@@ -1,14 +1,14 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MENU = [
-  { id: 1, categoria: 'Entradas', nombre: 'Papas fritas', precio: 8000 },
-  { id: 2, categoria: 'Entradas', nombre: 'Empanadas (3u)', precio: 9000 },
-  { id: 3, categoria: 'Platos fuertes', nombre: 'Bandeja paisa', precio: 25000 },
-  { id: 4, categoria: 'Platos fuertes', nombre: 'Pechuga a la plancha', precio: 22000 },
-  { id: 5, categoria: 'Platos fuertes', nombre: 'Pasta alfredo', precio: 20000 },
-  { id: 6, categoria: 'Bebidas', nombre: 'Gaseosa', precio: 5000 },
-  { id: 7, categoria: 'Bebidas', nombre: 'Jugo natural', precio: 6000 },
-  { id: 8, categoria: 'Postres', nombre: 'Flan', precio: 7000 },
+  { id: 1, categoria: 'Entradas', nombre: 'Papas fritas', precio: 8000, icono: '🍟' },
+  { id: 2, categoria: 'Entradas', nombre: 'Empanadas (3u)', precio: 9000, icono: '🥟' },
+  { id: 3, categoria: 'Platos fuertes', nombre: 'Bandeja paisa', precio: 25000, icono: '🍛' },
+  { id: 4, categoria: 'Platos fuertes', nombre: 'Pechuga a la plancha', precio: 22000, icono: '🍗' },
+  { id: 5, categoria: 'Platos fuertes', nombre: 'Pasta alfredo', precio: 20000, icono: '🍝' },
+  { id: 6, categoria: 'Bebidas', nombre: 'Gaseosa', precio: 5000, icono: '🥤' },
+  { id: 7, categoria: 'Bebidas', nombre: 'Jugo natural', precio: 6000, icono: '🧃' },
+  { id: 8, categoria: 'Postres', nombre: 'Flan', precio: 7000, icono: '🍮' },
 ];
 
 let mesas = [];
@@ -97,14 +97,20 @@ function renderListaMenu() {
   categorias.forEach(cat => {
     const bloque = document.createElement('div');
     bloque.className = 'menu-categoria';
-    bloque.innerHTML = `<h4>${cat}</h4>`;
+    const galeria = document.createElement('div');
+    galeria.className = 'galeria-platos';
     MENU.filter(p => p.categoria === cat).forEach(plato => {
       const el = document.createElement('div');
       el.className = 'plato';
-      el.innerHTML = `<span>${plato.nombre}</span><span class="precio">${formatoMoneda(plato.precio)}</span>`;
+      el.innerHTML = `
+        <span class="icono">${plato.icono}</span>
+        <span class="nombre">${plato.nombre}</span>
+        <span class="precio">${formatoMoneda(plato.precio)}</span>`;
       el.onclick = () => agregarPlato(plato.id);
-      bloque.appendChild(el);
+      galeria.appendChild(el);
     });
+    bloque.innerHTML = `<h4>${cat}</h4>`;
+    bloque.appendChild(galeria);
     cont.appendChild(bloque);
   });
 }
