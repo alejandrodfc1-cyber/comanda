@@ -11,7 +11,21 @@
   <h1>🍽️ Comanda</h1>
 </header>
 
-<main id="vista-mesas">
+<main id="vista-login">
+  <form id="form-login" class="login-caja">
+    <h2>Iniciar sesión</h2>
+    <input type="email" id="login-email" placeholder="Correo" required>
+    <input type="password" id="login-password" placeholder="Contraseña" required>
+    <button type="submit" class="btn">Entrar</button>
+    <button type="button" class="btn btn-secundario" onclick="crearCuenta()">Crear cuenta (primera vez)</button>
+    <p id="login-error" class="login-error"></p>
+  </form>
+</main>
+
+<main id="vista-mesas" class="oculto">
+  <div class="barra-superior">
+    <button class="btn btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>
   <div id="grid-mesas"></div>
 </main>
 

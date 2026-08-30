@@ -14,6 +14,36 @@ const MENU = [
 let mesas = [];
 let mesaActivaId = null;
 
+document.getElementById('form-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  document.getElementById('login-error').textContent = error ? 'Correo o contraseña incorrectos' : '';
+});
+
+async function cerrarSesion() {
+  await supabase.auth.signOut();
+}
+
+async function crearCuenta() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    document.getElementById('login-error').textContent = 'Escribe correo y contraseña arriba, luego presiona "Crear cuenta"';
+    return;
+  }
+  const { error } = await supabase.auth.signUp({ email, password });
+  document.getElementById('login-error').textContent = error ? error.message : 'Cuenta creada. Revisa tu correo si pide confirmación, luego presiona Entrar.';
+}
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  const haySesion = !!session;
+  document.getElementById('vista-login').classList.toggle('oculto', haySesion);
+  document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
+  if (haySesion) cargarMesas();
+});
+
 async function cargarMesas() {
   const { data, error } = await supabase.from('mesas').select('*').order('id');
   if (error) { console.error(error); return; }
@@ -166,5 +196,3 @@ function mostrarRecibo(mesa) {
 function cerrarRecibo() {
   document.getElementById('modal-recibo').classList.add('oculto');
 }
-
-cargarMesas();

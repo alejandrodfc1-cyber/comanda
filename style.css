@@ -24,6 +24,31 @@ main { padding: 20px; }
   margin: 0 auto;
 }
 
+.login-caja {
+  max-width: 320px;
+  margin: 60px auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.login-caja input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+.login-error { color: #c0392b; min-height: 1.2em; margin: 0; }
+
+.barra-superior {
+  max-width: 900px;
+  margin: 0 auto 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .mesa {
   aspect-ratio: 1;
   border-radius: 10px;
