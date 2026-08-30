@@ -138,7 +138,7 @@ function agregarPlato(platoId) {
   const plato = MENU.find(p => p.id === platoId);
   const item = mesa.pedido.find(i => i.id === platoId);
   if (item) item.cantidad++;
-  else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, cantidad: 1 });
+  else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, cantidad: 1 });
   renderPedido();
   guardarPedido(mesa);
 }
@@ -152,19 +152,30 @@ function cambiarCantidad(platoId, delta) {
   guardarPedido(mesa);
 }
 
+function eliminarDelPedido(platoId) {
+  const mesa = mesaActiva();
+  mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
+  renderPedido();
+  guardarPedido(mesa);
+}
+
 function renderPedido() {
   const mesa = mesaActiva();
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
+    const subtotal = item.precio * item.cantidad;
     const el = document.createElement('div');
     el.className = 'item-pedido';
     el.innerHTML = `
-      <span>${item.nombre}</span>
-      <div class="controles">
-        <button onclick="cambiarCantidad(${item.id}, -1)">-</button>
-        ${item.cantidad}
-        <button onclick="cambiarCantidad(${item.id}, 1)">+</button>
+      <span class="item-icono">${item.icono || '🍽️'}</span>
+      <div class="item-info">
+        <span class="item-nombre">${item.nombre}</span>
+        <span class="item-detalle">🛒 Cant: ${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}</span>
+      </div>
+      <div class="item-acciones">
+        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1)" title="Agregar uno más">+</button>
+        <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id})" title="Quitar">🗑️</button>
       </div>`;
     cont.appendChild(el);
   });
