@@ -1,4 +1,4 @@
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MENU = [
   { id: 1, categoria: 'Entradas', nombre: 'Papas fritas', precio: 8000 },
@@ -18,12 +18,12 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   document.getElementById('login-error').textContent = error ? 'Correo o contraseña incorrectos' : '';
 });
 
 async function cerrarSesion() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
 }
 
 async function crearCuenta() {
@@ -33,11 +33,11 @@ async function crearCuenta() {
     document.getElementById('login-error').textContent = 'Escribe correo y contraseña arriba, luego presiona "Crear cuenta"';
     return;
   }
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await sb.auth.signUp({ email, password });
   document.getElementById('login-error').textContent = error ? error.message : 'Cuenta creada. Revisa tu correo si pide confirmación, luego presiona Entrar.';
 }
 
-supabase.auth.onAuthStateChange((_event, session) => {
+sb.auth.onAuthStateChange((_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
@@ -45,13 +45,13 @@ supabase.auth.onAuthStateChange((_event, session) => {
 });
 
 async function cargarMesas() {
-  const { data, error } = await supabase.from('mesas').select('*').order('id');
+  const { data, error } = await sb.from('mesas').select('*').order('id');
   if (error) { console.error(error); return; }
   mesas = data;
   renderMesas();
 }
 
-supabase
+sb
   .channel('mesas-cambios')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, cargarMesas)
   .subscribe();
@@ -114,7 +114,7 @@ function mesaActiva() {
 }
 
 async function guardarPedido(mesa) {
-  const { error } = await supabase.from('mesas').update({ pedido: mesa.pedido }).eq('id', mesa.id);
+  const { error } = await sb.from('mesas').update({ pedido: mesa.pedido }).eq('id', mesa.id);
   if (error) console.error(error);
 }
 
@@ -164,7 +164,7 @@ async function cerrarMesa() {
   }
   mostrarRecibo(mesa);
 
-  await supabase.from('ventas').insert({
+  await sb.from('ventas').insert({
     mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa)
   });
   mesa.pedido = [];
