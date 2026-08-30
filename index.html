@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Comanda - Restaurante</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🍽️ Comanda</h1>
+</header>
+
+<main id="vista-mesas">
+  <div id="grid-mesas"></div>
+</main>
+
+<!-- Modal: menú de la mesa -->
+<div id="modal-menu" class="modal oculto">
+  <div class="modal-caja modal-grande">
+    <div class="modal-header">
+      <h2 id="titulo-mesa"></h2>
+      <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
+    </div>
+
+    <div class="menu-layout">
+      <div class="menu-lista" id="lista-menu"></div>
+
+      <div class="pedido-actual">
+        <h3>Pedido</h3>
+        <div id="lista-pedido"></div>
+        <div class="pedido-total">Total: <span id="total-pedido">$0</span></div>
+        <div class="acciones-modal">
+          <button class="btn btn-secundario" onclick="cerrarModalMenu()">Guardar y volver</button>
+          <button class="btn btn-peligro" onclick="cerrarMesa()">Cerrar mesa y cobrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: comprobante -->
+<div id="modal-recibo" class="modal oculto">
+  <div class="modal-caja">
+    <div id="recibo" class="recibo"></div>
+    <div class="acciones-modal no-imprimir">
+      <button class="btn btn-secundario" onclick="cerrarRecibo()">Cerrar</button>
+      <button class="btn" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
