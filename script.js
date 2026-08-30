@@ -13,6 +13,7 @@ const MENU = [
 
 let mesas = [];
 let mesaActivaId = null;
+let categoriaActiva = MENU[0].categoria;
 
 document.getElementById('form-login').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -90,29 +91,37 @@ function cerrarModalMenu() {
   mesaActivaId = null;
 }
 
-function renderListaMenu() {
-  const cont = document.getElementById('lista-menu');
-  cont.innerHTML = '';
+function renderTabsMenu() {
+  const tabs = document.getElementById('tabs-menu');
+  tabs.innerHTML = '';
   const categorias = [...new Set(MENU.map(p => p.categoria))];
   categorias.forEach(cat => {
-    const bloque = document.createElement('div');
-    bloque.className = 'menu-categoria';
-    const galeria = document.createElement('div');
-    galeria.className = 'galeria-platos';
-    MENU.filter(p => p.categoria === cat).forEach(plato => {
-      const el = document.createElement('div');
-      el.className = 'plato';
-      el.innerHTML = `
-        <span class="icono">${plato.icono}</span>
-        <span class="nombre">${plato.nombre}</span>
-        <span class="precio">${formatoMoneda(plato.precio)}</span>`;
-      el.onclick = () => agregarPlato(plato.id);
-      galeria.appendChild(el);
-    });
-    bloque.innerHTML = `<h4>${cat}</h4>`;
-    bloque.appendChild(galeria);
-    cont.appendChild(bloque);
+    const btn = document.createElement('button');
+    btn.textContent = cat;
+    btn.className = cat === categoriaActiva ? 'activa' : '';
+    btn.onclick = () => { categoriaActiva = cat; renderTabsMenu(); renderGaleriaMenu(); };
+    tabs.appendChild(btn);
   });
+}
+
+function renderGaleriaMenu() {
+  const galeria = document.getElementById('galeria-menu');
+  galeria.innerHTML = '';
+  MENU.filter(p => p.categoria === categoriaActiva).forEach(plato => {
+    const el = document.createElement('div');
+    el.className = 'plato';
+    el.innerHTML = `
+      <span class="icono">${plato.icono}</span>
+      <span class="nombre">${plato.nombre}</span>
+      <span class="precio">${formatoMoneda(plato.precio)}</span>`;
+    el.onclick = () => agregarPlato(plato.id);
+    galeria.appendChild(el);
+  });
+}
+
+function renderListaMenu() {
+  renderTabsMenu();
+  renderGaleriaMenu();
 }
 
 function mesaActiva() {
