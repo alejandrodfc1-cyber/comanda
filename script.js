@@ -19,7 +19,7 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
   const email = document.getElementById('login-email').value;
   const password = document.getElementById('login-password').value;
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  document.getElementById('login-error').textContent = error ? 'Correo o contraseña incorrectos' : '';
+  document.getElementById('login-error').textContent = error ? error.message : '';
 });
 
 async function cerrarSesion() {
