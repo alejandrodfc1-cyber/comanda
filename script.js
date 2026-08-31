@@ -139,7 +139,8 @@ function renderMesas() {
     const ocupada = mesa.pedido.length > 0;
     const btn = document.createElement('button');
     btn.className = 'mesa' + (ocupada ? ' ocupada' : '');
-    btn.innerHTML = `Mesa ${mesa.id}` + (ocupada ? `<small>${formatoMoneda(totalMesa(mesa))}</small>` : '<small>Libre</small>');
+    btn.innerHTML = `<span class="numero-mesa">${mesa.id}</span>` +
+      (ocupada ? `<small>${formatoMoneda(totalMesa(mesa))}</small>` : '<small>Libre</small>');
     btn.onclick = () => abrirModalMenu(mesa.id);
     grid.appendChild(btn);
   });
