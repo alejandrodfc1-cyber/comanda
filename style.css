@@ -152,6 +152,7 @@ main { padding: 20px; }
 .categoria-tabs {
   display: flex;
   flex-wrap: nowrap;
+  flex-shrink: 0;
   overflow-x: auto;
   background: #eceff1;
   border-radius: 999px;
