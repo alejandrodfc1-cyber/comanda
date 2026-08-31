@@ -104,11 +104,11 @@ main { padding: 20px; }
 
 .menu-layout {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 18px;
 }
 @media (max-width: 640px) {
-  .menu-layout { grid-template-columns: 1fr; }
+  .menu-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 .menu-categoria h4 {
@@ -120,23 +120,28 @@ main { padding: 20px; }
 
 .categoria-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   background: #eceff1;
   border-radius: 999px;
   padding: 4px;
   gap: 4px;
-  width: fit-content;
+  max-width: 100%;
   margin: 0 auto 18px;
+  scrollbar-width: none;
 }
+.categoria-tabs::-webkit-scrollbar { display: none; }
 .categoria-tabs button {
   border: none;
   background: transparent;
-  padding: 8px 18px;
+  padding: 8px 14px;
   border-radius: 999px;
   cursor: pointer;
-  font-size: .85rem;
+  font-size: .8rem;
   font-weight: 600;
   color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .categoria-tabs button.activa {
   background: #2c3e50;
@@ -145,8 +150,15 @@ main { padding: 20px; }
 
 .galeria-platos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .galeria-platos { gap: 6px; }
+  .plato .icono { font-size: 1.6rem; }
+  .plato .nombre { font-size: .7rem; }
+  .plato .precio { font-size: .65rem; }
 }
 .plato {
   display: flex;
