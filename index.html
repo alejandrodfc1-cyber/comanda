@@ -35,23 +35,23 @@
   <div class="modal-caja modal-grande">
     <div class="modal-header">
       <h2 id="titulo-mesa"></h2>
-      <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
+      <div class="header-acciones">
+        <button class="btn-detalle" id="btn-alternar-vista" onclick="alternarVistaModal()"></button>
+        <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
+      </div>
     </div>
 
-    <div class="menu-layout">
-      <div class="menu-lista">
-        <div class="categoria-tabs" id="tabs-menu"></div>
-        <div class="galeria-platos" id="galeria-menu"></div>
-      </div>
+    <div class="menu-lista" id="vista-menu-platos">
+      <div class="categoria-tabs" id="tabs-menu"></div>
+      <div class="galeria-platos" id="galeria-menu"></div>
+    </div>
 
-      <div class="pedido-actual">
-        <h3>Detalle de la mesa</h3>
-        <div id="lista-pedido"></div>
-        <div class="pedido-total">Total: <span id="total-pedido">$0</span></div>
-        <div class="acciones-modal">
-          <button class="btn btn-secundario" onclick="cerrarModalMenu()">Guardar y volver</button>
-          <button class="btn btn-peligro" onclick="cerrarMesa()">Cerrar mesa y cobrar</button>
-        </div>
+    <div class="pedido-actual oculto" id="vista-detalle-mesa">
+      <div id="lista-pedido"></div>
+      <div class="pedido-total">Total: <span id="total-pedido">$0</span></div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" onclick="cerrarModalMenu()">Guardar y volver</button>
+        <button class="btn btn-peligro" onclick="cerrarMesa()">Cerrar mesa y cobrar</button>
       </div>
     </div>
   </div>

@@ -133,8 +133,11 @@ function renderMesas() {
   });
 }
 
+let vistaModal = 'menu';
+
 function abrirModalMenu(mesaId) {
   mesaActivaId = mesaId;
+  vistaModal = 'menu';
   document.getElementById('titulo-mesa').textContent = `Mesa ${mesaId}`;
   renderListaMenu();
   renderPedido();
@@ -144,6 +147,22 @@ function abrirModalMenu(mesaId) {
 function cerrarModalMenu() {
   document.getElementById('modal-menu').classList.add('oculto');
   mesaActivaId = null;
+}
+
+function alternarVistaModal() {
+  vistaModal = vistaModal === 'menu' ? 'detalle' : 'menu';
+  actualizarVistaModal();
+}
+
+function actualizarVistaModal() {
+  const enMenu = vistaModal === 'menu';
+  document.getElementById('vista-menu-platos').classList.toggle('oculto', !enMenu);
+  document.getElementById('vista-detalle-mesa').classList.toggle('oculto', enMenu);
+  const mesa = mesaActiva();
+  const cantidadItems = mesa.pedido.reduce((s, i) => s + i.cantidad, 0);
+  document.getElementById('btn-alternar-vista').textContent = enMenu
+    ? `🧾 Detalle (${cantidadItems})`
+    : '← Menú';
 }
 
 function renderTabsMenu() {
@@ -235,6 +254,7 @@ function renderPedido() {
     cont.appendChild(el);
   });
   document.getElementById('total-pedido').textContent = formatoMoneda(totalMesa(mesa));
+  actualizarVistaModal();
 }
 
 async function cerrarMesa() {
