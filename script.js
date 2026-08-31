@@ -314,10 +314,11 @@ function mostrarRecibo(mesa) {
   });
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
+  const filaTotal = (etiqueta, valor) => `${etiqueta.padEnd(24)}${formatoMoneda(valor).padStart(8)}\n`;
   texto += `--------------------------------\n`;
-  texto += `TOTAL:            ${formatoMoneda(total)}\n`;
-  texto += `Propina (10%):    ${formatoMoneda(propina)}\n`;
-  texto += `TOTAL + PROPINA:  ${formatoMoneda(total + propina)}\n`;
+  texto += filaTotal('TOTAL:', total);
+  texto += filaTotal('Propina (10%):', propina);
+  texto += filaTotal('TOTAL + PROPINA:', total + propina);
   texto += `--------------------------------\n`;
   texto += `      ¡Gracias por su visita!`;
   document.getElementById('recibo').textContent = texto;
