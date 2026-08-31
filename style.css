@@ -311,6 +311,30 @@ main { padding: 20px; }
   border-radius: 6px;
   font-size: .9rem;
 }
+.titulo-form { margin: 0; color: #2c3e50; }
+.campo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: #555;
+}
+.preview-foto-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  font-size: .75rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+.preview-foto-form img {
+  width: 44px; height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
 
 .fila-admin {
   display: flex;

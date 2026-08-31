@@ -78,7 +78,10 @@
 
     <div id="seccion-admin-mesas">
       <form id="form-nueva-mesa" class="form-admin">
-        <input type="text" id="nueva-mesa-nombre" placeholder="Nombre (opcional: temporada, cliente...)">
+        <h3 class="titulo-form" id="titulo-form-mesa">Nueva mesa</h3>
+        <label class="campo-form">Nombre de la mesa
+          <input type="text" id="nueva-mesa-nombre" placeholder="Opcional: temporada, cliente...">
+        </label>
         <div class="fila-botones-form">
           <button type="submit" class="btn" id="btn-guardar-mesa">+ Agregar mesa</button>
           <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-mesa" onclick="cancelarEdicionMesa()">Cancelar</button>
@@ -89,12 +92,29 @@
 
     <div id="seccion-admin-productos" class="oculto">
       <form id="form-nuevo-producto" class="form-admin">
-        <input type="text" id="nuevo-producto-nombre" placeholder="Nombre" required>
-        <select id="nuevo-producto-categoria" required></select>
-        <input type="number" id="nuevo-producto-costo" placeholder="Costo" min="0">
-        <input type="number" id="nuevo-producto-precio" placeholder="Precio de venta" min="0" required>
-        <input type="number" id="nuevo-producto-inventario" placeholder="Inventario" min="0">
-        <input type="file" id="nuevo-producto-foto" accept="image/*">
+        <h3 class="titulo-form" id="titulo-form-producto">Nuevo producto</h3>
+        <label class="campo-form">Nombre del producto
+          <input type="text" id="nuevo-producto-nombre" placeholder="Ej: Completo Italiano" required>
+        </label>
+        <label class="campo-form">Categoría
+          <select id="nuevo-producto-categoria" required></select>
+        </label>
+        <label class="campo-form">Costo (lo que te cuesta hacerlo)
+          <input type="number" id="nuevo-producto-costo" placeholder="0" min="0">
+        </label>
+        <label class="campo-form">Precio de venta
+          <input type="number" id="nuevo-producto-precio" placeholder="0" min="0" required>
+        </label>
+        <label class="campo-form">Inventario (stock disponible)
+          <input type="number" id="nuevo-producto-inventario" placeholder="0" min="0">
+        </label>
+        <label class="campo-form">Foto del producto
+          <div class="preview-foto-form oculto" id="preview-foto-producto-wrap">
+            <img id="preview-foto-producto" src="" alt="Foto actual">
+            <span>Foto actual — elige otro archivo para reemplazarla</span>
+          </div>
+          <input type="file" id="nuevo-producto-foto" accept="image/*">
+        </label>
         <div class="fila-botones-form">
           <button type="submit" class="btn" id="btn-guardar-producto">+ Agregar producto</button>
           <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-producto" onclick="cancelarEdicionProducto()">Cancelar</button>

@@ -396,13 +396,17 @@ function editarMesa(id) {
   if (!mesa) return;
   mesaEditandoId = id;
   document.getElementById('nueva-mesa-nombre').value = mesa.nombre || '';
+  document.getElementById('titulo-form-mesa').textContent = `Editando: ${mesa.nombre || `Mesa ${mesa.id}`}`;
   document.getElementById('btn-guardar-mesa').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-mesa').classList.remove('oculto');
+  document.getElementById('form-nueva-mesa').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('nueva-mesa-nombre').focus();
 }
 
 function cancelarEdicionMesa() {
   mesaEditandoId = null;
   document.getElementById('nueva-mesa-nombre').value = '';
+  document.getElementById('titulo-form-mesa').textContent = 'Nueva mesa';
   document.getElementById('btn-guardar-mesa').textContent = '+ Agregar mesa';
   document.getElementById('btn-cancelar-mesa').classList.add('oculto');
 }
@@ -471,22 +475,42 @@ function editarProducto(id) {
   document.getElementById('nuevo-producto-costo').value = p.costo;
   document.getElementById('nuevo-producto-precio').value = p.precio;
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
+  document.getElementById('titulo-form-producto').textContent = `Editando: ${p.nombre}`;
   document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-producto').classList.remove('oculto');
+  const previewWrap = document.getElementById('preview-foto-producto-wrap');
+  if (p.foto_url) {
+    document.getElementById('preview-foto-producto').src = p.foto_url;
+    previewWrap.classList.remove('oculto');
+  } else {
+    previewWrap.classList.add('oculto');
+  }
+  document.getElementById('form-nuevo-producto').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('nuevo-producto-nombre').focus();
 }
 
 function cancelarEdicionProducto() {
   productoEditandoId = null;
   productoEditandoFotoUrl = null;
   document.getElementById('form-nuevo-producto').reset();
+  document.getElementById('titulo-form-producto').textContent = 'Nuevo producto';
   document.getElementById('btn-guardar-producto').textContent = '+ Agregar producto';
   document.getElementById('btn-cancelar-producto').classList.add('oculto');
+  document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
 }
 
 function poblarSelectCategorias() {
   const select = document.getElementById('nuevo-producto-categoria');
   select.innerHTML = categoriasDb.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 }
+
+document.getElementById('nuevo-producto-foto').addEventListener('change', (e) => {
+  const archivo = e.target.files[0];
+  if (!archivo) return;
+  const previewWrap = document.getElementById('preview-foto-producto-wrap');
+  document.getElementById('preview-foto-producto').src = URL.createObjectURL(archivo);
+  previewWrap.classList.remove('oculto');
+});
 
 document.getElementById('form-nuevo-producto').addEventListener('submit', async (e) => {
   e.preventDefault();
