@@ -3,8 +3,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let MENU = [];
 let CATEGORIAS = ['Top20'];
 let categoriasDb = [];
-
-const TOP20_IDS = [1, 5, 16, 17, 46, 7, 2, 20, 47, 31, 9, 21, 48, 3, 34, 11, 25, 49, 8, 22];
+let TOP20_IDS = [];
 
 async function cargarCategoriasYProductos() {
   const { data: cats } = await sb.from('categorias').select('*').order('orden');
@@ -21,6 +20,11 @@ async function cargarCategoriasYProductos() {
     foto_url: p.foto_url,
     categoria: mapaCategorias[p.categoria_id],
   }));
+
+  TOP20_IDS = (productos || [])
+    .filter(p => p.top20)
+    .sort((a, b) => (a.orden_top20 ?? 0) - (b.orden_top20 ?? 0))
+    .map(p => p.id);
 
   if (mesaActivaId) { renderListaMenu(); renderGaleriaMenu(); }
 }
@@ -343,12 +347,13 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias'].forEach(s => {
+  ['mesas', 'productos', 'categorias', 'top20'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20');
+  if (seccion === 'top20') cargarTop20Admin();
 }
 
 function guardarDesdeFlotante() {
@@ -567,3 +572,76 @@ document.getElementById('form-nueva-categoria').addEventListener('submit', async
   renderCategoriasAdmin();
   poblarSelectCategorias();
 });
+
+let top20AdminCache = [];
+
+async function cargarTop20Admin() {
+  const { data } = await sb.from('productos').select('*, categorias(nombre)').eq('visible', true).order('id');
+  top20AdminCache = data || [];
+  renderTop20Admin();
+}
+
+function renderTop20Admin() {
+  const enTop20 = top20AdminCache
+    .filter(p => p.top20)
+    .sort((a, b) => (a.orden_top20 ?? 0) - (b.orden_top20 ?? 0));
+  const disponibles = top20AdminCache.filter(p => !p.top20);
+
+  const contActual = document.getElementById('lista-top20-actual');
+  contActual.innerHTML = enTop20.length
+    ? ''
+    : '<p style="color:#666">Aún no has agregado productos al Top20.</p>';
+  enTop20.forEach((p, i) => {
+    const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">${miniatura}</div>
+      <div class="info-admin"><strong>${p.nombre}</strong><span>${p.categorias?.nombre || ''}</span></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverTop20(${p.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === enTop20.length - 1 ? 'disabled' : ''} onclick="moverTop20(${p.id}, 1)">▼</button>
+        <button class="btn-toggle-visible" onclick="quitarDeTop20(${p.id})">✕ Quitar</button>
+      </div>`;
+    contActual.appendChild(fila);
+  });
+
+  const contDisponibles = document.getElementById('lista-top20-disponibles');
+  contDisponibles.innerHTML = '';
+  disponibles.forEach(p => {
+    const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">${miniatura}</div>
+      <div class="info-admin"><strong>${p.nombre}</strong><span>${p.categorias?.nombre || ''}</span></div>
+      <button class="btn-toggle-visible" onclick="agregarATop20(${p.id})">+ Agregar</button>`;
+    contDisponibles.appendChild(fila);
+  });
+}
+
+async function agregarATop20(id) {
+  const siguienteOrden = Math.max(0, ...top20AdminCache.filter(p => p.top20).map(p => p.orden_top20 ?? 0)) + 1;
+  await sb.from('productos').update({ top20: true, orden_top20: siguienteOrden }).eq('id', id);
+  await cargarTop20Admin();
+  cargarCategoriasYProductos();
+}
+
+async function quitarDeTop20(id) {
+  await sb.from('productos').update({ top20: false, orden_top20: null }).eq('id', id);
+  await cargarTop20Admin();
+  cargarCategoriasYProductos();
+}
+
+async function moverTop20(id, direccion) {
+  const enTop20 = top20AdminCache.filter(p => p.top20).sort((a, b) => (a.orden_top20 ?? 0) - (b.orden_top20 ?? 0));
+  const i = enTop20.findIndex(p => p.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= enTop20.length) return;
+  const a = enTop20[i], b = enTop20[j];
+  const ordenA = a.orden_top20 ?? 0, ordenB = b.orden_top20 ?? 0;
+  await sb.from('productos').update({ orden_top20: ordenB }).eq('id', a.id);
+  await sb.from('productos').update({ orden_top20: ordenA }).eq('id', b.id);
+  await cargarTop20Admin();
+  cargarCategoriasYProductos();
+}

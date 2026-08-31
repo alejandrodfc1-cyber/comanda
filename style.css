@@ -365,6 +365,7 @@ main { padding: 20px; }
   font-size: .85rem;
   flex-shrink: 0;
 }
+.btn-editar-admin:disabled { opacity: .3; cursor: default; }
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 
 .fila-botones-form { display: flex; gap: 8px; }

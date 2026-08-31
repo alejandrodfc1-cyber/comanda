@@ -74,6 +74,7 @@
       <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
       <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
       <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
+      <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
     </div>
 
     <div id="seccion-admin-mesas">
@@ -129,6 +130,13 @@
         <button type="submit" class="btn">+ Agregar categoría</button>
       </form>
       <div id="lista-admin-categorias"></div>
+    </div>
+
+    <div id="seccion-admin-top20" class="oculto">
+      <h3 class="titulo-form">En el Top20 (arriba = primero)</h3>
+      <div id="lista-top20-actual"></div>
+      <h3 class="titulo-form" style="margin-top:20px">Agregar al Top20</h3>
+      <div id="lista-top20-disponibles" class="con-espacio-fab"></div>
     </div>
 
     <button class="fab-detalle oculto" id="btn-guardar-flotante" onclick="guardarDesdeFlotante()">💾 Guardar</button>
