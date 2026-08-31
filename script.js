@@ -1,74 +1,35 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const MENU = [
-  { id: 1, categoria: 'Comidas', nombre: 'Completo Italiano', precio: 2800, icono: '🌭' },
-  { id: 2, categoria: 'Comidas', nombre: 'Completo Dinámico', precio: 3000, icono: '🌭' },
-  { id: 3, categoria: 'Comidas', nombre: 'Completo Especial', precio: 3200, icono: '🌭' },
-  { id: 4, categoria: 'Comidas', nombre: 'As Completo', precio: 3400, icono: '🌭' },
-  { id: 5, categoria: 'Comidas', nombre: 'Barros Luco', precio: 3800, icono: '🥪' },
-  { id: 6, categoria: 'Comidas', nombre: 'Barros Jarpa', precio: 3800, icono: '🥪' },
-  { id: 7, categoria: 'Comidas', nombre: 'Chacarero', precio: 4000, icono: '🥪' },
-  { id: 8, categoria: 'Comidas', nombre: 'Churrasco Italiano', precio: 4200, icono: '🥪' },
-  { id: 9, categoria: 'Comidas', nombre: 'Ave Palta Mayo', precio: 3600, icono: '🥪' },
-  { id: 10, categoria: 'Comidas', nombre: 'Chemilico', precio: 3500, icono: '🌭' },
-  { id: 11, categoria: 'Comidas', nombre: 'Hot Dog Simple', precio: 2200, icono: '🌭' },
-  { id: 12, categoria: 'Comidas', nombre: 'Completo a lo Pobre', precio: 3900, icono: '🌭' },
-  { id: 13, categoria: 'Comidas', nombre: 'Sánguche de Pernil', precio: 4300, icono: '🥪' },
-  { id: 14, categoria: 'Comidas', nombre: 'Lomito Completo', precio: 4500, icono: '🥪' },
-  { id: 15, categoria: 'Comidas', nombre: 'Papas Fritas con Salsas', precio: 3000, icono: '🍟' },
-
-  { id: 16, categoria: 'Cervezas', nombre: '1/2 Royal Shop', precio: 3500, icono: '🍺' },
-  { id: 17, categoria: 'Cervezas', nombre: '1/2 Escudo Shop', precio: 3000, icono: '🍺' },
-  { id: 18, categoria: 'Cervezas', nombre: '1/2 Cristal Shop', precio: 3000, icono: '🍺' },
-  { id: 19, categoria: 'Cervezas', nombre: 'Litro Cristal Shop', precio: 5500, icono: '🍺' },
-  { id: 20, categoria: 'Cervezas', nombre: 'Escudo Botella', precio: 2500, icono: '🍺' },
-  { id: 21, categoria: 'Cervezas', nombre: 'Cristal Botella', precio: 2500, icono: '🍺' },
-  { id: 22, categoria: 'Cervezas', nombre: 'Royal Guard Botella', precio: 2800, icono: '🍺' },
-  { id: 23, categoria: 'Cervezas', nombre: 'Heineken Botella', precio: 3200, icono: '🍺' },
-  { id: 24, categoria: 'Cervezas', nombre: 'Corona Botella', precio: 3200, icono: '🍺' },
-  { id: 25, categoria: 'Cervezas', nombre: 'Austral Lata', precio: 2800, icono: '🍺' },
-  { id: 26, categoria: 'Cervezas', nombre: 'Kunstmann Lata', precio: 3000, icono: '🍺' },
-  { id: 27, categoria: 'Cervezas', nombre: 'Sin Alcohol Lata', precio: 2500, icono: '🍺' },
-  { id: 28, categoria: 'Cervezas', nombre: 'Artesanal IPA', precio: 3800, icono: '🍺' },
-  { id: 29, categoria: 'Cervezas', nombre: 'Artesanal Stout', precio: 3800, icono: '🍺' },
-  { id: 30, categoria: 'Cervezas', nombre: 'Jarra de Cerveza', precio: 8000, icono: '🍺' },
-
-  { id: 31, categoria: 'Vinos', nombre: 'Copa Vino Tinto', precio: 3000, icono: '🍷' },
-  { id: 32, categoria: 'Vinos', nombre: 'Copa Vino Blanco', precio: 3000, icono: '🍷' },
-  { id: 33, categoria: 'Vinos', nombre: 'Copa Vino Rosado', precio: 3000, icono: '🍷' },
-  { id: 34, categoria: 'Vinos', nombre: 'Botella Cabernet Sauvignon', precio: 15000, icono: '🍷' },
-  { id: 35, categoria: 'Vinos', nombre: 'Botella Carmenere', precio: 16000, icono: '🍷' },
-  { id: 36, categoria: 'Vinos', nombre: 'Botella Merlot', precio: 15000, icono: '🍷' },
-  { id: 37, categoria: 'Vinos', nombre: 'Botella Sauvignon Blanc', precio: 14000, icono: '🍷' },
-  { id: 38, categoria: 'Vinos', nombre: 'Botella Chardonnay', precio: 14000, icono: '🍷' },
-  { id: 39, categoria: 'Vinos', nombre: 'Botella Pinot Noir', precio: 17000, icono: '🍷' },
-  { id: 40, categoria: 'Vinos', nombre: 'Copa Espumante', precio: 4000, icono: '🥂' },
-  { id: 41, categoria: 'Vinos', nombre: 'Botella Espumante', precio: 18000, icono: '🥂' },
-  { id: 42, categoria: 'Vinos', nombre: 'Botella Malbec', precio: 16000, icono: '🍷' },
-  { id: 43, categoria: 'Vinos', nombre: 'Copa Vino de la Casa', precio: 2500, icono: '🍷' },
-  { id: 44, categoria: 'Vinos', nombre: 'Botella Vino de la Casa', precio: 12000, icono: '🍷' },
-  { id: 45, categoria: 'Vinos', nombre: 'Copa Sangría', precio: 3500, icono: '🍷' },
-
-  { id: 46, categoria: 'Combinados', nombre: 'Piscola', precio: 3500, icono: '🥃' },
-  { id: 47, categoria: 'Combinados', nombre: 'Pisco Sour', precio: 4500, icono: '🍹' },
-  { id: 48, categoria: 'Combinados', nombre: 'Cuba Libre', precio: 4000, icono: '🥃' },
-  { id: 49, categoria: 'Combinados', nombre: 'Mojito', precio: 4500, icono: '🍹' },
-  { id: 50, categoria: 'Combinados', nombre: 'Ron Cola', precio: 4000, icono: '🥃' },
-  { id: 51, categoria: 'Combinados', nombre: 'Whisky Cola', precio: 4500, icono: '🥃' },
-  { id: 52, categoria: 'Combinados', nombre: 'Gin Tonic', precio: 4800, icono: '🍸' },
-  { id: 53, categoria: 'Combinados', nombre: 'Vodka Naranja', precio: 4200, icono: '🍹' },
-  { id: 54, categoria: 'Combinados', nombre: 'Fernet Cola', precio: 4300, icono: '🥃' },
-  { id: 55, categoria: 'Combinados', nombre: 'Terremoto', precio: 4000, icono: '🌋' },
-  { id: 56, categoria: 'Combinados', nombre: 'Borgoña', precio: 3500, icono: '🍷' },
-  { id: 57, categoria: 'Combinados', nombre: 'Whisky Solo', precio: 5000, icono: '🥃' },
-  { id: 58, categoria: 'Combinados', nombre: 'Pisco Solo', precio: 3200, icono: '🥃' },
-  { id: 59, categoria: 'Combinados', nombre: 'Vodka Solo', precio: 3800, icono: '🥃' },
-  { id: 60, categoria: 'Combinados', nombre: 'Ron Solo', precio: 3800, icono: '🥃' },
-];
-
-const CATEGORIAS = ['Top20', 'Comidas', 'Cervezas', 'Vinos', 'Combinados'];
+let MENU = [];
+let CATEGORIAS = ['Top20'];
+let categoriasDb = [];
 
 const TOP20_IDS = [1, 5, 16, 17, 46, 7, 2, 20, 47, 31, 9, 21, 48, 3, 34, 11, 25, 49, 8, 22];
+
+async function cargarCategoriasYProductos() {
+  const { data: cats } = await sb.from('categorias').select('*').order('orden');
+  categoriasDb = cats || [];
+  CATEGORIAS = ['Top20', ...categoriasDb.map(c => c.nombre)];
+
+  const { data: productos } = await sb.from('productos').select('*').eq('visible', true).order('id');
+  const mapaCategorias = Object.fromEntries(categoriasDb.map(c => [c.id, c.nombre]));
+  MENU = (productos || []).map(p => ({
+    id: p.id,
+    nombre: p.nombre,
+    precio: p.precio,
+    icono: p.icono,
+    foto_url: p.foto_url,
+    categoria: mapaCategorias[p.categoria_id],
+  }));
+
+  if (mesaActivaId) { renderListaMenu(); renderGaleriaMenu(); }
+}
+
+sb
+  .channel('menu-cambios')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, cargarCategoriasYProductos)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'categorias' }, cargarCategoriasYProductos)
+  .subscribe();
 
 const USAR_TOP20_AUTOMATICO = false;
 let top20AutomaticoIds = [];
@@ -109,11 +70,11 @@ sb.auth.onAuthStateChange((_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
-  if (haySesion) cargarMesas();
+  if (haySesion) { cargarMesas(); cargarCategoriasYProductos(); }
 });
 
 async function cargarMesas() {
-  const { data, error } = await sb.from('mesas').select('*').order('id');
+  const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('id');
   if (error) { console.error(error); return; }
   mesas = data;
   renderMesas();
@@ -139,7 +100,9 @@ function renderMesas() {
     const ocupada = mesa.pedido.length > 0;
     const btn = document.createElement('button');
     btn.className = 'mesa' + (ocupada ? ' ocupada' : '');
-    btn.innerHTML = `<span class="numero-mesa">${mesa.id}</span>` +
+    const etiqueta = mesa.nombre || mesa.id;
+    const claseEtiqueta = mesa.nombre ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
+    btn.innerHTML = `<span class="${claseEtiqueta}">${etiqueta}</span>` +
       (ocupada ? `<small>${formatoMoneda(totalMesa(mesa))}</small>` : '<small>Libre</small>');
     btn.onclick = () => abrirModalMenu(mesa.id);
     grid.appendChild(btn);
@@ -215,9 +178,12 @@ function renderGaleriaMenu() {
     const enPedido = mesa.pedido.find(i => i.id === plato.id);
     const el = document.createElement('div');
     el.className = 'plato';
+    const iconoHtml = plato.foto_url
+      ? `<img src="${plato.foto_url}" alt="">`
+      : (plato.icono || '🍽️');
     el.innerHTML = `
       ${enPedido ? `<span class="badge-cantidad">${enPedido.cantidad}</span>` : ''}
-      <span class="icono">${plato.icono}</span>
+      <span class="icono">${iconoHtml}</span>
       <span class="nombre">${plato.nombre}</span>
       <span class="precio">${formatoMoneda(plato.precio)}</span>`;
     el.onclick = () => agregarPlato(plato.id);
@@ -244,7 +210,7 @@ function agregarPlato(platoId) {
   const plato = MENU.find(p => p.id === platoId);
   const item = mesa.pedido.find(i => i.id === platoId);
   if (item) item.cantidad++;
-  else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, cantidad: 1 });
+  else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
   renderPedido();
   guardarPedido(mesa);
 }
@@ -275,8 +241,9 @@ function renderPedido() {
     const el = document.createElement('div');
     el.className = 'item-pedido';
     el.onclick = () => toggleExpandido(item.id);
+    const iconoItemHtml = item.foto_url ? `<img src="${item.foto_url}" alt="">` : (item.icono || '🍽️');
     el.innerHTML = `
-      <span class="item-icono">${item.icono || '🍽️'}</span>
+      <span class="item-icono">${iconoItemHtml}</span>
       <div class="item-info">
         <span class="item-nombre">${item.nombre}</span>
         <span class="item-detalle">${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}</span>
@@ -344,3 +311,150 @@ function mostrarRecibo(mesa) {
 function cerrarRecibo() {
   document.getElementById('modal-recibo').classList.add('oculto');
 }
+
+function abrirDashboard() {
+  document.getElementById('modal-dashboard').classList.remove('oculto');
+  mostrarSeccionDashboard('mesas');
+  cargarMesasAdmin();
+  cargarProductosAdmin();
+  renderCategoriasAdmin();
+  poblarSelectCategorias();
+}
+
+function cerrarDashboard() {
+  document.getElementById('modal-dashboard').classList.add('oculto');
+}
+
+function mostrarSeccionDashboard(seccion) {
+  ['mesas', 'productos', 'categorias'].forEach(s => {
+    document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
+    document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
+  });
+}
+
+async function cargarMesasAdmin() {
+  const { data } = await sb.from('mesas').select('*').order('id');
+  renderMesasAdmin(data || []);
+}
+
+function renderMesasAdmin(lista) {
+  const cont = document.getElementById('lista-admin-mesas');
+  cont.innerHTML = '';
+  lista.forEach(mesa => {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin' + (mesa.visible ? '' : ' oculta-item');
+    fila.innerHTML = `
+      <div class="miniatura">${mesa.nombre ? '🏷️' : mesa.id}</div>
+      <div class="info-admin">
+        <strong>${mesa.nombre || `Mesa ${mesa.id}`}</strong>
+        <span>${mesa.pedido.length > 0 ? 'Ocupada' : 'Libre'}</span>
+      </div>
+      <button class="btn-toggle-visible" onclick="toggleVisibleMesa(${mesa.id}, ${mesa.visible})">${mesa.visible ? '👁️ Visible' : '🚫 Oculta'}</button>`;
+    cont.appendChild(fila);
+  });
+}
+
+async function toggleVisibleMesa(id, actual) {
+  await sb.from('mesas').update({ visible: !actual }).eq('id', id);
+  cargarMesasAdmin();
+  cargarMesas();
+}
+
+document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombreInput = document.getElementById('nueva-mesa-nombre');
+  const nombre = nombreInput.value.trim() || null;
+  const { data } = await sb.from('mesas').select('id').order('id', { ascending: false }).limit(1);
+  const siguienteId = data && data.length > 0 ? data[0].id + 1 : 1;
+  await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [] });
+  nombreInput.value = '';
+  cargarMesasAdmin();
+  cargarMesas();
+});
+
+async function cargarProductosAdmin() {
+  const { data } = await sb.from('productos').select('*, categorias(nombre)').order('id');
+  renderProductosAdmin(data || []);
+}
+
+function renderProductosAdmin(lista) {
+  const cont = document.getElementById('lista-admin-productos');
+  cont.innerHTML = '';
+  lista.forEach(p => {
+    const utilidad = p.precio - p.costo;
+    const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin' + (p.visible ? '' : ' oculta-item');
+    fila.innerHTML = `
+      <div class="miniatura">${miniatura}</div>
+      <div class="info-admin">
+        <strong>${p.nombre}</strong>
+        <span>${p.categorias?.nombre || ''} · Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)} · Stock ${p.inventario}</span>
+      </div>
+      <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>`;
+    cont.appendChild(fila);
+  });
+}
+
+async function toggleVisibleProducto(id, actual) {
+  await sb.from('productos').update({ visible: !actual }).eq('id', id);
+  cargarProductosAdmin();
+}
+
+function poblarSelectCategorias() {
+  const select = document.getElementById('nuevo-producto-categoria');
+  select.innerHTML = categoriasDb.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+}
+
+document.getElementById('form-nuevo-producto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('nuevo-producto-nombre').value.trim();
+  const categoriaId = document.getElementById('nuevo-producto-categoria').value;
+  const costo = Number(document.getElementById('nuevo-producto-costo').value) || 0;
+  const precio = Number(document.getElementById('nuevo-producto-precio').value) || 0;
+  const inventario = Number(document.getElementById('nuevo-producto-inventario').value) || 0;
+  const archivoFoto = document.getElementById('nuevo-producto-foto').files[0];
+
+  let fotoUrl = null;
+  if (archivoFoto) {
+    const ruta = `${Date.now()}-${archivoFoto.name}`;
+    const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoFoto);
+    if (!errorSubida) {
+      fotoUrl = sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
+    }
+  }
+
+  await sb.from('productos').insert({
+    nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl
+  });
+
+  e.target.reset();
+  cargarProductosAdmin();
+  cargarCategoriasYProductos();
+});
+
+function renderCategoriasAdmin() {
+  const cont = document.getElementById('lista-admin-categorias');
+  cont.innerHTML = '';
+  categoriasDb.forEach(c => {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">📂</div>
+      <div class="info-admin"><strong>${c.nombre}</strong></div>`;
+    cont.appendChild(fila);
+  });
+}
+
+document.getElementById('form-nueva-categoria').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombreInput = document.getElementById('nueva-categoria-nombre');
+  const nombre = nombreInput.value.trim();
+  if (!nombre) return;
+  const siguienteOrden = categoriasDb.length > 0 ? Math.max(...categoriasDb.map(c => c.orden)) + 1 : 1;
+  await sb.from('categorias').insert({ nombre, orden: siguienteOrden });
+  nombreInput.value = '';
+  await cargarCategoriasYProductos();
+  renderCategoriasAdmin();
+  poblarSelectCategorias();
+});

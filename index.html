@@ -25,6 +25,7 @@
 
 <main id="vista-mesas" class="oculto">
   <div class="barra-superior">
+    <button class="btn-icono-dashboard" onclick="abrirDashboard()" title="Panel de administración">⚙️</button>
     <button class="btn btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
   </div>
   <div id="grid-mesas"></div>
@@ -58,6 +59,51 @@
     </div>
 
     <button class="fab-detalle" id="btn-alternar-vista" onclick="alternarVistaModal()"></button>
+  </div>
+</div>
+
+<!-- Modal: panel de administración -->
+<div id="modal-dashboard" class="modal oculto">
+  <div class="modal-caja modal-grande">
+    <div class="modal-header">
+      <h2>⚙️ Administración</h2>
+      <button class="btn-cerrar" onclick="cerrarDashboard()">✕</button>
+    </div>
+
+    <div class="categoria-tabs">
+      <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
+      <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
+      <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
+    </div>
+
+    <div id="seccion-admin-mesas">
+      <form id="form-nueva-mesa" class="form-admin">
+        <input type="text" id="nueva-mesa-nombre" placeholder="Nombre (opcional: temporada, cliente...)">
+        <button type="submit" class="btn">+ Agregar mesa</button>
+      </form>
+      <div id="lista-admin-mesas"></div>
+    </div>
+
+    <div id="seccion-admin-productos" class="oculto">
+      <form id="form-nuevo-producto" class="form-admin">
+        <input type="text" id="nuevo-producto-nombre" placeholder="Nombre" required>
+        <select id="nuevo-producto-categoria" required></select>
+        <input type="number" id="nuevo-producto-costo" placeholder="Costo" min="0">
+        <input type="number" id="nuevo-producto-precio" placeholder="Precio de venta" min="0" required>
+        <input type="number" id="nuevo-producto-inventario" placeholder="Inventario" min="0">
+        <input type="file" id="nuevo-producto-foto" accept="image/*">
+        <button type="submit" class="btn">+ Agregar producto</button>
+      </form>
+      <div id="lista-admin-productos"></div>
+    </div>
+
+    <div id="seccion-admin-categorias" class="oculto">
+      <form id="form-nueva-categoria" class="form-admin">
+        <input type="text" id="nueva-categoria-nombre" placeholder="Nombre de categoría" required>
+        <button type="submit" class="btn">+ Agregar categoría</button>
+      </form>
+      <div id="lista-admin-categorias"></div>
+    </div>
   </div>
 </div>
 
