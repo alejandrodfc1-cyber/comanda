@@ -181,10 +181,13 @@ function renderTabsMenu() {
 function renderGaleriaMenu() {
   const galeria = document.getElementById('galeria-menu');
   galeria.innerHTML = '';
+  const mesa = mesaActiva();
   MENU.filter(p => p.categoria === categoriaActiva).forEach(plato => {
+    const enPedido = mesa.pedido.find(i => i.id === plato.id);
     const el = document.createElement('div');
     el.className = 'plato';
     el.innerHTML = `
+      ${enPedido ? `<span class="badge-cantidad">${enPedido.cantidad}</span>` : ''}
       <span class="icono">${plato.icono}</span>
       <span class="nombre">${plato.nombre}</span>
       <span class="precio">${formatoMoneda(plato.precio)}</span>`;
@@ -255,6 +258,7 @@ function renderPedido() {
   });
   document.getElementById('total-pedido').textContent = formatoMoneda(totalMesa(mesa));
   actualizarVistaModal();
+  renderGaleriaMenu();
 }
 
 async function cerrarMesa() {
