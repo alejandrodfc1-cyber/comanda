@@ -238,10 +238,19 @@ main { padding: 20px; }
   font-size: .9rem;
 }
 .item-pedido .btn-eliminar { background: #fdecea; margin-left: 4px; }
-.pedido-total {
+.resumen-total { margin-top: 10px; }
+.linea-resumen {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.linea-propina { color: #666; font-size: .85rem; }
+.linea-total-final {
   font-weight: 700;
-  margin-top: 10px;
   font-size: 1.1rem;
+  border-top: 1px dashed #ddd;
+  margin-top: 4px;
+  padding-top: 6px;
 }
 
 .acciones-modal {

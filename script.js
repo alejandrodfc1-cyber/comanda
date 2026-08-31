@@ -268,7 +268,11 @@ function renderPedido() {
       </div>` : ''}`;
     cont.appendChild(el);
   });
-  document.getElementById('total-pedido').textContent = formatoMoneda(totalMesa(mesa));
+  const total = totalMesa(mesa);
+  const propina = Math.round(total * 0.10);
+  document.getElementById('total-pedido').textContent = formatoMoneda(total);
+  document.getElementById('propina-pedido').textContent = formatoMoneda(propina);
+  document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   actualizarVistaModal();
   renderGaleriaMenu();
 }
@@ -302,8 +306,12 @@ function mostrarRecibo(mesa) {
     const precio = formatoMoneda(item.precio * item.cantidad);
     texto += `${linea.padEnd(24)}${precio.padStart(8)}\n`;
   });
+  const total = totalMesa(mesa);
+  const propina = Math.round(total * 0.10);
   texto += `--------------------------------\n`;
-  texto += `TOTAL: ${formatoMoneda(totalMesa(mesa))}\n`;
+  texto += `TOTAL:            ${formatoMoneda(total)}\n`;
+  texto += `Propina (10%):    ${formatoMoneda(propina)}\n`;
+  texto += `TOTAL + PROPINA:  ${formatoMoneda(total + propina)}\n`;
   texto += `--------------------------------\n`;
   texto += `      ¡Gracias por su visita!`;
   document.getElementById('recibo').textContent = texto;

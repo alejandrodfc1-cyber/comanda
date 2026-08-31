@@ -45,7 +45,11 @@
 
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
       <div id="lista-pedido"></div>
-      <div class="pedido-total">Total: <span id="total-pedido">$0</span></div>
+      <div class="resumen-total">
+        <div class="linea-resumen">Total: <span id="total-pedido">$0</span></div>
+        <div class="linea-resumen linea-propina">Propina (10%): <span id="propina-pedido">$0</span></div>
+        <div class="linea-resumen linea-total-final">Total + propina: <span id="total-con-propina">$0</span></div>
+      </div>
       <div class="acciones-modal">
         <button class="btn btn-secundario" onclick="cerrarModalMenu()">💾 Guardar</button>
         <button class="btn btn-secundario" onclick="alternarVistaModal()">🍽️ Menú</button>
