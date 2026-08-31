@@ -308,9 +308,8 @@ function mostrarRecibo(mesa) {
   texto += `Fecha: ${fecha}\n`;
   texto += `--------------------------------\n`;
   mesa.pedido.forEach(item => {
-    const linea = `${item.cantidad}x ${item.nombre}`;
-    const precio = formatoMoneda(item.precio * item.cantidad);
-    texto += `${linea.padEnd(24)}${precio.padStart(8)}\n`;
+    const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
+    texto += `${item.nombre.padEnd(18)}${cantidadPrecio.padStart(14)}\n`;
   });
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
