@@ -77,6 +77,9 @@ async function cargarMesas() {
   const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('id');
   if (error) { console.error(error); return; }
   mesas = data;
+  if (mesaActivaId && !mesaActiva()) {
+    cerrarModalMenu();
+  }
   renderMesas();
 }
 
@@ -118,11 +121,12 @@ function toggleExpandido(itemId) {
 }
 
 function abrirModalMenu(mesaId) {
+  const mesaAbierta = mesas.find(m => m.id === mesaId);
+  if (!mesaAbierta) return;
   mesaActivaId = mesaId;
   itemExpandidoId = null;
   categoriaActiva = 'Top20';
-  vistaModal = mesaActiva().pedido.length > 0 ? 'detalle' : 'menu';
-  const mesaAbierta = mesaActiva();
+  vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
   if (USAR_TOP20_AUTOMATICO) cargarTop20Automatico().then(renderGaleriaMenu);
   renderListaMenu();
@@ -145,10 +149,11 @@ function alternarVistaModal() {
 }
 
 function actualizarVistaModal() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
   const enMenu = vistaModal === 'menu';
   document.getElementById('vista-menu-platos').classList.toggle('oculto', !enMenu);
   document.getElementById('vista-detalle-mesa').classList.toggle('oculto', enMenu);
-  const mesa = mesaActiva();
   const cantidadItems = mesa.pedido.reduce((s, i) => s + i.cantidad, 0);
   const fab = document.getElementById('btn-alternar-vista');
   fab.classList.toggle('oculto', !enMenu);
@@ -171,6 +176,7 @@ function renderGaleriaMenu() {
   const galeria = document.getElementById('galeria-menu');
   galeria.innerHTML = '';
   const mesa = mesaActiva();
+  if (!mesa) return;
   const idsTop20 = (USAR_TOP20_AUTOMATICO && top20AutomaticoIds.length > 0) ? top20AutomaticoIds : TOP20_IDS;
   const platos = categoriaActiva === 'Top20'
     ? idsTop20.map(id => MENU.find(p => p.id === id)).filter(Boolean)
@@ -208,6 +214,7 @@ async function guardarPedido(mesa) {
 
 function agregarPlato(platoId) {
   const mesa = mesaActiva();
+  if (!mesa) return;
   const plato = MENU.find(p => p.id === platoId);
   const item = mesa.pedido.find(i => i.id === platoId);
   if (item) item.cantidad++;
@@ -218,6 +225,7 @@ function agregarPlato(platoId) {
 
 function cambiarCantidad(platoId, delta) {
   const mesa = mesaActiva();
+  if (!mesa) return;
   const item = mesa.pedido.find(i => i.id === platoId);
   item.cantidad += delta;
   if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
@@ -227,6 +235,7 @@ function cambiarCantidad(platoId, delta) {
 
 function eliminarDelPedido(platoId) {
   const mesa = mesaActiva();
+  if (!mesa) return;
   mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
   renderPedido();
   guardarPedido(mesa);
@@ -234,6 +243,7 @@ function eliminarDelPedido(platoId) {
 
 function renderPedido() {
   const mesa = mesaActiva();
+  if (!mesa) return;
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
@@ -269,6 +279,7 @@ function renderPedido() {
 
 async function cerrarMesa() {
   const mesa = mesaActiva();
+  if (!mesa) return;
   if (mesa.pedido.length === 0) {
     alert('La mesa no tiene pedidos.');
     return;
