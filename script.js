@@ -134,9 +134,16 @@ function renderMesas() {
 }
 
 let vistaModal = 'menu';
+let itemExpandidoId = null;
+
+function toggleExpandido(itemId) {
+  itemExpandidoId = itemExpandidoId === itemId ? null : itemId;
+  renderPedido();
+}
 
 function abrirModalMenu(mesaId) {
   mesaActivaId = mesaId;
+  itemExpandidoId = null;
   vistaModal = mesaActiva().pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = `Mesa ${mesaId}`;
   renderListaMenu();
@@ -242,18 +249,23 @@ function renderPedido() {
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
     const subtotal = item.precio * item.cantidad;
+    const expandido = item.id === itemExpandidoId;
     const el = document.createElement('div');
     el.className = 'item-pedido';
+    el.onclick = () => toggleExpandido(item.id);
     el.innerHTML = `
       <span class="item-icono">${item.icono || '🍽️'}</span>
       <div class="item-info">
         <span class="item-nombre">${item.nombre}</span>
-        <span class="item-detalle">🛒 Cant: ${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}</span>
+        <span class="item-detalle">${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}</span>
       </div>
-      <div class="item-acciones">
-        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1)" title="Agregar uno más">+</button>
+      ${expandido ? `
+      <div class="item-acciones" onclick="event.stopPropagation()">
+        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, -1)">−</button>
+        <span class="item-cantidad-num">${item.cantidad}</span>
+        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1)">+</button>
         <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id})" title="Quitar">🗑️</button>
-      </div>`;
+      </div>` : ''}`;
     cont.appendChild(el);
   });
   document.getElementById('total-pedido').textContent = formatoMoneda(totalMesa(mesa));
