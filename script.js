@@ -137,7 +137,7 @@ let vistaModal = 'menu';
 
 function abrirModalMenu(mesaId) {
   mesaActivaId = mesaId;
-  vistaModal = 'menu';
+  vistaModal = mesaActiva().pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = `Mesa ${mesaId}`;
   renderListaMenu();
   renderPedido();
