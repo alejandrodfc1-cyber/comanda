@@ -106,7 +106,8 @@ main { padding: 20px; }
   max-height: 90vh;
   overflow-y: auto;
 }
-.modal-grande { max-width: 760px; }
+.modal-grande { max-width: 760px; min-height: 85vh; display: flex; flex-direction: column; }
+.modal-grande .menu-lista, .modal-grande .pedido-actual { flex: 1; }
 
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -226,6 +227,7 @@ main { padding: 20px; }
   display: flex;
   flex-direction: column;
 }
+.pedido-actual .acciones-modal { margin-top: auto; }
 .item-pedido {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 0;
