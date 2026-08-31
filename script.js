@@ -122,7 +122,8 @@ function abrirModalMenu(mesaId) {
   itemExpandidoId = null;
   categoriaActiva = 'Top20';
   vistaModal = mesaActiva().pedido.length > 0 ? 'detalle' : 'menu';
-  document.getElementById('titulo-mesa').textContent = `Mesa ${mesaId}`;
+  const mesaAbierta = mesaActiva();
+  document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
   if (USAR_TOP20_AUTOMATICO) cargarTop20Automatico().then(renderGaleriaMenu);
   renderListaMenu();
   renderPedido();
@@ -315,6 +316,8 @@ function cerrarRecibo() {
 function abrirDashboard() {
   document.getElementById('modal-dashboard').classList.remove('oculto');
   mostrarSeccionDashboard('mesas');
+  cancelarEdicionMesa();
+  cancelarEdicionProducto();
   cargarMesasAdmin();
   cargarProductosAdmin();
   renderCategoriasAdmin();
@@ -325,16 +328,30 @@ function cerrarDashboard() {
   document.getElementById('modal-dashboard').classList.add('oculto');
 }
 
+let seccionActivaDashboard = 'mesas';
+
 function mostrarSeccionDashboard(seccion) {
+  seccionActivaDashboard = seccion;
   ['mesas', 'productos', 'categorias'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
+  const fab = document.getElementById('btn-guardar-flotante');
+  fab.classList.toggle('oculto', seccion === 'categorias');
 }
+
+function guardarDesdeFlotante() {
+  const formId = { mesas: 'form-nueva-mesa', productos: 'form-nuevo-producto' }[seccionActivaDashboard];
+  if (formId) document.getElementById(formId).requestSubmit();
+}
+
+let mesasAdminCache = [];
+let mesaEditandoId = null;
 
 async function cargarMesasAdmin() {
   const { data } = await sb.from('mesas').select('*').order('id');
-  renderMesasAdmin(data || []);
+  mesasAdminCache = data || [];
+  renderMesasAdmin(mesasAdminCache);
 }
 
 function renderMesasAdmin(lista) {
@@ -349,7 +366,10 @@ function renderMesasAdmin(lista) {
         <strong>${mesa.nombre || `Mesa ${mesa.id}`}</strong>
         <span>${mesa.pedido.length > 0 ? 'Ocupada' : 'Libre'}</span>
       </div>
-      <button class="btn-toggle-visible" onclick="toggleVisibleMesa(${mesa.id}, ${mesa.visible})">${mesa.visible ? '👁️ Visible' : '🚫 Oculta'}</button>`;
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" onclick="editarMesa(${mesa.id})">✏️</button>
+        <button class="btn-toggle-visible" onclick="toggleVisibleMesa(${mesa.id}, ${mesa.visible})">${mesa.visible ? '👁️ Visible' : '🚫 Oculta'}</button>
+      </div>`;
     cont.appendChild(fila);
   });
 }
@@ -360,21 +380,47 @@ async function toggleVisibleMesa(id, actual) {
   cargarMesas();
 }
 
+function editarMesa(id) {
+  const mesa = mesasAdminCache.find(m => m.id === id);
+  if (!mesa) return;
+  mesaEditandoId = id;
+  document.getElementById('nueva-mesa-nombre').value = mesa.nombre || '';
+  document.getElementById('btn-guardar-mesa').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-mesa').classList.remove('oculto');
+}
+
+function cancelarEdicionMesa() {
+  mesaEditandoId = null;
+  document.getElementById('nueva-mesa-nombre').value = '';
+  document.getElementById('btn-guardar-mesa').textContent = '+ Agregar mesa';
+  document.getElementById('btn-cancelar-mesa').classList.add('oculto');
+}
+
 document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) => {
   e.preventDefault();
   const nombreInput = document.getElementById('nueva-mesa-nombre');
   const nombre = nombreInput.value.trim() || null;
-  const { data } = await sb.from('mesas').select('id').order('id', { ascending: false }).limit(1);
-  const siguienteId = data && data.length > 0 ? data[0].id + 1 : 1;
-  await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [] });
-  nombreInput.value = '';
-  cargarMesasAdmin();
+
+  if (mesaEditandoId) {
+    await sb.from('mesas').update({ nombre }).eq('id', mesaEditandoId);
+  } else {
+    const { data } = await sb.from('mesas').select('id').order('id', { ascending: false }).limit(1);
+    const siguienteId = data && data.length > 0 ? data[0].id + 1 : 1;
+    await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [] });
+  }
+  cancelarEdicionMesa();
   cargarMesas();
+  cerrarDashboard();
 });
+
+let productosAdminCache = [];
+let productoEditandoId = null;
+let productoEditandoFotoUrl = null;
 
 async function cargarProductosAdmin() {
   const { data } = await sb.from('productos').select('*, categorias(nombre)').order('id');
-  renderProductosAdmin(data || []);
+  productosAdminCache = data || [];
+  renderProductosAdmin(productosAdminCache);
 }
 
 function renderProductosAdmin(lista) {
@@ -391,7 +437,10 @@ function renderProductosAdmin(lista) {
         <strong>${p.nombre}</strong>
         <span>${p.categorias?.nombre || ''} · Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)} · Stock ${p.inventario}</span>
       </div>
-      <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>`;
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
+        <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
+      </div>`;
     cont.appendChild(fila);
   });
 }
@@ -399,6 +448,28 @@ function renderProductosAdmin(lista) {
 async function toggleVisibleProducto(id, actual) {
   await sb.from('productos').update({ visible: !actual }).eq('id', id);
   cargarProductosAdmin();
+}
+
+function editarProducto(id) {
+  const p = productosAdminCache.find(x => x.id === id);
+  if (!p) return;
+  productoEditandoId = id;
+  productoEditandoFotoUrl = p.foto_url;
+  document.getElementById('nuevo-producto-nombre').value = p.nombre;
+  document.getElementById('nuevo-producto-categoria').value = p.categoria_id;
+  document.getElementById('nuevo-producto-costo').value = p.costo;
+  document.getElementById('nuevo-producto-precio').value = p.precio;
+  document.getElementById('nuevo-producto-inventario').value = p.inventario;
+  document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-producto').classList.remove('oculto');
+}
+
+function cancelarEdicionProducto() {
+  productoEditandoId = null;
+  productoEditandoFotoUrl = null;
+  document.getElementById('form-nuevo-producto').reset();
+  document.getElementById('btn-guardar-producto').textContent = '+ Agregar producto';
+  document.getElementById('btn-cancelar-producto').classList.add('oculto');
 }
 
 function poblarSelectCategorias() {
@@ -415,7 +486,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   const inventario = Number(document.getElementById('nuevo-producto-inventario').value) || 0;
   const archivoFoto = document.getElementById('nuevo-producto-foto').files[0];
 
-  let fotoUrl = null;
+  let fotoUrl = productoEditandoId ? productoEditandoFotoUrl : null;
   if (archivoFoto) {
     const ruta = `${Date.now()}-${archivoFoto.name}`;
     const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoFoto);
@@ -424,13 +495,16 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
     }
   }
 
-  await sb.from('productos').insert({
-    nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl
-  });
+  const datos = { nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl };
+  if (productoEditandoId) {
+    await sb.from('productos').update(datos).eq('id', productoEditandoId);
+  } else {
+    await sb.from('productos').insert(datos);
+  }
 
-  e.target.reset();
-  cargarProductosAdmin();
+  cancelarEdicionProducto();
   cargarCategoriasYProductos();
+  cerrarDashboard();
 });
 
 function renderCategoriasAdmin() {

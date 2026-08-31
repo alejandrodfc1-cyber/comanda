@@ -319,7 +319,7 @@ main { padding: 20px; }
 .fila-admin .info-admin strong { display: block; }
 .fila-admin .info-admin span { color: #666; font-size: .8rem; }
 .fila-admin.oculta-item { opacity: .45; }
-.btn-toggle-visible {
+.btn-toggle-visible, .btn-editar-admin {
   border: none;
   background: #f2f2f2;
   border-radius: 6px;
@@ -328,6 +328,12 @@ main { padding: 20px; }
   font-size: .85rem;
   flex-shrink: 0;
 }
+.acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
+
+.fila-botones-form { display: flex; gap: 8px; }
+.fila-botones-form .btn { flex: 1; }
+
+.con-espacio-fab { padding-bottom: 70px; }
 
 .foto-producto {
   width: 100%; height: 100%;
