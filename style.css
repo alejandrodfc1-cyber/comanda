@@ -242,7 +242,13 @@ main { padding: 20px; }
 }
 
 .acciones-modal {
-  display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;
+  display: flex; gap: 6px; margin-top: 14px; flex-wrap: nowrap;
+}
+.acciones-modal .btn {
+  flex: 1;
+  padding: 10px 4px;
+  font-size: .8rem;
+  white-space: nowrap;
 }
 .btn {
   background: #2c3e50; color: #fff; border: none;
