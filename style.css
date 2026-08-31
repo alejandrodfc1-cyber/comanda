@@ -20,7 +20,7 @@ main { padding: 20px; }
 
 #grid-mesas {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   max-width: 900px;
   margin: 0 auto;
@@ -67,6 +67,7 @@ main { padding: 20px; }
 
 .mesa {
   aspect-ratio: 1;
+  min-width: 0;
   border-radius: 10px;
   border: none;
   cursor: pointer;
@@ -79,11 +80,12 @@ main { padding: 20px; }
   color: #fff;
   background: #27ae60;
   transition: transform .1s;
+  overflow: hidden;
 }
 .mesa:hover { transform: scale(1.04); }
 .mesa.ocupada { background: #c0392b; }
 .numero-mesa { font-size: 2.2rem; font-weight: 800; line-height: 1; }
-.numero-mesa.etiqueta-texto { font-size: 1rem; text-align: center; padding: 0 4px; }
+.numero-mesa.etiqueta-texto { font-size: 1rem; text-align: center; padding: 0 4px; word-break: break-word; overflow-wrap: anywhere; }
 .mesa small { font-weight: 400; font-size: .8rem; margin-top: 4px; }
 
 .modal {
