@@ -20,10 +20,15 @@ main { padding: 20px; }
 
 #grid-mesas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   max-width: 900px;
   margin: 0 auto;
+}
+@media (max-width: 480px) {
+  #grid-mesas { gap: 8px; }
+  .mesa { font-size: .85rem; }
+  .mesa small { font-size: .7rem; }
 }
 
 .login-caja {
