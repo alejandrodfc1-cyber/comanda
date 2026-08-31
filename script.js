@@ -141,6 +141,7 @@ function abrirModalMenu(mesaId) {
 function cerrarModalMenu() {
   document.getElementById('modal-menu').classList.add('oculto');
   mesaActivaId = null;
+  window.scrollTo(0, 0);
 }
 
 function alternarVistaModal() {
@@ -297,8 +298,7 @@ async function cerrarMesa() {
   mesa.pedido = [];
   await guardarPedido(mesa);
 
-  document.getElementById('modal-menu').classList.add('oculto');
-  mesaActivaId = null;
+  cerrarModalMenu();
 }
 
 function mostrarRecibo(mesa) {
