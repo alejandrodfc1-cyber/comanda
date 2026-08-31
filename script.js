@@ -1,74 +1,86 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MENU = [
-  { id: 1, categoria: 'Entradas', nombre: 'Papas fritas', precio: 8000, icono: '🍟' },
-  { id: 2, categoria: 'Entradas', nombre: 'Empanadas (3u)', precio: 9000, icono: '🥟' },
-  { id: 3, categoria: 'Entradas', nombre: 'Nachos con queso', precio: 10000, icono: '🧀' },
-  { id: 4, categoria: 'Entradas', nombre: 'Alitas BBQ', precio: 12000, icono: '🍗' },
-  { id: 5, categoria: 'Entradas', nombre: 'Croquetas de jamón', precio: 9000, icono: '🥘' },
-  { id: 6, categoria: 'Entradas', nombre: 'Patacones', precio: 7000, icono: '🍌' },
-  { id: 7, categoria: 'Entradas', nombre: 'Tequeños (6u)', precio: 11000, icono: '🧈' },
-  { id: 8, categoria: 'Entradas', nombre: 'Ceviche de camarón', precio: 15000, icono: '🍤' },
-  { id: 9, categoria: 'Entradas', nombre: 'Ensalada César', precio: 10000, icono: '🥗' },
-  { id: 10, categoria: 'Entradas', nombre: 'Sopa del día', precio: 8000, icono: '🍲' },
-  { id: 11, categoria: 'Entradas', nombre: 'Arepas rellenas', precio: 9000, icono: '🌽' },
-  { id: 12, categoria: 'Entradas', nombre: 'Chorizo a la parrilla', precio: 10000, icono: '🌭' },
-  { id: 13, categoria: 'Entradas', nombre: 'Yuca frita', precio: 6000, icono: '🥔' },
-  { id: 14, categoria: 'Entradas', nombre: 'Rollitos primavera', precio: 9000, icono: '🥢' },
-  { id: 15, categoria: 'Entradas', nombre: 'Tabla de quesos', precio: 18000, icono: '🧀' },
+  { id: 1, categoria: 'Comidas', nombre: 'Completo Italiano', precio: 2800, icono: '🌭' },
+  { id: 2, categoria: 'Comidas', nombre: 'Completo Dinámico', precio: 3000, icono: '🌭' },
+  { id: 3, categoria: 'Comidas', nombre: 'Completo Especial', precio: 3200, icono: '🌭' },
+  { id: 4, categoria: 'Comidas', nombre: 'As Completo', precio: 3400, icono: '🌭' },
+  { id: 5, categoria: 'Comidas', nombre: 'Barros Luco', precio: 3800, icono: '🥪' },
+  { id: 6, categoria: 'Comidas', nombre: 'Barros Jarpa', precio: 3800, icono: '🥪' },
+  { id: 7, categoria: 'Comidas', nombre: 'Chacarero', precio: 4000, icono: '🥪' },
+  { id: 8, categoria: 'Comidas', nombre: 'Churrasco Italiano', precio: 4200, icono: '🥪' },
+  { id: 9, categoria: 'Comidas', nombre: 'Ave Palta Mayo', precio: 3600, icono: '🥪' },
+  { id: 10, categoria: 'Comidas', nombre: 'Chemilico', precio: 3500, icono: '🌭' },
+  { id: 11, categoria: 'Comidas', nombre: 'Hot Dog Simple', precio: 2200, icono: '🌭' },
+  { id: 12, categoria: 'Comidas', nombre: 'Completo a lo Pobre', precio: 3900, icono: '🌭' },
+  { id: 13, categoria: 'Comidas', nombre: 'Sánguche de Pernil', precio: 4300, icono: '🥪' },
+  { id: 14, categoria: 'Comidas', nombre: 'Lomito Completo', precio: 4500, icono: '🥪' },
+  { id: 15, categoria: 'Comidas', nombre: 'Papas Fritas con Salsas', precio: 3000, icono: '🍟' },
 
-  { id: 16, categoria: 'Platos fuertes', nombre: 'Bandeja paisa', precio: 25000, icono: '🍛' },
-  { id: 17, categoria: 'Platos fuertes', nombre: 'Pechuga a la plancha', precio: 22000, icono: '🍗' },
-  { id: 18, categoria: 'Platos fuertes', nombre: 'Pasta alfredo', precio: 20000, icono: '🍝' },
-  { id: 19, categoria: 'Platos fuertes', nombre: 'Lomo saltado', precio: 26000, icono: '🥩' },
-  { id: 20, categoria: 'Platos fuertes', nombre: 'Pescado frito', precio: 24000, icono: '🐟' },
-  { id: 21, categoria: 'Platos fuertes', nombre: 'Arroz con pollo', precio: 18000, icono: '🍚' },
-  { id: 22, categoria: 'Platos fuertes', nombre: 'Costillas BBQ', precio: 28000, icono: '🍖' },
-  { id: 23, categoria: 'Platos fuertes', nombre: 'Hamburguesa clásica', precio: 17000, icono: '🍔' },
-  { id: 24, categoria: 'Platos fuertes', nombre: 'Pizza margarita', precio: 22000, icono: '🍕' },
-  { id: 25, categoria: 'Platos fuertes', nombre: 'Fajitas de res', precio: 23000, icono: '🌯' },
-  { id: 26, categoria: 'Platos fuertes', nombre: 'Salmón a la parrilla', precio: 27000, icono: '🐠' },
-  { id: 27, categoria: 'Platos fuertes', nombre: 'Risotto de champiñones', precio: 21000, icono: '🍄' },
-  { id: 28, categoria: 'Platos fuertes', nombre: 'Milanesa napolitana', precio: 24000, icono: '🍽️' },
-  { id: 29, categoria: 'Platos fuertes', nombre: 'Tacos de carnitas (3u)', precio: 16000, icono: '🌮' },
-  { id: 30, categoria: 'Platos fuertes', nombre: 'Sancocho', precio: 19000, icono: '🍲' },
+  { id: 16, categoria: 'Cervezas', nombre: '1/2 Royal Shop', precio: 3500, icono: '🍺' },
+  { id: 17, categoria: 'Cervezas', nombre: '1/2 Escudo Shop', precio: 3000, icono: '🍺' },
+  { id: 18, categoria: 'Cervezas', nombre: '1/2 Cristal Shop', precio: 3000, icono: '🍺' },
+  { id: 19, categoria: 'Cervezas', nombre: 'Litro Cristal Shop', precio: 5500, icono: '🍺' },
+  { id: 20, categoria: 'Cervezas', nombre: 'Escudo Botella', precio: 2500, icono: '🍺' },
+  { id: 21, categoria: 'Cervezas', nombre: 'Cristal Botella', precio: 2500, icono: '🍺' },
+  { id: 22, categoria: 'Cervezas', nombre: 'Royal Guard Botella', precio: 2800, icono: '🍺' },
+  { id: 23, categoria: 'Cervezas', nombre: 'Heineken Botella', precio: 3200, icono: '🍺' },
+  { id: 24, categoria: 'Cervezas', nombre: 'Corona Botella', precio: 3200, icono: '🍺' },
+  { id: 25, categoria: 'Cervezas', nombre: 'Austral Lata', precio: 2800, icono: '🍺' },
+  { id: 26, categoria: 'Cervezas', nombre: 'Kunstmann Lata', precio: 3000, icono: '🍺' },
+  { id: 27, categoria: 'Cervezas', nombre: 'Sin Alcohol Lata', precio: 2500, icono: '🍺' },
+  { id: 28, categoria: 'Cervezas', nombre: 'Artesanal IPA', precio: 3800, icono: '🍺' },
+  { id: 29, categoria: 'Cervezas', nombre: 'Artesanal Stout', precio: 3800, icono: '🍺' },
+  { id: 30, categoria: 'Cervezas', nombre: 'Jarra de Cerveza', precio: 8000, icono: '🍺' },
 
-  { id: 31, categoria: 'Bebidas', nombre: 'Gaseosa', precio: 5000, icono: '🥤' },
-  { id: 32, categoria: 'Bebidas', nombre: 'Jugo natural', precio: 6000, icono: '🧃' },
-  { id: 33, categoria: 'Bebidas', nombre: 'Limonada', precio: 5000, icono: '🍋' },
-  { id: 34, categoria: 'Bebidas', nombre: 'Agua mineral', precio: 4000, icono: '💧' },
-  { id: 35, categoria: 'Bebidas', nombre: 'Café', precio: 4000, icono: '☕' },
-  { id: 36, categoria: 'Bebidas', nombre: 'Té helado', precio: 5000, icono: '🧊' },
-  { id: 37, categoria: 'Bebidas', nombre: 'Malteada de chocolate', precio: 8000, icono: '🥛' },
-  { id: 38, categoria: 'Bebidas', nombre: 'Cerveza', precio: 9000, icono: '🍺' },
-  { id: 39, categoria: 'Bebidas', nombre: 'Copa de vino', precio: 12000, icono: '🍷' },
-  { id: 40, categoria: 'Bebidas', nombre: 'Mojito', precio: 14000, icono: '🍹' },
-  { id: 41, categoria: 'Bebidas', nombre: 'Margarita', precio: 14000, icono: '🍸' },
-  { id: 42, categoria: 'Bebidas', nombre: 'Piña colada', precio: 13000, icono: '🍍' },
-  { id: 43, categoria: 'Bebidas', nombre: 'Chocolate caliente', precio: 6000, icono: '☕' },
-  { id: 44, categoria: 'Bebidas', nombre: 'Smoothie de fresa', precio: 9000, icono: '🍓' },
-  { id: 45, categoria: 'Bebidas', nombre: 'Agua de panela', precio: 4000, icono: '🫖' },
+  { id: 31, categoria: 'Vinos', nombre: 'Copa Vino Tinto', precio: 3000, icono: '🍷' },
+  { id: 32, categoria: 'Vinos', nombre: 'Copa Vino Blanco', precio: 3000, icono: '🍷' },
+  { id: 33, categoria: 'Vinos', nombre: 'Copa Vino Rosado', precio: 3000, icono: '🍷' },
+  { id: 34, categoria: 'Vinos', nombre: 'Botella Cabernet Sauvignon', precio: 15000, icono: '🍷' },
+  { id: 35, categoria: 'Vinos', nombre: 'Botella Carmenere', precio: 16000, icono: '🍷' },
+  { id: 36, categoria: 'Vinos', nombre: 'Botella Merlot', precio: 15000, icono: '🍷' },
+  { id: 37, categoria: 'Vinos', nombre: 'Botella Sauvignon Blanc', precio: 14000, icono: '🍷' },
+  { id: 38, categoria: 'Vinos', nombre: 'Botella Chardonnay', precio: 14000, icono: '🍷' },
+  { id: 39, categoria: 'Vinos', nombre: 'Botella Pinot Noir', precio: 17000, icono: '🍷' },
+  { id: 40, categoria: 'Vinos', nombre: 'Copa Espumante', precio: 4000, icono: '🥂' },
+  { id: 41, categoria: 'Vinos', nombre: 'Botella Espumante', precio: 18000, icono: '🥂' },
+  { id: 42, categoria: 'Vinos', nombre: 'Botella Malbec', precio: 16000, icono: '🍷' },
+  { id: 43, categoria: 'Vinos', nombre: 'Copa Vino de la Casa', precio: 2500, icono: '🍷' },
+  { id: 44, categoria: 'Vinos', nombre: 'Botella Vino de la Casa', precio: 12000, icono: '🍷' },
+  { id: 45, categoria: 'Vinos', nombre: 'Copa Sangría', precio: 3500, icono: '🍷' },
 
-  { id: 46, categoria: 'Postres', nombre: 'Flan', precio: 7000, icono: '🍮' },
-  { id: 47, categoria: 'Postres', nombre: 'Tres leches', precio: 8000, icono: '🍰' },
-  { id: 48, categoria: 'Postres', nombre: 'Brownie con helado', precio: 9000, icono: '🍫' },
-  { id: 49, categoria: 'Postres', nombre: 'Helado (2 bolas)', precio: 6000, icono: '🍨' },
-  { id: 50, categoria: 'Postres', nombre: 'Cheesecake', precio: 9000, icono: '🍰' },
-  { id: 51, categoria: 'Postres', nombre: 'Torta de chocolate', precio: 8000, icono: '🎂' },
-  { id: 52, categoria: 'Postres', nombre: 'Arroz con leche', precio: 6000, icono: '🍚' },
-  { id: 53, categoria: 'Postres', nombre: 'Churros con chocolate', precio: 8000, icono: '🥐' },
-  { id: 54, categoria: 'Postres', nombre: 'Gelatina', precio: 4000, icono: '🍮' },
-  { id: 55, categoria: 'Postres', nombre: 'Frutas frescas', precio: 6000, icono: '🍓' },
-  { id: 56, categoria: 'Postres', nombre: 'Postre de limón', precio: 7000, icono: '🍋' },
-  { id: 57, categoria: 'Postres', nombre: 'Milhojas', precio: 8000, icono: '🥮' },
-  { id: 58, categoria: 'Postres', nombre: 'Cupcake', precio: 5000, icono: '🧁' },
-  { id: 59, categoria: 'Postres', nombre: 'Waffle con miel', precio: 9000, icono: '🧇' },
-  { id: 60, categoria: 'Postres', nombre: 'Copa de frutas con crema', precio: 7000, icono: '🍨' },
+  { id: 46, categoria: 'Combinados', nombre: 'Piscola', precio: 3500, icono: '🥃' },
+  { id: 47, categoria: 'Combinados', nombre: 'Pisco Sour', precio: 4500, icono: '🍹' },
+  { id: 48, categoria: 'Combinados', nombre: 'Cuba Libre', precio: 4000, icono: '🥃' },
+  { id: 49, categoria: 'Combinados', nombre: 'Mojito', precio: 4500, icono: '🍹' },
+  { id: 50, categoria: 'Combinados', nombre: 'Ron Cola', precio: 4000, icono: '🥃' },
+  { id: 51, categoria: 'Combinados', nombre: 'Whisky Cola', precio: 4500, icono: '🥃' },
+  { id: 52, categoria: 'Combinados', nombre: 'Gin Tonic', precio: 4800, icono: '🍸' },
+  { id: 53, categoria: 'Combinados', nombre: 'Vodka Naranja', precio: 4200, icono: '🍹' },
+  { id: 54, categoria: 'Combinados', nombre: 'Fernet Cola', precio: 4300, icono: '🥃' },
+  { id: 55, categoria: 'Combinados', nombre: 'Terremoto', precio: 4000, icono: '🌋' },
+  { id: 56, categoria: 'Combinados', nombre: 'Borgoña', precio: 3500, icono: '🍷' },
+  { id: 57, categoria: 'Combinados', nombre: 'Whisky Solo', precio: 5000, icono: '🥃' },
+  { id: 58, categoria: 'Combinados', nombre: 'Pisco Solo', precio: 3200, icono: '🥃' },
+  { id: 59, categoria: 'Combinados', nombre: 'Vodka Solo', precio: 3800, icono: '🥃' },
+  { id: 60, categoria: 'Combinados', nombre: 'Ron Solo', precio: 3800, icono: '🥃' },
 ];
+
+const CATEGORIAS = ['Top20', 'Comidas', 'Cervezas', 'Vinos', 'Combinados'];
+
+const TOP20_IDS = [1, 5, 16, 17, 46, 7, 2, 20, 47, 31, 9, 21, 48, 3, 34, 11, 25, 49, 8, 22];
+
+const USAR_TOP20_AUTOMATICO = false;
+let top20AutomaticoIds = [];
+
+async function cargarTop20Automatico() {
+  const { data } = await sb.from('conteo_ventas').select('plato_id').order('veces_vendido', { ascending: false }).limit(20);
+  top20AutomaticoIds = data ? data.map(r => r.plato_id) : [];
+}
 
 let mesas = [];
 let mesaActivaId = null;
-let categoriaActiva = MENU[0].categoria;
+let categoriaActiva = 'Top20';
 
 document.getElementById('form-login').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -144,8 +156,10 @@ function toggleExpandido(itemId) {
 function abrirModalMenu(mesaId) {
   mesaActivaId = mesaId;
   itemExpandidoId = null;
+  categoriaActiva = 'Top20';
   vistaModal = mesaActiva().pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = `Mesa ${mesaId}`;
+  if (USAR_TOP20_AUTOMATICO) cargarTop20Automatico().then(renderGaleriaMenu);
   renderListaMenu();
   renderPedido();
   document.getElementById('modal-menu').classList.remove('oculto');
@@ -158,6 +172,10 @@ function cerrarModalMenu() {
 
 function alternarVistaModal() {
   vistaModal = vistaModal === 'menu' ? 'detalle' : 'menu';
+  if (vistaModal === 'menu') {
+    categoriaActiva = 'Top20';
+    renderListaMenu();
+  }
   actualizarVistaModal();
 }
 
@@ -175,8 +193,7 @@ function actualizarVistaModal() {
 function renderTabsMenu() {
   const tabs = document.getElementById('tabs-menu');
   tabs.innerHTML = '';
-  const categorias = [...new Set(MENU.map(p => p.categoria))];
-  categorias.forEach(cat => {
+  CATEGORIAS.forEach(cat => {
     const btn = document.createElement('button');
     btn.textContent = cat;
     btn.className = cat === categoriaActiva ? 'activa' : '';
@@ -189,7 +206,11 @@ function renderGaleriaMenu() {
   const galeria = document.getElementById('galeria-menu');
   galeria.innerHTML = '';
   const mesa = mesaActiva();
-  MENU.filter(p => p.categoria === categoriaActiva).forEach(plato => {
+  const idsTop20 = (USAR_TOP20_AUTOMATICO && top20AutomaticoIds.length > 0) ? top20AutomaticoIds : TOP20_IDS;
+  const platos = categoriaActiva === 'Top20'
+    ? idsTop20.map(id => MENU.find(p => p.id === id)).filter(Boolean)
+    : MENU.filter(p => p.categoria === categoriaActiva);
+  platos.forEach(plato => {
     const enPedido = mesa.pedido.find(i => i.id === plato.id);
     const el = document.createElement('div');
     el.className = 'plato';
@@ -288,6 +309,7 @@ async function cerrarMesa() {
   await sb.from('ventas').insert({
     mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa)
   });
+  mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
   mesa.pedido = [];
   await guardarPedido(mesa);
 

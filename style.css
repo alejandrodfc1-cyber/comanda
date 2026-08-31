@@ -143,10 +143,10 @@ main { padding: 20px; }
 .categoria-tabs button {
   border: none;
   background: transparent;
-  padding: 8px 14px;
+  padding: 8px 10px;
   border-radius: 999px;
   cursor: pointer;
-  font-size: .8rem;
+  font-size: .72rem;
   font-weight: 600;
   color: #555;
   white-space: nowrap;
