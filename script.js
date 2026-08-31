@@ -328,6 +328,12 @@ function cerrarRecibo() {
   document.getElementById('modal-recibo').classList.add('oculto');
 }
 
+function imprimirConRawBT() {
+  const texto = document.getElementById('recibo').textContent;
+  const textoCodificado = encodeURI(texto);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+}
+
 function abrirDashboard() {
   document.getElementById('modal-dashboard').classList.remove('oculto');
   mostrarSeccionDashboard('mesas');
