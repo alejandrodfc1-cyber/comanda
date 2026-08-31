@@ -35,10 +35,7 @@
   <div class="modal-caja modal-grande">
     <div class="modal-header">
       <h2 id="titulo-mesa"></h2>
-      <div class="header-acciones">
-        <button class="btn-detalle" id="btn-alternar-vista" onclick="alternarVistaModal()"></button>
-        <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
-      </div>
+      <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
     </div>
 
     <div class="menu-lista" id="vista-menu-platos">
@@ -47,6 +44,7 @@
     </div>
 
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
+      <button class="btn-volver-menu" onclick="alternarVistaModal()">← Menú</button>
       <div id="lista-pedido"></div>
       <div class="pedido-total">Total: <span id="total-pedido">$0</span></div>
       <div class="acciones-modal">
@@ -54,6 +52,8 @@
         <button class="btn btn-peligro" onclick="cerrarMesa()">Cerrar mesa y cobrar</button>
       </div>
     </div>
+
+    <button class="fab-detalle" id="btn-alternar-vista" onclick="alternarVistaModal()"></button>
   </div>
 </div>
 

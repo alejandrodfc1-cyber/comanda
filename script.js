@@ -160,9 +160,9 @@ function actualizarVistaModal() {
   document.getElementById('vista-detalle-mesa').classList.toggle('oculto', enMenu);
   const mesa = mesaActiva();
   const cantidadItems = mesa.pedido.reduce((s, i) => s + i.cantidad, 0);
-  document.getElementById('btn-alternar-vista').textContent = enMenu
-    ? `🧾 Detalle (${cantidadItems})`
-    : '← Menú';
+  const fab = document.getElementById('btn-alternar-vista');
+  fab.classList.toggle('oculto', !enMenu);
+  fab.textContent = `🧾 Detalle (${cantidadItems})`;
 }
 
 function renderTabsMenu() {
