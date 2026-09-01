@@ -321,47 +321,41 @@ async function cerrarMesa() {
   cerrarModalMenu();
 }
 
-const ANCHO_TICKET = 42;
-
-function centrarTexto(linea) {
-  const relleno = Math.max(0, Math.floor((ANCHO_TICKET - linea.length) / 2));
-  return ' '.repeat(relleno) + linea;
-}
-
-function filaDosColumnas(izquierda, derecha) {
-  const espacioDisponible = ANCHO_TICKET - derecha.length;
-  if (izquierda.length <= espacioDisponible - 1) {
-    return `${izquierda.padEnd(espacioDisponible)}${derecha}\n`;
-  }
-  return `${izquierda}\n${derecha.padStart(ANCHO_TICKET)}\n`;
-}
+let reciboActual = null;
 
 function mostrarRecibo(mesa, numeroRecibo) {
   const ahora = new Date();
   const fecha = ahora.toLocaleDateString('es-CL');
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  const separador = '-'.repeat(ANCHO_TICKET) + '\n';
-
-  let texto = `${centrarTexto(NEGOCIO_NOMBRE)}\n`;
-  texto += `${centrarTexto(NEGOCIO_DIRECCION)}\n`;
-  texto += `${centrarTexto(negocioTelefono)}\n`;
-  texto += separador;
-  texto += filaDosColumnas(`Recibo N.° ${numeroRecibo ?? ''}`, mesa.nombre || `Mesa ${mesa.id}`);
-  texto += `${fecha} · ${hora}\n`;
-  texto += separador;
-  mesa.pedido.forEach(item => {
-    const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
-    texto += filaDosColumnas(item.nombre, cantidadPrecio);
-  });
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
-  texto += separador;
-  texto += filaDosColumnas('Total', formatoMoneda(total));
-  texto += filaDosColumnas('Propina sugerida (10%)', formatoMoneda(propina));
-  texto += filaDosColumnas('Total con propina', formatoMoneda(total + propina));
-  texto += separador;
-  texto += `${centrarTexto('¡Gracias por tu visita!')}`;
-  document.getElementById('recibo').textContent = texto;
+  const etiquetaMesa = mesa.nombre || mesa.id;
+
+  reciboActual = { mesa, numeroRecibo, fecha, hora, total, propina, etiquetaMesa };
+
+  const filasItems = mesa.pedido.map(item => `
+    <div class="recibo-fila">
+      <span>${item.nombre}</span>
+      <span>${item.cantidad} x ${formatoMoneda(item.precio)}</span>
+    </div>`).join('');
+
+  document.getElementById('recibo').innerHTML = `
+    <div class="recibo-nombre-negocio">${NEGOCIO_NOMBRE}</div>
+    <div class="recibo-centrado">${NEGOCIO_DIRECCION}</div>
+    <div class="recibo-centrado">${negocioTelefono}</div>
+    <div class="recibo-mesa-grande">MESA : ${etiquetaMesa}</div>
+    <hr>
+    <div>Recibo N.° ${numeroRecibo ?? ''}</div>
+    <div>${fecha} · ${hora}</div>
+    <hr>
+    ${filasItems}
+    <hr>
+    <div class="recibo-fila recibo-total-grande"><span>Total</span><span>${formatoMoneda(total)}</span></div>
+    <div class="recibo-fila"><span>Propina sugerida (10%)</span><span>${formatoMoneda(propina)}</span></div>
+    <div class="recibo-fila"><span>Total con propina</span><span>${formatoMoneda(total + propina)}</span></div>
+    <hr>
+    <div class="recibo-centrado">¡Gracias por tu visita!</div>
+  `;
   document.getElementById('modal-recibo').classList.remove('oculto');
 }
 
@@ -370,9 +364,40 @@ function cerrarRecibo() {
 }
 
 function imprimirConRawBT() {
-  const FUENTE_CONDENSADA = '\x1B\x4D\x01';
-  const texto = FUENTE_CONDENSADA + document.getElementById('recibo').textContent;
-  const textoCodificado = encodeURI(texto);
+  if (!reciboActual) return;
+  const r = reciboActual;
+  const ANCHO = 32;
+  const fila = (izquierda, derecha, ancho = ANCHO) => {
+    const disponible = ancho - derecha.length;
+    if (izquierda.length <= disponible - 1) return `${izquierda.padEnd(disponible)}${derecha}\n`;
+    return `${izquierda}\n${derecha.padStart(ancho)}\n`;
+  };
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const GRANDE = '\x1D\x21\x11', TAM_NORMAL = '\x1D\x21\x00';
+  const CENTRO = '\x1B\x61\x01', IZQUIERDA = '\x1B\x61\x00';
+  const FUENTE_A = '\x1B\x4D\x00';
+
+  let t = FUENTE_A;
+  t += CENTRO + GRANDE + BOLD_ON + NEGOCIO_NOMBRE + '\n' + TAM_NORMAL + BOLD_OFF;
+  t += CENTRO + NEGOCIO_DIRECCION + '\n';
+  t += CENTRO + negocioTelefono + '\n';
+  t += CENTRO + GRANDE + BOLD_ON + `MESA : ${r.etiquetaMesa}` + '\n' + TAM_NORMAL + BOLD_OFF;
+  t += IZQUIERDA + '-'.repeat(ANCHO) + '\n';
+  t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
+  t += `${r.fecha} · ${r.hora}\n`;
+  t += '-'.repeat(ANCHO) + '\n';
+  r.mesa.pedido.forEach(item => {
+    const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
+    t += fila(item.nombre, cantidadPrecio);
+  });
+  t += '-'.repeat(ANCHO) + '\n';
+  t += GRANDE + BOLD_ON + fila('Total', formatoMoneda(r.total), 16) + TAM_NORMAL + BOLD_OFF;
+  t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
+  t += fila('Total con propina', formatoMoneda(r.total + r.propina));
+  t += '-'.repeat(ANCHO) + '\n';
+  t += CENTRO + '¡Gracias por tu visita!';
+
+  const textoCodificado = encodeURI(t);
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
 
