@@ -388,8 +388,8 @@ function imprimirConRawBT() {
   t += `${centrarChico(negocioTelefono)}${FUENTE_A}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
-  t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
-  t += `${r.fecha} · ${r.hora}\n`;
+  t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
+  t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
   r.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
