@@ -392,7 +392,8 @@ main { padding: 20px; }
 .recibo {
   font-family: 'Courier New', monospace;
   font-size: .9rem;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .recibo hr { border: none; border-top: 1px dashed #333; }
 

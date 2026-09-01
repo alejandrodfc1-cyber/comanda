@@ -321,35 +321,46 @@ async function cerrarMesa() {
   cerrarModalMenu();
 }
 
+const ANCHO_TICKET = 42;
+
+function centrarTexto(linea) {
+  const relleno = Math.max(0, Math.floor((ANCHO_TICKET - linea.length) / 2));
+  return ' '.repeat(relleno) + linea;
+}
+
+function filaDosColumnas(izquierda, derecha) {
+  const espacioDisponible = ANCHO_TICKET - derecha.length;
+  if (izquierda.length <= espacioDisponible - 1) {
+    return `${izquierda.padEnd(espacioDisponible)}${derecha}\n`;
+  }
+  return `${izquierda}\n${derecha.padStart(ANCHO_TICKET)}\n`;
+}
+
 function mostrarRecibo(mesa, numeroRecibo) {
   const ahora = new Date();
   const fecha = ahora.toLocaleDateString('es-CL');
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  const centrar = (linea) => {
-    const relleno = Math.max(0, Math.floor((32 - linea.length) / 2));
-    return ' '.repeat(relleno) + linea;
-  };
+  const separador = '-'.repeat(ANCHO_TICKET) + '\n';
 
-  let texto = `${centrar(NEGOCIO_NOMBRE)}\n`;
-  texto += `${centrar(NEGOCIO_DIRECCION)}\n`;
-  texto += `${centrar(negocioTelefono)}\n`;
-  texto += `--------------------------------\n`;
-  texto += `${`Recibo N.° ${numeroRecibo ?? ''}`.padEnd(18)}${(mesa.nombre || `Mesa ${mesa.id}`).padStart(14)}\n`;
+  let texto = `${centrarTexto(NEGOCIO_NOMBRE)}\n`;
+  texto += `${centrarTexto(NEGOCIO_DIRECCION)}\n`;
+  texto += `${centrarTexto(negocioTelefono)}\n`;
+  texto += separador;
+  texto += filaDosColumnas(`Recibo N.° ${numeroRecibo ?? ''}`, mesa.nombre || `Mesa ${mesa.id}`);
   texto += `${fecha} · ${hora}\n`;
-  texto += `--------------------------------\n`;
+  texto += separador;
   mesa.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
-    texto += `${item.nombre.padEnd(18)}${cantidadPrecio.padStart(14)}\n`;
+    texto += filaDosColumnas(item.nombre, cantidadPrecio);
   });
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
-  const filaTotal = (etiqueta, valor) => `${etiqueta.padEnd(24)}${formatoMoneda(valor).padStart(8)}\n`;
-  texto += `--------------------------------\n`;
-  texto += filaTotal('Total', total);
-  texto += filaTotal('Propina sugerida (10%)', propina);
-  texto += filaTotal('Total con propina', total + propina);
-  texto += `--------------------------------\n`;
-  texto += `${centrar('¡Gracias por tu visita!')}`;
+  texto += separador;
+  texto += filaDosColumnas('Total', formatoMoneda(total));
+  texto += filaDosColumnas('Propina sugerida (10%)', formatoMoneda(propina));
+  texto += filaDosColumnas('Total con propina', formatoMoneda(total + propina));
+  texto += separador;
+  texto += `${centrarTexto('¡Gracias por tu visita!')}`;
   document.getElementById('recibo').textContent = texto;
   document.getElementById('modal-recibo').classList.remove('oculto');
 }
@@ -359,7 +370,8 @@ function cerrarRecibo() {
 }
 
 function imprimirConRawBT() {
-  const texto = document.getElementById('recibo').textContent;
+  const FUENTE_CONDENSADA = '\x1B\x4D\x01';
+  const texto = FUENTE_CONDENSADA + document.getElementById('recibo').textContent;
   const textoCodificado = encodeURI(texto);
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
