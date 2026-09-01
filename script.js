@@ -331,7 +331,7 @@ function mostrarRecibo(mesa, numeroRecibo) {
   const propina = Math.round(total * 0.10);
   const etiquetaMesa = mesa.nombre || mesa.id;
 
-  reciboActual = { mesa, numeroRecibo, fecha, hora, total, propina, etiquetaMesa };
+  reciboActual = { pedido: [...mesa.pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa };
 
   const filasItems = mesa.pedido.map(item => `
     <div class="recibo-fila">
@@ -386,7 +386,7 @@ function imprimirConRawBT() {
   t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}\n`;
   t += separador;
-  r.mesa.pedido.forEach(item => {
+  r.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
     t += fila(item.nombre, cantidadPrecio);
   });
