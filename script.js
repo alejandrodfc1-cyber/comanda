@@ -377,8 +377,9 @@ function imprimirConRawBT() {
     return `${izquierda}\n${derecha.padStart(ancho)}\n`;
   };
   const separador = '-'.repeat(ANCHO) + '\n';
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
 
-  let t = `${centrar(NEGOCIO_NOMBRE)}\n`;
+  let t = `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
   t += `${centrar(NEGOCIO_DIRECCION)}\n`;
   t += `${centrar(negocioTelefono)}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
