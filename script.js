@@ -382,7 +382,6 @@ function imprimirConRawBT() {
   const separador = '-'.repeat(ANCHO) + '\n';
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
   const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
-  const DOBLE = '\x1D\x21\x11', TAM_NORMAL = '\x1D\x21\x00';
 
   let t = `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrarChico(NEGOCIO_DIRECCION)}\n`;
@@ -397,7 +396,7 @@ function imprimirConRawBT() {
     t += fila(item.nombre, cantidadPrecio);
   });
   t += separador;
-  t += `${DOBLE}${fila('Total', formatoMoneda(r.total), 16)}${TAM_NORMAL}`;
+  t += `${BOLD_ON}${fila('Total', formatoMoneda(r.total))}${BOLD_OFF}`;
   t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
   t += fila('Total con propina', formatoMoneda(r.total + r.propina));
   t += separador;
