@@ -399,10 +399,11 @@ function imprimirConRawBT() {
   t += FUENTE_A;
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
-  t += `${BOLD_ON}${fila('Total', formatoMoneda(r.total))}${BOLD_OFF}`;
+  const soloNumero = (n) => n.toLocaleString('es-CO');
+  t += `${BOLD_ON}${fila('Total $', soloNumero(r.total))}${BOLD_OFF}`;
   t += MEDIO_ESPACIO;
-  t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
-  t += fila('Total con propina', formatoMoneda(r.total + r.propina));
+  t += fila('Propina sugerida (10%) $', soloNumero(r.propina));
+  t += fila('Total con propina $', soloNumero(r.total + r.propina));
   t += separador;
   t += centrar('¡Gracias por tu visita!');
 
