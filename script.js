@@ -382,6 +382,7 @@ function imprimirConRawBT() {
   const separador = '-'.repeat(ANCHO) + '\n';
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
   const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
+  const ALTO_DOBLE = '\x1D\x21\x01', TAM_NORMAL = '\x1D\x21\x00';
 
   let t = `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrarChico(NEGOCIO_DIRECCION)}\n`;
@@ -391,12 +392,12 @@ function imprimirConRawBT() {
   t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
-  t += FUENTE_B;
+  t += FUENTE_B + ALTO_DOBLE;
   r.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
     t += fila(item.nombre, cantidadPrecio, ANCHO_FUENTE_B);
   });
-  t += FUENTE_A;
+  t += TAM_NORMAL + FUENTE_A;
   t += separador;
   t += `${BOLD_ON}${fila('Total', formatoMoneda(r.total))}${BOLD_OFF}`;
   t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
