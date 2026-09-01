@@ -391,10 +391,12 @@ function imprimirConRawBT() {
   t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
+  t += FUENTE_B;
   r.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
-    t += fila(item.nombre, cantidadPrecio);
+    t += fila(item.nombre, cantidadPrecio, ANCHO_FUENTE_B);
   });
+  t += FUENTE_A;
   t += separador;
   t += `${BOLD_ON}${fila('Total', formatoMoneda(r.total))}${BOLD_OFF}`;
   t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
