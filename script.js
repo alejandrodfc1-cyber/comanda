@@ -1,5 +1,23 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const NEGOCIO_NOMBRE = 'La Españita';
+const NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
+let negocioTelefono = '';
+
+async function cargarConfiguracion() {
+  const { data } = await sb.from('configuracion').select('valor').eq('clave', 'telefono').single();
+  negocioTelefono = data?.valor || '';
+  const input = document.getElementById('config-telefono');
+  if (input) input.value = negocioTelefono;
+}
+
+document.getElementById('form-telefono-negocio').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const valor = document.getElementById('config-telefono').value.trim();
+  await sb.from('configuracion').update({ valor }).eq('clave', 'telefono');
+  negocioTelefono = valor;
+});
+
 let MENU = [];
 let CATEGORIAS = ['Top20'];
 let categoriasDb = [];
@@ -74,7 +92,7 @@ sb.auth.onAuthStateChange((_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
-  if (haySesion) { cargarMesas(); cargarCategoriasYProductos(); }
+  if (haySesion) { cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); }
 });
 
 async function cargarMesas() {
@@ -289,11 +307,13 @@ async function cerrarMesa() {
     alert('La mesa no tiene pedidos.');
     return;
   }
-  mostrarRecibo(mesa);
 
-  await sb.from('ventas').insert({
+  const { data: venta } = await sb.from('ventas').insert({
     mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa)
-  });
+  }).select().single();
+
+  mostrarRecibo(mesa, venta?.id);
+
   mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
   mesa.pedido = [];
   await guardarPedido(mesa);
@@ -301,11 +321,21 @@ async function cerrarMesa() {
   cerrarModalMenu();
 }
 
-function mostrarRecibo(mesa) {
-  const fecha = new Date().toLocaleString('es-CO');
-  let texto = `      COMPROBANTE DE PAGO\n`;
-  texto += `Mesa: ${mesa.id}\n`;
-  texto += `Fecha: ${fecha}\n`;
+function mostrarRecibo(mesa, numeroRecibo) {
+  const ahora = new Date();
+  const fecha = ahora.toLocaleDateString('es-CL');
+  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((32 - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
+
+  let texto = `${centrar(NEGOCIO_NOMBRE)}\n`;
+  texto += `${centrar(NEGOCIO_DIRECCION)}\n`;
+  texto += `${centrar(negocioTelefono)}\n`;
+  texto += `--------------------------------\n`;
+  texto += `${`Recibo N.° ${numeroRecibo ?? ''}`.padEnd(18)}${(mesa.nombre || `Mesa ${mesa.id}`).padStart(14)}\n`;
+  texto += `${fecha} · ${hora}\n`;
   texto += `--------------------------------\n`;
   mesa.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
@@ -315,11 +345,11 @@ function mostrarRecibo(mesa) {
   const propina = Math.round(total * 0.10);
   const filaTotal = (etiqueta, valor) => `${etiqueta.padEnd(24)}${formatoMoneda(valor).padStart(8)}\n`;
   texto += `--------------------------------\n`;
-  texto += filaTotal('TOTAL:', total);
-  texto += filaTotal('Propina (10%):', propina);
-  texto += filaTotal('TOTAL + PROPINA:', total + propina);
+  texto += filaTotal('Total', total);
+  texto += filaTotal('Propina sugerida (10%)', propina);
+  texto += filaTotal('Total con propina', total + propina);
   texto += `--------------------------------\n`;
-  texto += `      ¡Gracias por su visita!`;
+  texto += `${centrar('¡Gracias por tu visita!')}`;
   document.getElementById('recibo').textContent = texto;
   document.getElementById('modal-recibo').classList.remove('oculto');
 }
