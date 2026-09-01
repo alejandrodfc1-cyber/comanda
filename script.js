@@ -367,10 +367,13 @@ function imprimirConRawBT() {
   if (!reciboActual) return;
   const r = reciboActual;
   const ANCHO = 32;
-  const centrar = (linea) => {
-    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+  const ANCHO_FUENTE_B = 42;
+  const centrarEn = (linea, ancho) => {
+    const relleno = Math.max(0, Math.floor((ancho - linea.length) / 2));
     return ' '.repeat(relleno) + linea;
   };
+  const centrar = (linea) => centrarEn(linea, ANCHO);
+  const centrarChico = (linea) => centrarEn(linea, ANCHO_FUENTE_B);
   const fila = (izquierda, derecha, ancho = ANCHO) => {
     const disponible = ancho - derecha.length;
     if (izquierda.length <= disponible - 1) return `${izquierda.padEnd(disponible)}${derecha}\n`;
@@ -381,8 +384,8 @@ function imprimirConRawBT() {
   const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
 
   let t = `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
-  t += `${FUENTE_B}${centrar(NEGOCIO_DIRECCION)}\n`;
-  t += `${centrar(negocioTelefono)}${FUENTE_A}\n`;
+  t += `${FUENTE_B}${centrarChico(NEGOCIO_DIRECCION)}\n`;
+  t += `${centrarChico(negocioTelefono)}${FUENTE_A}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
   t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
