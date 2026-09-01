@@ -395,6 +395,7 @@ main { padding: 20px; }
   word-break: break-word;
 }
 .recibo hr { border: none; border-top: 1px dashed #333; margin: 6px 0; }
+.ayuda-impresion { font-size: .8rem; color: #666; text-align: center; margin-top: 8px; }
 .recibo-nombre-negocio { text-align: center; font-weight: 800; font-size: 1.5rem; }
 .recibo-centrado { text-align: center; }
 .recibo-mesa-grande { text-align: center; font-weight: 800; font-size: 1.3rem; margin-top: 4px; }
@@ -403,7 +404,10 @@ main { padding: 20px; }
 
 @media print {
   body * { visibility: hidden; }
-  .recibo, .recibo * { visibility: visible; }
-  .recibo { position: absolute; top: 0; left: 0; width: 100%; }
-  .no-imprimir { display: none; }
+  .recibo, .recibo * { visibility: visible; color: #000 !important; border-color: #999 !important; }
+  .recibo {
+    position: absolute; top: 0; left: 0; width: 100%;
+    background: #fff !important; box-shadow: none !important;
+  }
+  .no-imprimir { display: none !important; }
 }

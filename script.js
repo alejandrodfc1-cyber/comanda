@@ -321,8 +321,6 @@ async function cerrarMesa() {
   cerrarModalMenu();
 }
 
-let reciboActual = null;
-
 function mostrarRecibo(mesa, numeroRecibo) {
   const ahora = new Date();
   const fecha = ahora.toLocaleDateString('es-CL');
@@ -330,8 +328,6 @@ function mostrarRecibo(mesa, numeroRecibo) {
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
   const etiquetaMesa = mesa.nombre || mesa.id;
-
-  reciboActual = { mesa, numeroRecibo, fecha, hora, total, propina, etiquetaMesa };
 
   const filasItems = mesa.pedido.map(item => `
     <div class="recibo-fila">
@@ -361,44 +357,6 @@ function mostrarRecibo(mesa, numeroRecibo) {
 
 function cerrarRecibo() {
   document.getElementById('modal-recibo').classList.add('oculto');
-}
-
-function imprimirConRawBT() {
-  if (!reciboActual) return;
-  const r = reciboActual;
-  const ANCHO = 32;
-  const centrar = (linea) => {
-    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
-    return ' '.repeat(relleno) + linea;
-  };
-  const fila = (izquierda, derecha, ancho = ANCHO) => {
-    const disponible = ancho - derecha.length;
-    if (izquierda.length <= disponible - 1) return `${izquierda.padEnd(disponible)}${derecha}\n`;
-    return `${izquierda}\n${derecha.padStart(ancho)}\n`;
-  };
-  const separador = '-'.repeat(ANCHO) + '\n';
-
-  let t = `${centrar(NEGOCIO_NOMBRE)}\n`;
-  t += `${centrar(NEGOCIO_DIRECCION)}\n`;
-  t += `${centrar(negocioTelefono)}\n`;
-  t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
-  t += separador;
-  t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
-  t += `${r.fecha} · ${r.hora}\n`;
-  t += separador;
-  r.mesa.pedido.forEach(item => {
-    const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
-    t += fila(item.nombre, cantidadPrecio);
-  });
-  t += separador;
-  t += fila('Total', formatoMoneda(r.total));
-  t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
-  t += fila('Total con propina', formatoMoneda(r.total + r.propina));
-  t += separador;
-  t += centrar('¡Gracias por tu visita!');
-
-  const textoCodificado = encodeURI(t);
-  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
 
 function abrirDashboard() {
