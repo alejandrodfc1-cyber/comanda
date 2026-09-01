@@ -378,10 +378,11 @@ function imprimirConRawBT() {
   };
   const separador = '-'.repeat(ANCHO) + '\n';
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
 
   let t = `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
-  t += `${centrar(NEGOCIO_DIRECCION)}\n`;
-  t += `${centrar(negocioTelefono)}\n`;
+  t += `${FUENTE_B}${centrar(NEGOCIO_DIRECCION)}\n`;
+  t += `${centrar(negocioTelefono)}${FUENTE_A}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
   t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
