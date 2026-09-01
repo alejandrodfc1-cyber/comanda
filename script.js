@@ -367,35 +367,35 @@ function imprimirConRawBT() {
   if (!reciboActual) return;
   const r = reciboActual;
   const ANCHO = 32;
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
   const fila = (izquierda, derecha, ancho = ANCHO) => {
     const disponible = ancho - derecha.length;
     if (izquierda.length <= disponible - 1) return `${izquierda.padEnd(disponible)}${derecha}\n`;
     return `${izquierda}\n${derecha.padStart(ancho)}\n`;
   };
-  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
-  const GRANDE = '\x1D\x21\x11', TAM_NORMAL = '\x1D\x21\x00';
-  const CENTRO = '\x1B\x61\x01', IZQUIERDA = '\x1B\x61\x00';
-  const FUENTE_A = '\x1B\x4D\x00';
+  const separador = '-'.repeat(ANCHO) + '\n';
 
-  let t = FUENTE_A;
-  t += CENTRO + GRANDE + BOLD_ON + NEGOCIO_NOMBRE + '\n' + TAM_NORMAL + BOLD_OFF;
-  t += CENTRO + NEGOCIO_DIRECCION + '\n';
-  t += CENTRO + negocioTelefono + '\n';
-  t += CENTRO + GRANDE + BOLD_ON + `MESA : ${r.etiquetaMesa}` + '\n' + TAM_NORMAL + BOLD_OFF;
-  t += IZQUIERDA + '-'.repeat(ANCHO) + '\n';
+  let t = `${centrar(NEGOCIO_NOMBRE)}\n`;
+  t += `${centrar(NEGOCIO_DIRECCION)}\n`;
+  t += `${centrar(negocioTelefono)}\n`;
+  t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
+  t += separador;
   t += `Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}\n`;
-  t += '-'.repeat(ANCHO) + '\n';
+  t += separador;
   r.mesa.pedido.forEach(item => {
     const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
     t += fila(item.nombre, cantidadPrecio);
   });
-  t += '-'.repeat(ANCHO) + '\n';
-  t += GRANDE + BOLD_ON + fila('Total', formatoMoneda(r.total), 16) + TAM_NORMAL + BOLD_OFF;
+  t += separador;
+  t += fila('Total', formatoMoneda(r.total));
   t += fila('Propina sugerida (10%)', formatoMoneda(r.propina));
   t += fila('Total con propina', formatoMoneda(r.total + r.propina));
-  t += '-'.repeat(ANCHO) + '\n';
-  t += CENTRO + '¡Gracias por tu visita!';
+  t += separador;
+  t += centrar('¡Gracias por tu visita!');
 
   const textoCodificado = encodeURI(t);
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
