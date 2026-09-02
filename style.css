@@ -224,14 +224,33 @@ main { padding: 20px; }
 }
 .plato:hover { background: #eef3f8; border-color: #2c3e50; }
 .plato .icono {
-  flex: 1;
+  flex: 0 0 55%;
   min-height: 0;
   width: 100%;
   font-size: 2.2rem;
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.plato .nombre { font-size: .85rem; font-weight: 600; padding: 0 6px; }
-.plato .precio { color: #666; font-size: .8rem; padding-bottom: 6px; }
+.plato .nombre {
+  flex-shrink: 0;
+  width: 100%;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plato .precio {
+  flex-shrink: 0;
+  width: 100%;
+  color: #666;
+  font-size: .72rem;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .pedido-actual {
   display: flex;
