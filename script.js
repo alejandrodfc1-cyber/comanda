@@ -401,12 +401,8 @@ function imprimirConRawBT() {
   });
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
-  const INV_ON = '\x1D\x42\x01', INV_OFF = '\x1D\x42\x00';
   const soloNumero = (n) => n.toLocaleString('es-CO');
-  const etiquetaTotal = 'Total $';
-  const numeroTotal = soloNumero(r.total);
-  const rellenoTotal = ' '.repeat(Math.max(0, ANCHO - etiquetaTotal.length - numeroTotal.length));
-  t += `${BOLD_ON}${etiquetaTotal}${rellenoTotal}${INV_ON}${numeroTotal}${INV_OFF}${BOLD_OFF}\n`;
+  t += `${BOLD_ON}${fila('Total $', soloNumero(r.total))}${BOLD_OFF}`;
   t += MEDIO_ESPACIO;
   t += fila('Propina sugerida (10%) $', soloNumero(r.propina));
   t += fila('Total con propina $', soloNumero(r.total + r.propina));
