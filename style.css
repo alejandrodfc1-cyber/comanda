@@ -196,15 +196,14 @@ main { padding: 20px; }
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   text-align: center;
-  gap: 4px;
+  gap: 2px;
   aspect-ratio: 1;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
   cursor: pointer;
   background: #fafafa;
+  overflow: hidden;
 }
 .badge-cantidad {
   position: absolute;
@@ -225,12 +224,14 @@ main { padding: 20px; }
 }
 .plato:hover { background: #eef3f8; border-color: #2c3e50; }
 .plato .icono {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   font-size: 2.2rem;
-  width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
 }
 .plato .nombre { font-size: .85rem; font-weight: 600; padding: 0 6px; }
-.plato .precio { color: #666; font-size: .8rem; }
+.plato .precio { color: #666; font-size: .8rem; padding-bottom: 6px; }
 
 .pedido-actual {
   display: flex;
@@ -383,10 +384,10 @@ main { padding: 20px; }
   object-fit: cover;
   border-radius: inherit;
 }
+.item-icono img { border-radius: 8px; }
 .item-icono img, .plato .icono img {
   width: 100%; height: 100%;
   object-fit: cover;
-  border-radius: 8px;
 }
 
 .recibo {
