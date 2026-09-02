@@ -395,6 +395,68 @@ main { padding: 20px; }
 .btn-editar-admin:disabled { opacity: .3; cursor: default; }
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 
+.texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
+
+.metricas-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.metrica-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f6f7f8;
+  border-radius: 10px;
+  padding: 12px;
+}
+.metrica-valor { font-size: 1.25rem; font-weight: 700; color: #2c3e50; }
+.metrica-etiqueta { font-size: .75rem; color: #666; }
+
+.grafico-barras-dias {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 110px;
+  padding-top: 10px;
+  overflow-x: auto;
+}
+.barra-dia {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1 0 24px;
+  height: 100%;
+  min-width: 24px;
+}
+.barra-dia-relleno {
+  width: 100%;
+  min-height: 2px;
+  background: #2c3e50;
+  border-radius: 4px 4px 0 0;
+}
+.barra-dia-etiqueta { font-size: .65rem; color: #666; margin-top: 4px; white-space: nowrap; }
+
+.barra-categoria { margin-bottom: 10px; }
+.barra-categoria-etiqueta {
+  display: flex;
+  justify-content: space-between;
+  font-size: .85rem;
+  margin-bottom: 3px;
+}
+.barra-categoria-fondo {
+  background: #f0f0f0;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+.barra-categoria-relleno {
+  height: 100%;
+  background: #2c3e50;
+  border-radius: 999px;
+}
+
 .fila-botones-form { display: flex; gap: 8px; }
 .fila-botones-form .btn { flex: 1; }
 

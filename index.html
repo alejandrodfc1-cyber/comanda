@@ -82,6 +82,7 @@
       <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
       <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
       <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
+      <button id="tab-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
     </div>
 
     <div id="seccion-admin-mesas">
@@ -144,6 +145,43 @@
       <div id="lista-top20-actual"></div>
       <h3 class="titulo-form" style="margin-top:20px">Agregar al Top20</h3>
       <div id="lista-top20-disponibles" class="con-espacio-fab"></div>
+    </div>
+
+    <div id="seccion-admin-metricas" class="oculto">
+      <div class="categoria-tabs" id="tabs-periodo-metricas">
+        <button data-periodo="hoy" class="activa">Hoy</button>
+        <button data-periodo="semana">7 días</button>
+        <button data-periodo="mes">Este mes</button>
+        <button data-periodo="todo">Todo</button>
+      </div>
+
+      <div class="metricas-tarjetas">
+        <div class="metrica-tarjeta">
+          <span class="metrica-valor" id="metrica-total-vendido">$0</span>
+          <span class="metrica-etiqueta">Total vendido</span>
+        </div>
+        <div class="metrica-tarjeta">
+          <span class="metrica-valor" id="metrica-n-ventas">0</span>
+          <span class="metrica-etiqueta">Ventas</span>
+        </div>
+        <div class="metrica-tarjeta">
+          <span class="metrica-valor" id="metrica-ticket-promedio">$0</span>
+          <span class="metrica-etiqueta">Ticket promedio</span>
+        </div>
+        <div class="metrica-tarjeta">
+          <span class="metrica-valor" id="metrica-ganancia">$0</span>
+          <span class="metrica-etiqueta">Ganancia estimada</span>
+        </div>
+      </div>
+
+      <h3 class="titulo-form" id="titulo-grafico-dias" style="margin-top:20px">Ventas por día</h3>
+      <div id="grafico-ventas-dia" class="grafico-barras-dias"></div>
+
+      <h3 class="titulo-form" style="margin-top:20px">Productos más vendidos</h3>
+      <div id="lista-top-productos-metricas"></div>
+
+      <h3 class="titulo-form" style="margin-top:20px">Ventas por categoría</h3>
+      <div id="lista-categorias-metricas" class="con-espacio-fab"></div>
     </div>
 
     <button class="fab-detalle oculto" id="btn-guardar-flotante" onclick="guardarDesdeFlotante()">💾 Guardar</button>

@@ -34,6 +34,7 @@ async function cargarCategoriasYProductos() {
     id: p.id,
     nombre: p.nombre,
     precio: p.precio,
+    costo: p.costo,
     icono: p.icono,
     foto_url: p.foto_url,
     categoria: mapaCategorias[p.categoria_id],
@@ -432,18 +433,119 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias', 'top20'].forEach(s => {
+  ['mesas', 'productos', 'categorias', 'top20', 'metricas'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'metricas');
   if (seccion === 'top20') cargarTop20Admin();
+  if (seccion === 'metricas') cargarMetricas();
 }
 
 function guardarDesdeFlotante() {
   const formId = { mesas: 'form-nueva-mesa', productos: 'form-nuevo-producto' }[seccionActivaDashboard];
   if (formId) document.getElementById(formId).requestSubmit();
+}
+
+let periodoMetricas = 'hoy';
+
+document.querySelectorAll('#tabs-periodo-metricas button').forEach(btn => {
+  btn.onclick = () => {
+    periodoMetricas = btn.dataset.periodo;
+    document.querySelectorAll('#tabs-periodo-metricas button').forEach(b => b.classList.toggle('activa', b === btn));
+    cargarMetricas();
+  };
+});
+
+function inicioPeriodo(periodo) {
+  const ahora = new Date();
+  if (periodo === 'hoy') return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  if (periodo === 'semana') return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - 6);
+  if (periodo === 'mes') return new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  return null;
+}
+
+async function cargarMetricas() {
+  const desde = inicioPeriodo(periodoMetricas);
+  let query = sb.from('ventas').select('items, total, creado_en').order('creado_en', { ascending: true });
+  if (desde) query = query.gte('creado_en', desde.toISOString());
+  const { data } = await query;
+  renderMetricas(data || []);
+}
+
+function renderMetricas(ventas) {
+  const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
+  const nVentas = ventas.length;
+  const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
+
+  const mapaProductos = Object.fromEntries(MENU.map(p => [p.id, p]));
+  let ganancia = 0;
+  const tallyProductos = {};
+  const tallyCategorias = {};
+
+  ventas.forEach(v => {
+    (v.items || []).forEach(item => {
+      const producto = mapaProductos[item.id];
+      const costo = producto ? Number(producto.costo || 0) : 0;
+      ganancia += (Number(item.precio) - costo) * item.cantidad;
+
+      if (!tallyProductos[item.id]) tallyProductos[item.id] = { nombre: item.nombre, cantidad: 0, monto: 0 };
+      tallyProductos[item.id].cantidad += item.cantidad;
+      tallyProductos[item.id].monto += item.precio * item.cantidad;
+
+      const catNombre = (producto && producto.categoria) || 'Sin categoría';
+      tallyCategorias[catNombre] = (tallyCategorias[catNombre] || 0) + item.precio * item.cantidad;
+    });
+  });
+
+  document.getElementById('metrica-total-vendido').textContent = formatoMoneda(Math.round(totalVendido));
+  document.getElementById('metrica-n-ventas').textContent = nVentas;
+  document.getElementById('metrica-ticket-promedio').textContent = formatoMoneda(Math.round(ticketPromedio));
+  document.getElementById('metrica-ganancia').textContent = formatoMoneda(Math.round(ganancia));
+
+  const topProductos = Object.values(tallyProductos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
+  const listaTop = document.getElementById('lista-top-productos-metricas');
+  listaTop.innerHTML = topProductos.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : topProductos.map((p, i) => `
+      <div class="fila-admin">
+        <span class="miniatura">${i + 1}</span>
+        <div class="info-admin">
+          <strong>${p.nombre}</strong>
+          <span>${p.cantidad} vendidos · ${formatoMoneda(Math.round(p.monto))}</span>
+        </div>
+      </div>`).join('');
+
+  const categoriasOrdenadas = Object.entries(tallyCategorias).sort((a, b) => b[1] - a[1]);
+  const maxCategoria = categoriasOrdenadas.length > 0 ? categoriasOrdenadas[0][1] : 0;
+  const listaCats = document.getElementById('lista-categorias-metricas');
+  listaCats.innerHTML = categoriasOrdenadas.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : categoriasOrdenadas.map(([nombre, monto]) => `
+      <div class="barra-categoria">
+        <div class="barra-categoria-etiqueta"><span>${nombre}</span><span>${formatoMoneda(Math.round(monto))}</span></div>
+        <div class="barra-categoria-fondo"><div class="barra-categoria-relleno" style="width:${maxCategoria ? (monto / maxCategoria * 100) : 0}%"></div></div>
+      </div>`).join('');
+
+  const tallyDias = {};
+  ventas.forEach(v => {
+    const dia = v.creado_en.slice(0, 10);
+    tallyDias[dia] = (tallyDias[dia] || 0) + Number(v.total);
+  });
+  const dias = Object.entries(tallyDias).sort((a, b) => a[0].localeCompare(b[0])).slice(-14);
+  const maxDia = dias.length > 0 ? Math.max(...dias.map(d => d[1])) : 0;
+  const grafico = document.getElementById('grafico-ventas-dia');
+  grafico.innerHTML = dias.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : dias.map(([fecha, monto]) => {
+        const [, mes, dia] = fecha.split('-');
+        return `
+      <div class="barra-dia" title="${formatoMoneda(Math.round(monto))}">
+        <div class="barra-dia-relleno" style="height:${maxDia ? (monto / maxDia * 100) : 0}%"></div>
+        <span class="barra-dia-etiqueta">${dia}/${mes}</span>
+      </div>`;
+      }).join('');
 }
 
 let mesasAdminCache = [];
