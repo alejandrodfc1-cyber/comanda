@@ -391,12 +391,10 @@ function imprimirConRawBT() {
   t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
-  t += FUENTE_B;
   r.pedido.forEach(item => {
-    const cantidadPrecio = `${item.cantidad} x ${formatoMoneda(item.precio)}`;
-    t += fila(item.nombre, cantidadPrecio, ANCHO_FUENTE_B);
+    const cantidadPrecio = `${item.cantidad} x ${item.precio.toLocaleString('es-CO')}`;
+    t += fila(item.nombre, cantidadPrecio);
   });
-  t += FUENTE_A;
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
   const soloNumero = (n) => n.toLocaleString('es-CO');
