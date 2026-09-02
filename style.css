@@ -224,7 +224,7 @@ main { padding: 20px; }
 }
 .plato:hover { background: #eef3f8; border-color: #2c3e50; }
 .plato .icono {
-  flex: 0 0 55%;
+  flex: 1;
   min-height: 0;
   width: 100%;
   font-size: 2.2rem;
