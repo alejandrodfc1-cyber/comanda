@@ -391,9 +391,13 @@ function imprimirConRawBT() {
   t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
+  const MAX_NOMBRE_PRODUCTO = 18;
   r.pedido.forEach(item => {
+    const nombreCorto = item.nombre.length > MAX_NOMBRE_PRODUCTO
+      ? item.nombre.slice(0, MAX_NOMBRE_PRODUCTO - 1) + '…'
+      : item.nombre;
     const cantidadPrecio = `${item.cantidad} x ${item.precio.toLocaleString('es-CO')}`;
-    t += fila(item.nombre, cantidadPrecio);
+    t += fila(nombreCorto, cantidadPrecio);
   });
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
