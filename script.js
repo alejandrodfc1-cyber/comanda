@@ -119,6 +119,14 @@ function formatoMoneda(n) {
   return '$' + n.toLocaleString('es-CO');
 }
 
+function formatoDuracion(minutos) {
+  if (minutos == null) return '—';
+  const total = Math.round(minutos);
+  const horas = Math.floor(total / 60);
+  const mins = total % 60;
+  return horas > 0 ? `${horas} h ${mins} min` : `${mins} min`;
+}
+
 function renderMesas() {
   const grid = document.getElementById('grid-mesas');
   grid.innerHTML = '';
@@ -232,7 +240,7 @@ function mesaActiva() {
 }
 
 async function guardarPedido(mesa) {
-  const { error } = await sb.from('mesas').update({ pedido: mesa.pedido }).eq('id', mesa.id);
+  const { error } = await sb.from('mesas').update({ pedido: mesa.pedido, abierta_en: mesa.abierta_en }).eq('id', mesa.id);
   if (error) console.error(error);
 }
 
@@ -241,6 +249,7 @@ function agregarPlato(platoId) {
   if (!mesa) return;
   const plato = MENU.find(p => p.id === platoId);
   const item = mesa.pedido.find(i => i.id === platoId);
+  if (mesa.pedido.length === 0 && !mesa.abierta_en) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
   else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
   renderPedido();
@@ -309,14 +318,19 @@ async function cerrarMesa() {
     return;
   }
 
+  const duracionMinutos = mesa.abierta_en
+    ? Math.round((Date.now() - new Date(mesa.abierta_en).getTime()) / 60000)
+    : null;
+
   const { data: venta } = await sb.from('ventas').insert({
-    mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa)
+    mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos
   }).select().single();
 
   mostrarRecibo(mesa, venta?.id);
 
   mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
   mesa.pedido = [];
+  mesa.abierta_en = null;
   await guardarPedido(mesa);
 
   cerrarModalMenu();
@@ -468,7 +482,7 @@ function inicioPeriodo(periodo) {
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('items, total, creado_en').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('items, total, creado_en, duracion_minutos').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   const { data } = await query;
   renderMetricas(data || []);
@@ -478,6 +492,9 @@ function renderMetricas(ventas) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
   const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
+
+  const duraciones = ventas.map(v => v.duracion_minutos).filter(d => d != null && d >= 0);
+  const duracionPromedio = duraciones.length > 0 ? duraciones.reduce((s, d) => s + d, 0) / duraciones.length : null;
 
   const mapaProductos = Object.fromEntries(MENU.map(p => [p.id, p]));
   let ganancia = 0;
@@ -503,6 +520,7 @@ function renderMetricas(ventas) {
   document.getElementById('metrica-n-ventas').textContent = nVentas;
   document.getElementById('metrica-ticket-promedio').textContent = formatoMoneda(Math.round(ticketPromedio));
   document.getElementById('metrica-ganancia').textContent = formatoMoneda(Math.round(ganancia));
+  document.getElementById('metrica-tiempo-mesa').textContent = formatoDuracion(duracionPromedio);
 
   const topProductos = Object.values(tallyProductos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
   const listaTop = document.getElementById('lista-top-productos-metricas');
