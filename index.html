@@ -70,13 +70,6 @@
       <button class="btn-cerrar" onclick="cerrarDashboard()">✕</button>
     </div>
 
-    <form id="form-telefono-negocio" class="form-admin fila-telefono-negocio">
-      <label class="campo-form">Teléfono en el comprobante
-        <input type="text" id="config-telefono" placeholder="+56 9 0000 0000">
-      </label>
-      <button type="submit" class="btn btn-secundario">Guardar teléfono</button>
-    </form>
-
     <div class="tabs-fijas">
       <div class="categoria-tabs" id="tabs-admin-secciones">
         <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
@@ -84,7 +77,18 @@
         <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
         <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
         <button id="tab-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
+        <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
       </div>
+    </div>
+
+    <div id="seccion-admin-config" class="oculto">
+      <form id="form-telefono-negocio" class="form-admin">
+        <h3 class="titulo-form">Teléfono en el comprobante</h3>
+        <label class="campo-form">Teléfono
+          <input type="text" id="config-telefono" placeholder="+56 9 0000 0000">
+        </label>
+        <button type="submit" class="btn btn-secundario">Guardar teléfono</button>
+      </form>
     </div>
 
     <div id="seccion-admin-mesas">

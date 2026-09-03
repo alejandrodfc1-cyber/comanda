@@ -335,11 +335,6 @@ main { padding: 20px; }
   padding-bottom: 16px;
   border-bottom: 1px solid #eee;
 }
-.fila-telefono-negocio {
-  margin: 0 0 14px;
-  padding-bottom: 14px;
-  flex-shrink: 0;
-}
 .form-admin input, .form-admin select {
   padding: 9px 10px;
   border: 1px solid #ccc;

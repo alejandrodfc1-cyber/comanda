@@ -433,12 +433,12 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias', 'top20', 'metricas'].forEach(s => {
+  ['mesas', 'productos', 'categorias', 'top20', 'metricas', 'config'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'metricas');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'metricas' || seccion === 'config');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
 }
