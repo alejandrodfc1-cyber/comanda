@@ -515,6 +515,7 @@ function renderMetricas(ventas, mapaMesas) {
   const tallyCategorias = {};
   const tallyMesas = {};
   const tallyDiaSemana = {};
+  const tallyHora = {};
 
   ventas.forEach(v => {
     const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
@@ -528,6 +529,11 @@ function renderMetricas(ventas, mapaMesas) {
     if (!tallyDiaSemana[diaSemana]) tallyDiaSemana[diaSemana] = { total: 0, fechas: new Set() };
     tallyDiaSemana[diaSemana].total += Number(v.total);
     tallyDiaSemana[diaSemana].fechas.add(fechaStr);
+
+    const hora = fecha.getHours();
+    if (!tallyHora[hora]) tallyHora[hora] = { total: 0, fechas: new Set() };
+    tallyHora[hora].total += Number(v.total);
+    tallyHora[hora].fechas.add(fechaStr);
 
     (v.items || []).forEach(item => {
       const producto = mapaProductos[item.id];
@@ -562,6 +568,23 @@ function renderMetricas(ventas, mapaMesas) {
           <strong>${m.etiqueta}</strong>
           <span>${m.veces} ${m.veces === 1 ? 'vez' : 'veces'} · ${formatoMoneda(Math.round(m.monto))}</span>
         </div>
+      </div>`).join('');
+
+  const horasOrdenadas = Object.entries(tallyHora)
+    .map(([hora, h]) => ({ hora: Number(hora), promedio: h.total / h.fechas.size }))
+    .sort((a, b) => a.hora - b.hora);
+  const maxHora = horasOrdenadas.length > 0 ? Math.max(...horasOrdenadas.map(h => h.promedio)) : 0;
+  const horaTop = horasOrdenadas.length > 0
+    ? horasOrdenadas.reduce((max, h) => h.promedio > max.promedio ? h : max, horasOrdenadas[0])
+    : null;
+  document.getElementById('metrica-hora-top').textContent = horaTop ? `${String(horaTop.hora).padStart(2, '0')}:00` : '—';
+  const graficoHora = document.getElementById('grafico-hora-metricas');
+  graficoHora.innerHTML = horasOrdenadas.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : horasOrdenadas.map(h => `
+      <div class="barra-dia" title="${formatoMoneda(Math.round(h.promedio))}">
+        <div class="barra-dia-relleno" style="height:${maxHora ? (h.promedio / maxHora * 100) : 0}%"></div>
+        <span class="barra-dia-etiqueta">${String(h.hora).padStart(2, '0')}h</span>
       </div>`).join('');
 
   const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
