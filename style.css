@@ -411,39 +411,24 @@ main { padding: 20px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
 .comparativa-fila {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   margin-bottom: 10px;
 }
-.comparativa-arco { flex-shrink: 0; }
-.comparativa-cuerpo { flex: 1; min-width: 0; }
-.comparativa-titulo {
-  display: block;
-  font-size: .7rem;
-  color: #888;
-  margin-bottom: 3px;
+.comparativa-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
 }
-.comparativa-valor-actual {
-  display: block;
-  font-weight: 700;
-  font-size: .95rem;
-  color: #2c3e50;
-}
-.comparativa-valor-anterior {
-  display: block;
-  font-size: .72rem;
-  color: #999;
-  margin-top: 1px;
-}
+.comparativa-titulo { font-size: .78rem; color: #555; font-weight: 600; }
 .comparativa-delta {
   flex-shrink: 0;
   font-weight: 700;
-  font-size: .85rem;
+  font-size: .8rem;
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
@@ -451,6 +436,40 @@ main { padding: 20px; }
 .comparativa-delta.positivo { color: #1e7e34; background: #e6f4ea; }
 .comparativa-delta.negativo { color: #c0392b; background: #fdecea; }
 .comparativa-delta.neutro { color: #888; background: #eee; }
+.comparativa-barra-linea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.comparativa-barra-linea:last-child { margin-bottom: 0; }
+.comparativa-barra-etq {
+  font-size: .68rem;
+  color: #888;
+  width: 82px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comparativa-barra-pista {
+  flex: 1;
+  background: #f0f0f0;
+  border-radius: 4px;
+  height: 15px;
+  overflow: hidden;
+}
+.comparativa-barra-relleno { height: 100%; border-radius: 4px; background: #bbb; }
+.comparativa-barra-linea.actual .comparativa-barra-relleno { background: #2c3e50; }
+.comparativa-barra-valor {
+  font-size: .72rem;
+  font-weight: 600;
+  color: #2c3e50;
+  flex-shrink: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 .metricas-tarjetas {
   display: grid;

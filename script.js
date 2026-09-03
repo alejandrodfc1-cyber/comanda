@@ -582,9 +582,9 @@ async function cargarComparativas() {
   const nombreMes = f => f.toLocaleDateString('es-CL', { month: 'long' }).replace(/^./, c => c.toUpperCase());
 
   renderComparativas([
-    { titulo: 'Ayer vs. Hoy', anterior: ayer, actual: hoy },
-    { titulo: 'Semana anterior vs. Esta semana', anterior: semanaAnterior, actual: semanaActual },
-    { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anterior: mesAnterior, actual: mesActual },
+    { titulo: 'Ayer vs. Hoy', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
+    { titulo: 'Semana anterior vs. Esta semana', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
+    { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
   ]);
 
   const ventasHoy = ventas.filter(v => new Date(v.creado_en) >= hoyIni);
@@ -597,18 +597,6 @@ async function cargarComparativas() {
     : `<span class="destacado-icono">📋</span> Aún no hay ventas registradas hoy`;
 }
 
-function svgTendencia(positivo, sinCambio) {
-  const color = sinCambio ? '#bbb' : (positivo ? '#1e7e34' : '#c0392b');
-  const yInicio = sinCambio ? 16 : (positivo ? 24 : 8);
-  const yFin = sinCambio ? 16 : (positivo ? 8 : 24);
-  return `
-    <svg class="comparativa-arco" width="40" height="32" viewBox="0 0 40 32">
-      <path d="M4 ${yInicio} C 14 ${yInicio}, 24 ${yFin}, 36 ${yFin}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="4" cy="${yInicio}" r="2.5" fill="#bbb"/>
-      <circle cx="36" cy="${yFin}" r="3" fill="${color}"/>
-    </svg>`;
-}
-
 function renderComparativas(filas) {
   const cont = document.getElementById('comparativas-rapidas');
   cont.innerHTML = filas.map(f => {
@@ -617,15 +605,25 @@ function renderComparativas(filas) {
     const sinCambio = sinDatos || delta === 0;
     const positivo = delta > 0;
     const deltaTexto = sinCambio ? '—' : `${positivo ? '▲' : '▼'} ${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
+    const max = Math.max(f.anterior, f.actual, 1);
+    const pctAnterior = (f.anterior / max * 100).toFixed(1);
+    const pctActual = (f.actual / max * 100).toFixed(1);
     return `
       <div class="comparativa-fila">
-        ${svgTendencia(positivo, sinCambio)}
-        <div class="comparativa-cuerpo">
+        <div class="comparativa-cabecera">
           <span class="comparativa-titulo">${f.titulo}</span>
-          <span class="comparativa-valor-actual">${formatoMoneda(Math.round(f.actual))}</span>
-          <span class="comparativa-valor-anterior">antes ${formatoMoneda(Math.round(f.anterior))}</span>
+          <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
         </div>
-        <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
+        <div class="comparativa-barra-linea">
+          <span class="comparativa-barra-etq">${f.anteriorLabel}</span>
+          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" style="width:${pctAnterior}%"></div></div>
+          <span class="comparativa-barra-valor">${formatoMoneda(Math.round(f.anterior))}</span>
+        </div>
+        <div class="comparativa-barra-linea actual">
+          <span class="comparativa-barra-etq">${f.actualLabel}</span>
+          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" style="width:${pctActual}%"></div></div>
+          <span class="comparativa-barra-valor">${formatoMoneda(Math.round(f.actual))}</span>
+        </div>
       </div>`;
   }).join('');
 }
