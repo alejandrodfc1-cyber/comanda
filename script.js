@@ -472,6 +472,15 @@ document.querySelectorAll('#tabs-periodo-metricas button').forEach(btn => {
   };
 });
 
+document.querySelectorAll('#tabs-vista-reportes button').forEach(btn => {
+  btn.onclick = () => {
+    const vista = btn.dataset.vista;
+    document.querySelectorAll('#tabs-vista-reportes button').forEach(b => b.classList.toggle('activa', b === btn));
+    document.getElementById('reportes-vista-general').classList.toggle('oculto', vista !== 'general');
+    document.getElementById('reportes-vista-detalle').classList.toggle('oculto', vista !== 'detalle');
+  };
+});
+
 function inicioPeriodo(periodo) {
   const ahora = new Date();
   if (periodo === 'hoy') return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
@@ -540,7 +549,9 @@ function renderMetricas(ventas, mapaMesas) {
   document.getElementById('metrica-ganancia').textContent = formatoMoneda(Math.round(ganancia));
   document.getElementById('metrica-tiempo-mesa').textContent = formatoDuracion(duracionPromedio);
 
-  const topMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces).slice(0, 10);
+  const todasLasMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces);
+  document.getElementById('metrica-mesa-top').textContent = todasLasMesas.length > 0 ? todasLasMesas[0].etiqueta : '—';
+  const topMesas = todasLasMesas.slice(0, 10);
   const listaMesas = document.getElementById('lista-mesas-metricas');
   listaMesas.innerHTML = topMesas.length === 0
     ? '<p class="texto-vacio">Sin ventas en este período</p>'
@@ -558,6 +569,7 @@ function renderMetricas(ventas, mapaMesas) {
     .map(([dia, d]) => ({ nombre: nombresDias[dia], promedio: d.total / d.fechas.size }))
     .sort((a, b) => b.promedio - a.promedio);
   const maxDiaSemana = diasOrdenados.length > 0 ? diasOrdenados[0].promedio : 0;
+  document.getElementById('metrica-dia-top').textContent = diasOrdenados.length > 0 ? diasOrdenados[0].nombre : '—';
   const listaDiaSemana = document.getElementById('lista-dia-semana-metricas');
   listaDiaSemana.innerHTML = diasOrdenados.length === 0
     ? '<p class="texto-vacio">Sin ventas en este período</p>'

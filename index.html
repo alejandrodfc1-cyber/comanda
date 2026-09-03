@@ -159,52 +159,69 @@
       <h3 class="titulo-form">Comparativa rápida</h3>
       <div class="comparativas-rapidas" id="comparativas-rapidas"></div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Resumen por período</h3>
-      <div class="categoria-tabs" id="tabs-periodo-metricas">
-        <button data-periodo="hoy" class="activa">Hoy</button>
-        <button data-periodo="semana">7 días</button>
-        <button data-periodo="mes">Este mes</button>
-        <button data-periodo="todo">Todo</button>
+      <div class="categoria-tabs titulo-seccion-nueva" id="tabs-vista-reportes">
+        <button data-vista="general" class="activa">General</button>
+        <button data-vista="detalle">Detalle</button>
       </div>
 
-      <div class="metricas-tarjetas">
-        <div class="metrica-tarjeta">
-          <span class="metrica-valor" id="metrica-total-vendido">$0</span>
-          <span class="metrica-etiqueta">Total vendido</span>
+      <div id="reportes-vista-general">
+        <h3 class="titulo-form">Resumen por período</h3>
+        <div class="categoria-tabs" id="tabs-periodo-metricas">
+          <button data-periodo="hoy" class="activa">Hoy</button>
+          <button data-periodo="semana">7 días</button>
+          <button data-periodo="mes">Este mes</button>
+          <button data-periodo="todo">Todo</button>
         </div>
-        <div class="metrica-tarjeta">
-          <span class="metrica-valor" id="metrica-n-ventas">0</span>
-          <span class="metrica-etiqueta">Ventas</span>
-        </div>
-        <div class="metrica-tarjeta">
-          <span class="metrica-valor" id="metrica-ticket-promedio">$0</span>
-          <span class="metrica-etiqueta">Ticket promedio</span>
-        </div>
-        <div class="metrica-tarjeta">
-          <span class="metrica-valor" id="metrica-ganancia">$0</span>
-          <span class="metrica-etiqueta">Ganancia estimada</span>
-        </div>
-        <div class="metrica-tarjeta">
-          <span class="metrica-valor" id="metrica-tiempo-mesa">—</span>
-          <span class="metrica-etiqueta">Tiempo promedio en mesa</span>
+
+        <div class="metricas-tarjetas">
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-total-vendido">$0</span>
+            <span class="metrica-etiqueta">Total vendido</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-n-ventas">0</span>
+            <span class="metrica-etiqueta">Ventas</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-ticket-promedio">$0</span>
+            <span class="metrica-etiqueta">Ticket promedio</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-ganancia">$0</span>
+            <span class="metrica-etiqueta">Ganancia estimada</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-tiempo-mesa">—</span>
+            <span class="metrica-etiqueta">Tiempo promedio en mesa</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-mesa-top">—</span>
+            <span class="metrica-etiqueta">Mesa más usada</span>
+          </div>
+          <div class="metrica-tarjeta">
+            <span class="metrica-valor" id="metrica-dia-top">—</span>
+            <span class="metrica-etiqueta">Mejor día</span>
+          </div>
         </div>
       </div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Mesas más usadas</h3>
-      <div id="lista-mesas-metricas"></div>
+      <div id="reportes-vista-detalle" class="oculto">
+        <h3 class="titulo-form">Mesas más usadas</h3>
+        <div id="lista-mesas-metricas"></div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Ventas por categoría</h3>
-      <div id="lista-categorias-metricas" class="con-espacio-fab"></div>
+        <h3 class="titulo-form titulo-seccion-nueva">Ventas por categoría</h3>
+        <div id="lista-categorias-metricas" class="con-espacio-fab"></div>
 
-      <h3 class="titulo-form titulo-seccion-nueva" id="titulo-grafico-dias">Ventas por día</h3>
-      <div id="grafico-ventas-dia" class="grafico-barras-dias"></div>
+        <h3 class="titulo-form titulo-seccion-nueva" id="titulo-grafico-dias">Ventas por día</h3>
+        <div id="grafico-ventas-dia" class="grafico-barras-dias"></div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Mejor día de la semana</h3>
-      <p class="texto-ayuda">Promedio de ventas por día, según el período elegido arriba</p>
-      <div id="lista-dia-semana-metricas" class="con-espacio-fab"></div>
+        <h3 class="titulo-form titulo-seccion-nueva">Mejor día de la semana</h3>
+        <p class="texto-ayuda">Promedio de ventas por día, según el período elegido en General</p>
+        <div id="lista-dia-semana-metricas" class="con-espacio-fab"></div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Productos más vendidos</h3>
-      <div id="lista-top-productos-metricas"></div>
+        <h3 class="titulo-form titulo-seccion-nueva">Productos más vendidos</h3>
+        <div id="lista-top-productos-metricas"></div>
+      </div>
     </div>
 
     <button class="fab-detalle oculto" id="btn-guardar-flotante" onclick="guardarDesdeFlotante()">💾 Guardar</button>
