@@ -77,12 +77,14 @@
       <button type="submit" class="btn btn-secundario">Guardar teléfono</button>
     </form>
 
-    <div class="categoria-tabs">
-      <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
-      <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
-      <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
-      <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
-      <button id="tab-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
+    <div class="tabs-fijas">
+      <div class="categoria-tabs" id="tabs-admin-secciones">
+        <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
+        <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
+        <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
+        <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
+        <button id="tab-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
+      </div>
     </div>
 
     <div id="seccion-admin-mesas">

@@ -163,6 +163,14 @@ main { padding: 20px; }
   scrollbar-width: none;
 }
 .categoria-tabs::-webkit-scrollbar { display: none; }
+.tabs-fijas {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  margin: 0 -20px;
+  padding: 8px 20px;
+}
 .categoria-tabs button {
   border: none;
   background: transparent;
