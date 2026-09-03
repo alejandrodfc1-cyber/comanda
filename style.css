@@ -404,6 +404,7 @@ main { padding: 20px; }
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
+.texto-ayuda { color: #999; font-size: .78rem; margin: 4px 0 12px; }
 
 .destacado-metricas {
   background: linear-gradient(135deg, #fff3e0, #ffe8d6);

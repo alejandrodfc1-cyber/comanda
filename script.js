@@ -505,12 +505,20 @@ function renderMetricas(ventas, mapaMesas) {
   const tallyProductos = {};
   const tallyCategorias = {};
   const tallyMesas = {};
+  const tallyDiaSemana = {};
 
   ventas.forEach(v => {
     const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
     if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
     tallyMesas[v.mesa_id].veces += 1;
     tallyMesas[v.mesa_id].monto += Number(v.total);
+
+    const fecha = new Date(v.creado_en);
+    const diaSemana = fecha.getDay();
+    const fechaStr = v.creado_en.slice(0, 10);
+    if (!tallyDiaSemana[diaSemana]) tallyDiaSemana[diaSemana] = { total: 0, fechas: new Set() };
+    tallyDiaSemana[diaSemana].total += Number(v.total);
+    tallyDiaSemana[diaSemana].fechas.add(fechaStr);
 
     (v.items || []).forEach(item => {
       const producto = mapaProductos[item.id];
@@ -543,6 +551,20 @@ function renderMetricas(ventas, mapaMesas) {
           <strong>${m.etiqueta}</strong>
           <span>${m.veces} ${m.veces === 1 ? 'vez' : 'veces'} · ${formatoMoneda(Math.round(m.monto))}</span>
         </div>
+      </div>`).join('');
+
+  const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const diasOrdenados = Object.entries(tallyDiaSemana)
+    .map(([dia, d]) => ({ nombre: nombresDias[dia], promedio: d.total / d.fechas.size }))
+    .sort((a, b) => b.promedio - a.promedio);
+  const maxDiaSemana = diasOrdenados.length > 0 ? diasOrdenados[0].promedio : 0;
+  const listaDiaSemana = document.getElementById('lista-dia-semana-metricas');
+  listaDiaSemana.innerHTML = diasOrdenados.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : diasOrdenados.map(d => `
+      <div class="barra-categoria">
+        <div class="barra-categoria-etiqueta"><span>${d.nombre}</span><span>${formatoMoneda(Math.round(d.promedio))}</span></div>
+        <div class="barra-categoria-fondo"><div class="barra-categoria-relleno" style="width:${maxDiaSemana ? (d.promedio / maxDiaSemana * 100) : 0}%"></div></div>
       </div>`).join('');
 
   const topProductos = Object.values(tallyProductos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
