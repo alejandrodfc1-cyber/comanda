@@ -408,38 +408,51 @@ main { padding: 20px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
 .comparativa-fila {
-  background: #f6f7f8;
+  background: #fff;
+  border: 1px solid #e5e5e5;
   border-radius: 10px;
   padding: 10px 12px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-.comparativa-etiqueta {
+.comparativa-titulo {
   display: block;
   font-size: .68rem;
   color: #888;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: .02em;
 }
-.comparativa-cuerpo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.comparativa-tabla {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  align-items: end;
 }
-.comparativa-valores {
+.comparativa-columna {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
 }
-.comparativa-valor-anterior { color: #888; font-size: .82rem; white-space: nowrap; }
-.comparativa-valor-actual { font-weight: 700; font-size: .98rem; color: #2c3e50; white-space: nowrap; }
-.comparativa-delta {
-  flex-shrink: 0;
+.comparativa-col-label {
+  font-size: .68rem;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comparativa-col-valor {
   font-weight: 700;
-  font-size: .82rem;
+  font-size: .95rem;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.comparativa-col-var { align-items: flex-end; }
+.comparativa-delta {
+  font-weight: 700;
+  font-size: .85rem;
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;

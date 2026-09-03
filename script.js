@@ -579,10 +579,12 @@ async function cargarComparativas() {
   const mesActual = sumaEntre(mesActualIni, null);
   const mesAnterior = sumaEntre(mesAnteriorIni, mesAnteriorFin);
 
+  const nombreMes = f => f.toLocaleDateString('es-CL', { month: 'long' }).replace(/^./, c => c.toUpperCase());
+
   renderComparativas([
-    { etiqueta: 'Hoy vs. ayer', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
-    { etiqueta: 'Esta semana vs. anterior', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
-    { etiqueta: 'Este mes vs. anterior (mismos días)', anteriorLabel: 'Mes anterior', anterior: mesAnterior, actualLabel: 'Este mes', actual: mesActual },
+    { titulo: 'Ventas: Ayer vs. Hoy', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
+    { titulo: 'Ventas: Semana anterior vs. Esta semana', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
+    { titulo: 'Ventas por mes (mismos días transcurridos)', anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
   ]);
 
   const ventasHoy = ventas.filter(v => new Date(v.creado_en) >= hoyIni);
@@ -602,16 +604,23 @@ function renderComparativas(filas) {
     const delta = f.anterior > 0 ? ((f.actual - f.anterior) / f.anterior * 100) : (f.actual > 0 ? 100 : 0);
     const sinCambio = sinDatos || delta === 0;
     const positivo = delta > 0;
-    const deltaTexto = sinCambio ? '— 0%' : `${positivo ? '▲' : '▼'} ${Math.abs(delta).toFixed(0)}%`;
+    const deltaTexto = sinCambio ? '—' : `${positivo ? '▲' : '▼'} ${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
     return `
       <div class="comparativa-fila">
-        <span class="comparativa-etiqueta">${f.etiqueta}</span>
-        <div class="comparativa-cuerpo">
-          <div class="comparativa-valores">
-            <span class="comparativa-valor-anterior">${f.anteriorLabel} ${formatoMoneda(Math.round(f.anterior))}</span>
-            <span class="comparativa-valor-actual">${f.actualLabel} ${formatoMoneda(Math.round(f.actual))}</span>
+        <span class="comparativa-titulo">${f.titulo}</span>
+        <div class="comparativa-tabla">
+          <div class="comparativa-columna">
+            <span class="comparativa-col-label">${f.anteriorLabel}</span>
+            <span class="comparativa-col-valor">${formatoMoneda(Math.round(f.anterior))}</span>
           </div>
-          <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
+          <div class="comparativa-columna">
+            <span class="comparativa-col-label">${f.actualLabel}</span>
+            <span class="comparativa-col-valor">${formatoMoneda(Math.round(f.actual))}</span>
+          </div>
+          <div class="comparativa-columna comparativa-col-var">
+            <span class="comparativa-col-label">Var%</span>
+            <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
+          </div>
         </div>
       </div>`;
   }).join('');
