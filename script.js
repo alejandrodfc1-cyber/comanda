@@ -440,7 +440,7 @@ function mostrarSeccionDashboard(seccion) {
   const fab = document.getElementById('btn-guardar-flotante');
   fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'metricas');
   if (seccion === 'top20') cargarTop20Admin();
-  if (seccion === 'metricas') cargarMetricas();
+  if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
 }
 
 function guardarDesdeFlotante() {
@@ -546,6 +546,73 @@ function renderMetricas(ventas) {
         <span class="barra-dia-etiqueta">${dia}/${mes}</span>
       </div>`;
       }).join('');
+}
+
+function inicioDia(fecha) {
+  return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+}
+
+async function cargarComparativas() {
+  const ahora = new Date();
+  const hoyIni = inicioDia(ahora);
+  const ayerIni = new Date(hoyIni); ayerIni.setDate(ayerIni.getDate() - 1);
+  const semanaActualIni = new Date(hoyIni); semanaActualIni.setDate(semanaActualIni.getDate() - 6);
+  const semanaAnteriorIni = new Date(hoyIni); semanaAnteriorIni.setDate(semanaAnteriorIni.getDate() - 13);
+  const mesActualIni = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  const diaDelMes = ahora.getDate();
+  const mesAnteriorIni = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+  const ultimoDiaMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0).getDate();
+  const mesAnteriorFin = new Date(ahora.getFullYear(), ahora.getMonth() - 1, Math.min(diaDelMes, ultimoDiaMesAnterior) + 1);
+
+  const desde = mesAnteriorIni < semanaAnteriorIni ? mesAnteriorIni : semanaAnteriorIni;
+  const { data } = await sb.from('ventas').select('items, total, creado_en').gte('creado_en', desde.toISOString());
+  const ventas = data || [];
+
+  const sumaEntre = (ini, fin) => ventas
+    .filter(v => { const t = new Date(v.creado_en); return t >= ini && (!fin || t < fin); })
+    .reduce((s, v) => s + Number(v.total), 0);
+
+  const hoy = sumaEntre(hoyIni, null);
+  const ayer = sumaEntre(ayerIni, hoyIni);
+  const semanaActual = sumaEntre(semanaActualIni, null);
+  const semanaAnterior = sumaEntre(semanaAnteriorIni, semanaActualIni);
+  const mesActual = sumaEntre(mesActualIni, null);
+  const mesAnterior = sumaEntre(mesAnteriorIni, mesAnteriorFin);
+
+  renderComparativas([
+    { etiqueta: 'Hoy vs. ayer', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
+    { etiqueta: 'Esta semana vs. anterior', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
+    { etiqueta: 'Este mes vs. anterior (mismos días)', anteriorLabel: 'Mes anterior', anterior: mesAnterior, actualLabel: 'Este mes', actual: mesActual },
+  ]);
+
+  const ventasHoy = ventas.filter(v => new Date(v.creado_en) >= hoyIni);
+  const tallyHoy = {};
+  ventasHoy.forEach(v => (v.items || []).forEach(it => { tallyHoy[it.nombre] = (tallyHoy[it.nombre] || 0) + it.cantidad; }));
+  const rankingHoy = Object.entries(tallyHoy).sort((a, b) => b[1] - a[1]);
+  const destacado = document.getElementById('destacado-producto-dia');
+  destacado.innerHTML = rankingHoy.length > 0
+    ? `<span class="destacado-icono">🔥</span> Más vendido hoy: <strong>${rankingHoy[0][0]}</strong> (${rankingHoy[0][1]} vendidos)`
+    : `<span class="destacado-icono">📋</span> Aún no hay ventas registradas hoy`;
+}
+
+function renderComparativas(filas) {
+  const cont = document.getElementById('comparativas-rapidas');
+  cont.innerHTML = filas.map(f => {
+    const sinDatos = f.anterior === 0 && f.actual === 0;
+    const delta = f.anterior > 0 ? ((f.actual - f.anterior) / f.anterior * 100) : (f.actual > 0 ? 100 : 0);
+    const sinCambio = sinDatos || delta === 0;
+    const positivo = delta > 0;
+    const deltaTexto = sinCambio ? '— 0%' : `${positivo ? '▲' : '▼'} ${Math.abs(delta).toFixed(0)}%`;
+    return `
+      <div class="comparativa-fila">
+        <span class="comparativa-etiqueta">${f.etiqueta}</span>
+        <div class="comparativa-cuerpo">
+          <span class="comparativa-valor-anterior">${f.anteriorLabel} ${formatoMoneda(Math.round(f.anterior))}</span>
+          <span class="comparativa-valor-actual">${f.actualLabel} ${formatoMoneda(Math.round(f.actual))}</span>
+          <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 let mesasAdminCache = [];

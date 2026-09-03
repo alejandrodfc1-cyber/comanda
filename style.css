@@ -397,6 +397,50 @@ main { padding: 20px; }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
 
+.destacado-metricas {
+  background: linear-gradient(135deg, #fff3e0, #ffe8d6);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .88rem;
+  margin-bottom: 14px;
+}
+.destacado-icono { margin-right: 4px; }
+
+.comparativas-rapidas { margin-bottom: 8px; }
+.comparativa-fila {
+  background: #f6f7f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.comparativa-etiqueta {
+  display: block;
+  font-size: .68rem;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.comparativa-cuerpo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.comparativa-valor-anterior { color: #888; font-size: .82rem; }
+.comparativa-valor-actual { font-weight: 700; font-size: .98rem; color: #2c3e50; }
+.comparativa-delta {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: .82rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.comparativa-delta.positivo { color: #1e7e34; background: #e6f4ea; }
+.comparativa-delta.negativo { color: #c0392b; background: #fdecea; }
+.comparativa-delta.neutro { color: #888; background: #eee; }
+
 .metricas-tarjetas {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
