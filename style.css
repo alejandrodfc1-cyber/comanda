@@ -349,12 +349,24 @@ main { padding: 20px; }
 }
 .titulo-colapsable {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
 }
-.icono-colapso { color: #999; font-size: .8rem; }
+.titulo-colapsable .titulo-texto { flex-shrink: 0; }
+.resumen-colapsado {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: .78rem;
+  font-weight: 400;
+  color: #888;
+}
+.icono-colapso { color: #999; font-size: .8rem; flex-shrink: 0; }
 .campo-form {
   display: flex;
   flex-direction: column;

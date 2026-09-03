@@ -505,6 +505,8 @@ function toggleColapso(contenidoId, tituloEl) {
   const contenido = document.getElementById(contenidoId);
   const colapsado = contenido.classList.toggle('oculto');
   tituloEl.querySelector('.icono-colapso').textContent = colapsado ? '▸' : '▾';
+  const resumen = tituloEl.querySelector('.resumen-colapsado');
+  if (resumen) resumen.classList.toggle('oculto', !colapsado);
 }
 
 function renderMetricas(ventas, mapaMesas) {
@@ -563,6 +565,9 @@ function renderMetricas(ventas, mapaMesas) {
 
   const todasLasMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces);
   document.getElementById('metrica-mesa-top').textContent = todasLasMesas.length > 0 ? todasLasMesas[0].etiqueta : '—';
+  document.getElementById('resumen-mesas-top').textContent = todasLasMesas.length > 0
+    ? `${todasLasMesas[0].etiqueta} · ${todasLasMesas[0].veces} ${todasLasMesas[0].veces === 1 ? 'vez' : 'veces'} · ${formatoMoneda(Math.round(todasLasMesas[0].monto))}`
+    : 'Sin ventas en este período';
   const topMesas = todasLasMesas.slice(0, 10);
   const listaMesas = document.getElementById('lista-mesas-metricas');
   listaMesas.innerHTML = topMesas.length === 0
@@ -609,6 +614,9 @@ function renderMetricas(ventas, mapaMesas) {
       </div>`).join('');
 
   const topProductos = Object.values(tallyProductos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
+  document.getElementById('resumen-productos-top').textContent = topProductos.length > 0
+    ? `${topProductos[0].nombre} · ${topProductos[0].cantidad} vendidos · ${formatoMoneda(Math.round(topProductos[0].monto))}`
+    : 'Sin ventas en este período';
   const listaTop = document.getElementById('lista-top-productos-metricas');
   listaTop.innerHTML = topProductos.length === 0
     ? '<p class="texto-vacio">Sin ventas en este período</p>'
