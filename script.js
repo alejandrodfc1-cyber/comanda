@@ -607,8 +607,10 @@ function renderComparativas(filas) {
       <div class="comparativa-fila">
         <span class="comparativa-etiqueta">${f.etiqueta}</span>
         <div class="comparativa-cuerpo">
-          <span class="comparativa-valor-anterior">${f.anteriorLabel} ${formatoMoneda(Math.round(f.anterior))}</span>
-          <span class="comparativa-valor-actual">${f.actualLabel} ${formatoMoneda(Math.round(f.actual))}</span>
+          <div class="comparativa-valores">
+            <span class="comparativa-valor-anterior">${f.anteriorLabel} ${formatoMoneda(Math.round(f.anterior))}</span>
+            <span class="comparativa-valor-actual">${f.actualLabel} ${formatoMoneda(Math.round(f.actual))}</span>
+          </div>
           <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
         </div>
       </div>`;
