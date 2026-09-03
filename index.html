@@ -72,11 +72,11 @@
 
     <div class="tabs-fijas">
       <div class="categoria-tabs" id="tabs-admin-secciones">
-        <button id="tab-admin-mesas" class="activa" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
-        <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
-        <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
+        <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
         <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
-        <button id="tab-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">Métricas</button>
+        <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
+        <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
+        <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
         <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
       </div>
     </div>
@@ -91,7 +91,7 @@
       </form>
     </div>
 
-    <div id="seccion-admin-mesas">
+    <div id="seccion-admin-mesas" class="oculto">
       <form id="form-nueva-mesa" class="form-admin">
         <h3 class="titulo-form" id="titulo-form-mesa">Nueva mesa</h3>
         <label class="campo-form">Nombre de la mesa
@@ -153,7 +153,7 @@
       <div id="lista-top20-disponibles" class="con-espacio-fab"></div>
     </div>
 
-    <div id="seccion-admin-metricas" class="oculto">
+    <div id="seccion-admin-metricas">
       <div class="destacado-metricas" id="destacado-producto-dia"></div>
 
       <h3 class="titulo-form">Comparativa rápida</h3>

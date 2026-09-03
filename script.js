@@ -416,7 +416,7 @@ function imprimirConRawBT() {
 
 function abrirDashboard() {
   document.getElementById('modal-dashboard').classList.remove('oculto');
-  mostrarSeccionDashboard('mesas');
+  mostrarSeccionDashboard('metricas');
   cancelarEdicionMesa();
   cancelarEdicionProducto();
   cargarMesasAdmin();
