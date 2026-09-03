@@ -347,6 +347,14 @@ main { padding: 20px; }
   padding-top: 24px;
   border-top: 1px solid #eee;
 }
+.titulo-colapsable {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.icono-colapso { color: #999; font-size: .8rem; }
 .campo-form {
   display: flex;
   flex-direction: column;

@@ -501,6 +501,12 @@ async function cargarMetricas() {
   renderMetricas(data || [], mapaMesas);
 }
 
+function toggleColapso(contenidoId, tituloEl) {
+  const contenido = document.getElementById(contenidoId);
+  const colapsado = contenido.classList.toggle('oculto');
+  tituloEl.querySelector('.icono-colapso').textContent = colapsado ? '▸' : '▾';
+}
+
 function renderMetricas(ventas, mapaMesas) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;

@@ -224,11 +224,15 @@
         <p class="texto-ayuda">Promedio de ventas por día, según el período elegido en General</p>
         <div id="lista-dia-semana-metricas" class="con-espacio-fab"></div>
 
-        <h3 class="titulo-form titulo-seccion-nueva">Mesas más usadas</h3>
-        <div id="lista-mesas-metricas"></div>
+        <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('lista-mesas-metricas', this)">
+          Mesas más usadas <span class="icono-colapso">▸</span>
+        </h3>
+        <div id="lista-mesas-metricas" class="oculto"></div>
 
-        <h3 class="titulo-form titulo-seccion-nueva">Productos más vendidos</h3>
-        <div id="lista-top-productos-metricas"></div>
+        <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('lista-top-productos-metricas', this)">
+          Productos más vendidos <span class="icono-colapso">▸</span>
+        </h3>
+        <div id="lista-top-productos-metricas" class="oculto"></div>
       </div>
     </div>
 
