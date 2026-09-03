@@ -26,6 +26,7 @@
 <main id="vista-mesas" class="oculto">
   <div class="barra-superior">
     <button class="btn-icono-dashboard" onclick="abrirDashboard()" title="Panel de administración">⚙️</button>
+    <button class="btn btn-turno" id="btn-turno" onclick="toggleTurno()" title="Tocar para cambiar de turno">Turno 1</button>
     <button class="btn btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
   </div>
   <div id="grid-mesas"></div>
@@ -171,6 +172,13 @@
           <button data-periodo="semana">7 días</button>
           <button data-periodo="mes">Este mes</button>
           <button data-periodo="todo">Todo</button>
+        </div>
+
+        <p class="texto-ayuda">Turno de caja</p>
+        <div class="categoria-tabs" id="tabs-turno-metricas">
+          <button data-turno="ambos" class="activa">Ambos (consolidado)</button>
+          <button data-turno="1">Turno 1</button>
+          <button data-turno="2">Turno 2</button>
         </div>
 
         <div class="metricas-tarjetas">

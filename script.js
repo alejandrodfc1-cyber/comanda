@@ -3,12 +3,26 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const NEGOCIO_NOMBRE = 'La Españita';
 const NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
 let negocioTelefono = '';
+let turnoActivo = '1';
 
 async function cargarConfiguracion() {
-  const { data } = await sb.from('configuracion').select('valor').eq('clave', 'telefono').single();
-  negocioTelefono = data?.valor || '';
+  const { data } = await sb.from('configuracion').select('clave, valor').in('clave', ['telefono', 'turno_activo']);
+  negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
+  turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   const input = document.getElementById('config-telefono');
   if (input) input.value = negocioTelefono;
+  actualizarBotonTurno();
+}
+
+function actualizarBotonTurno() {
+  const boton = document.getElementById('btn-turno');
+  if (boton) boton.textContent = `Turno ${turnoActivo}`;
+}
+
+async function toggleTurno() {
+  turnoActivo = turnoActivo === '1' ? '2' : '1';
+  actualizarBotonTurno();
+  await sb.from('configuracion').update({ valor: turnoActivo }).eq('clave', 'turno_activo');
 }
 
 document.getElementById('form-telefono-negocio').addEventListener('submit', async (e) => {
@@ -323,7 +337,7 @@ async function cerrarMesa() {
     : null;
 
   const { data: venta } = await sb.from('ventas').insert({
-    mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos
+    mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo)
   }).select().single();
 
   mostrarRecibo(mesa, venta?.id);
@@ -463,11 +477,20 @@ function guardarDesdeFlotante() {
 }
 
 let periodoMetricas = 'hoy';
+let turnoFiltro = 'ambos';
 
 document.querySelectorAll('#tabs-periodo-metricas button').forEach(btn => {
   btn.onclick = () => {
     periodoMetricas = btn.dataset.periodo;
     document.querySelectorAll('#tabs-periodo-metricas button').forEach(b => b.classList.toggle('activa', b === btn));
+    cargarMetricas();
+  };
+});
+
+document.querySelectorAll('#tabs-turno-metricas button').forEach(btn => {
+  btn.onclick = () => {
+    turnoFiltro = btn.dataset.turno;
+    document.querySelectorAll('#tabs-turno-metricas button').forEach(b => b.classList.toggle('activa', b === btn));
     cargarMetricas();
   };
 });
@@ -493,6 +516,7 @@ async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
   let query = sb.from('ventas').select('mesa_id, items, total, creado_en, duracion_minutos').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
+  if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
     query,
     sb.from('mesas').select('id, nombre'),

@@ -326,6 +326,7 @@ main { padding: 20px; }
 }
 .btn-secundario { background: #7f8c8d; }
 .btn-peligro { background: #c0392b; }
+.btn-turno { background: #8e44ad; font-weight: 600; }
 
 .form-admin {
   display: flex;
