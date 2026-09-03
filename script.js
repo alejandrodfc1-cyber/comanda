@@ -582,9 +582,9 @@ async function cargarComparativas() {
   const nombreMes = f => f.toLocaleDateString('es-CL', { month: 'long' }).replace(/^./, c => c.toUpperCase());
 
   renderComparativas([
-    { titulo: 'Ventas: Ayer vs. Hoy', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
-    { titulo: 'Ventas: Semana anterior vs. Esta semana', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
-    { titulo: 'Ventas por mes (mismos días transcurridos)', anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
+    { titulo: 'Ayer vs. Hoy', anterior: ayer, actual: hoy },
+    { titulo: 'Semana anterior vs. Esta semana', anterior: semanaAnterior, actual: semanaActual },
+    { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anterior: mesAnterior, actual: mesActual },
   ]);
 
   const ventasHoy = ventas.filter(v => new Date(v.creado_en) >= hoyIni);
@@ -597,6 +597,18 @@ async function cargarComparativas() {
     : `<span class="destacado-icono">📋</span> Aún no hay ventas registradas hoy`;
 }
 
+function svgTendencia(positivo, sinCambio) {
+  const color = sinCambio ? '#bbb' : (positivo ? '#1e7e34' : '#c0392b');
+  const yInicio = sinCambio ? 16 : (positivo ? 24 : 8);
+  const yFin = sinCambio ? 16 : (positivo ? 8 : 24);
+  return `
+    <svg class="comparativa-arco" width="40" height="32" viewBox="0 0 40 32">
+      <path d="M4 ${yInicio} C 14 ${yInicio}, 24 ${yFin}, 36 ${yFin}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="4" cy="${yInicio}" r="2.5" fill="#bbb"/>
+      <circle cx="36" cy="${yFin}" r="3" fill="${color}"/>
+    </svg>`;
+}
+
 function renderComparativas(filas) {
   const cont = document.getElementById('comparativas-rapidas');
   cont.innerHTML = filas.map(f => {
@@ -607,21 +619,13 @@ function renderComparativas(filas) {
     const deltaTexto = sinCambio ? '—' : `${positivo ? '▲' : '▼'} ${Math.abs(delta).toFixed(1).replace('.', ',')}%`;
     return `
       <div class="comparativa-fila">
-        <span class="comparativa-titulo">${f.titulo}</span>
-        <div class="comparativa-tabla">
-          <div class="comparativa-columna">
-            <span class="comparativa-col-label">${f.anteriorLabel}</span>
-            <span class="comparativa-col-valor">${formatoMoneda(Math.round(f.anterior))}</span>
-          </div>
-          <div class="comparativa-columna">
-            <span class="comparativa-col-label">${f.actualLabel}</span>
-            <span class="comparativa-col-valor">${formatoMoneda(Math.round(f.actual))}</span>
-          </div>
-          <div class="comparativa-columna comparativa-col-var">
-            <span class="comparativa-col-label">Var%</span>
-            <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
-          </div>
+        ${svgTendencia(positivo, sinCambio)}
+        <div class="comparativa-cuerpo">
+          <span class="comparativa-titulo">${f.titulo}</span>
+          <span class="comparativa-valor-actual">${formatoMoneda(Math.round(f.actual))}</span>
+          <span class="comparativa-valor-anterior">antes ${formatoMoneda(Math.round(f.anterior))}</span>
         </div>
+        <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
       </div>`;
   }).join('');
 }

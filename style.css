@@ -411,49 +411,37 @@ main { padding: 20px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
 .comparativa-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
   padding: 10px 12px;
   margin-bottom: 10px;
 }
+.comparativa-arco { flex-shrink: 0; }
+.comparativa-cuerpo { flex: 1; min-width: 0; }
 .comparativa-titulo {
   display: block;
-  font-size: .68rem;
+  font-size: .7rem;
   color: #888;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: .02em;
+  margin-bottom: 3px;
 }
-.comparativa-tabla {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 6px;
-  align-items: end;
-}
-.comparativa-columna {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-.comparativa-col-label {
-  font-size: .68rem;
-  color: #888;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.comparativa-col-valor {
+.comparativa-valor-actual {
+  display: block;
   font-weight: 700;
   font-size: .95rem;
   color: #2c3e50;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.comparativa-col-var { align-items: flex-end; }
+.comparativa-valor-anterior {
+  display: block;
+  font-size: .72rem;
+  color: #999;
+  margin-top: 1px;
+}
 .comparativa-delta {
+  flex-shrink: 0;
   font-weight: 700;
   font-size: .85rem;
   padding: 3px 9px;
