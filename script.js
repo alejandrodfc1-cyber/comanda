@@ -505,8 +505,6 @@ function toggleColapso(contenidoId, tituloEl) {
   const contenido = document.getElementById(contenidoId);
   const colapsado = contenido.classList.toggle('oculto');
   tituloEl.querySelector('.icono-colapso').textContent = colapsado ? '▸' : '▾';
-  const resumen = tituloEl.querySelector('.resumen-colapsado');
-  if (resumen) resumen.classList.toggle('oculto', !colapsado);
 }
 
 function renderMetricas(ventas, mapaMesas) {

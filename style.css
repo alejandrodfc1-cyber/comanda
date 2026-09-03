@@ -347,21 +347,19 @@ main { padding: 20px; }
   padding-top: 24px;
   border-top: 1px solid #eee;
 }
-.titulo-colapsable {
+.titulo-colapsable { cursor: pointer; user-select: none; }
+.titulo-fila {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  cursor: pointer;
-  user-select: none;
 }
-.titulo-colapsable .titulo-texto { flex-shrink: 0; }
 .resumen-colapsado {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  margin-top: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: right;
   font-size: .78rem;
   font-weight: 400;
   color: #888;
