@@ -482,13 +482,17 @@ function inicioPeriodo(periodo) {
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('items, total, creado_en, duracion_minutos').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('mesa_id, items, total, creado_en, duracion_minutos').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
-  const { data } = await query;
-  renderMetricas(data || []);
+  const [{ data }, { data: mesasData }] = await Promise.all([
+    query,
+    sb.from('mesas').select('id, nombre'),
+  ]);
+  const mapaMesas = Object.fromEntries((mesasData || []).map(m => [m.id, m.nombre || `Mesa ${m.id}`]));
+  renderMetricas(data || [], mapaMesas);
 }
 
-function renderMetricas(ventas) {
+function renderMetricas(ventas, mapaMesas) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
   const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
@@ -500,8 +504,14 @@ function renderMetricas(ventas) {
   let ganancia = 0;
   const tallyProductos = {};
   const tallyCategorias = {};
+  const tallyMesas = {};
 
   ventas.forEach(v => {
+    const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
+    if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
+    tallyMesas[v.mesa_id].veces += 1;
+    tallyMesas[v.mesa_id].monto += Number(v.total);
+
     (v.items || []).forEach(item => {
       const producto = mapaProductos[item.id];
       const costo = producto ? Number(producto.costo || 0) : 0;
@@ -521,6 +531,19 @@ function renderMetricas(ventas) {
   document.getElementById('metrica-ticket-promedio').textContent = formatoMoneda(Math.round(ticketPromedio));
   document.getElementById('metrica-ganancia').textContent = formatoMoneda(Math.round(ganancia));
   document.getElementById('metrica-tiempo-mesa').textContent = formatoDuracion(duracionPromedio);
+
+  const topMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces).slice(0, 10);
+  const listaMesas = document.getElementById('lista-mesas-metricas');
+  listaMesas.innerHTML = topMesas.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : topMesas.map((m, i) => `
+      <div class="fila-admin">
+        <span class="miniatura">${i + 1}</span>
+        <div class="info-admin">
+          <strong>${m.etiqueta}</strong>
+          <span>${m.veces} ${m.veces === 1 ? 'vez' : 'veces'} · ${formatoMoneda(Math.round(m.monto))}</span>
+        </div>
+      </div>`).join('');
 
   const topProductos = Object.values(tallyProductos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
   const listaTop = document.getElementById('lista-top-productos-metricas');
