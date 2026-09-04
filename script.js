@@ -912,6 +912,38 @@ function cancelarEdicionProducto() {
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
 }
 
+// Encuentra el grupo de pixeles "contenido" conectados entre si mas grande dentro
+// de la mascara, y devuelve su recuadro. Usa una pila en vez de recursion para
+// no desbordar el stack con fotos grandes.
+function componenteMasGrande(mascara, w, h) {
+  const visitado = new Uint8Array(w * h);
+  let mejorTam = 0;
+  let mejor = null;
+  const pila = [];
+  for (let inicio = 0; inicio < mascara.length; inicio++) {
+    if (!mascara[inicio] || visitado[inicio]) continue;
+    let minX = w, maxX = -1, minY = h, maxY = -1, tam = 0;
+    pila.length = 0;
+    pila.push(inicio);
+    visitado[inicio] = 1;
+    while (pila.length) {
+      const idx = pila.pop();
+      const x = idx % w, y = (idx / w) | 0;
+      tam++;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      if (x > 0 && mascara[idx - 1] && !visitado[idx - 1]) { visitado[idx - 1] = 1; pila.push(idx - 1); }
+      if (x < w - 1 && mascara[idx + 1] && !visitado[idx + 1]) { visitado[idx + 1] = 1; pila.push(idx + 1); }
+      if (y > 0 && mascara[idx - w] && !visitado[idx - w]) { visitado[idx - w] = 1; pila.push(idx - w); }
+      if (y < h - 1 && mascara[idx + w] && !visitado[idx + w]) { visitado[idx + w] = 1; pila.push(idx + w); }
+    }
+    if (tam > mejorTam) { mejorTam = tam; mejor = { minX, maxX, minY, maxY }; }
+  }
+  return mejor;
+}
+
 // Recorta la foto al contenido real (ignorando fondo blanco/transparente) y la centra
 // en un lienzo de proporcion 1.25 con relleno parejo, para que todas las fotos del
 // menu se vean con el mismo tamano relativo sin importar el encuadre original.
@@ -930,25 +962,25 @@ async function ajustarFotoProducto(archivo) {
     const esTransparente = alphaProm < 200;
     const refR = data[0], refG = data[1], refB = data[2];
 
-    let minX = w, maxX = -1, minY = h, maxY = -1;
     const umbralAlpha = 20;
     const umbralColor = 22;
+    const mascara = new Uint8Array(w * h);
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i = (y * w + x) * 4;
         const esContenido = esTransparente
           ? data[i + 3] > umbralAlpha
           : (Math.abs(data[i] - refR) + Math.abs(data[i + 1] - refG) + Math.abs(data[i + 2] - refB)) > umbralColor;
-        if (esContenido) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
+        if (esContenido) mascara[y * w + x] = 1;
       }
     }
 
-    if (maxX < 0) return archivo;
+    // Se queda solo con el grupo de pixeles conectados mas grande, para ignorar
+    // elementos sueltos y chicos (marcas de agua, insignias, manchas) que no son
+    // el producto en si.
+    const bbox = componenteMasGrande(mascara, w, h);
+    if (!bbox) return archivo;
+    const { minX, maxX, minY, maxY } = bbox;
 
     const bboxW = maxX - minX + 1;
     const bboxH = maxY - minY + 1;
