@@ -984,8 +984,12 @@ async function ajustarFotoProducto(archivo) {
 
     const bboxW = maxX - minX + 1;
     const bboxH = maxY - minY + 1;
-    const finalH = Math.round(bboxH * 1.16);
-    const finalW = Math.round(finalH * 1.25);
+    const RATIO_OBJETIVO = 1.25;
+    const RELLENO_MIN = 0.86; // el producto ocupa como maximo ~86% de cada lado, dejando margen
+    // Calcula el lienzo final segun el lado que necesite mas espacio (alto o ancho),
+    // para que funcione igual de bien con productos angostos (botellas) y anchos (sanguches).
+    const finalH = Math.round(Math.max(bboxH / RELLENO_MIN, bboxW / (RELLENO_MIN * RATIO_OBJETIVO)));
+    const finalW = Math.round(finalH * RATIO_OBJETIVO);
 
     const outCanvas = document.createElement('canvas');
     outCanvas.width = finalW; outCanvas.height = finalH;
