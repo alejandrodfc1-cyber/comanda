@@ -904,6 +904,7 @@ function editarProducto(id) {
 function cancelarEdicionProducto() {
   productoEditandoId = null;
   productoEditandoFotoUrl = null;
+  archivoFotoAjustado = null;
   document.getElementById('form-nuevo-producto').reset();
   document.getElementById('titulo-form-producto').textContent = 'Nuevo producto';
   document.getElementById('btn-guardar-producto').textContent = '+ Agregar producto';
@@ -911,16 +912,85 @@ function cancelarEdicionProducto() {
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
 }
 
+// Recorta la foto al contenido real (ignorando fondo blanco/transparente) y la centra
+// en un lienzo de proporcion 1.25 con relleno parejo, para que todas las fotos del
+// menu se vean con el mismo tamano relativo sin importar el encuadre original.
+async function ajustarFotoProducto(archivo) {
+  try {
+    const bitmap = await createImageBitmap(archivo);
+    const w = bitmap.width, h = bitmap.height;
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = w; srcCanvas.height = h;
+    const srcCtx = srcCanvas.getContext('2d');
+    srcCtx.drawImage(bitmap, 0, 0);
+    const { data } = srcCtx.getImageData(0, 0, w, h);
+
+    const esquinas = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + (w - 1)) * 4];
+    const alphaProm = esquinas.reduce((s, i) => s + data[i + 3], 0) / 4;
+    const esTransparente = alphaProm < 200;
+    const refR = data[0], refG = data[1], refB = data[2];
+
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    const umbralAlpha = 20;
+    const umbralColor = 22;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const esContenido = esTransparente
+          ? data[i + 3] > umbralAlpha
+          : (Math.abs(data[i] - refR) + Math.abs(data[i + 1] - refG) + Math.abs(data[i + 2] - refB)) > umbralColor;
+        if (esContenido) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < 0) return archivo;
+
+    const bboxW = maxX - minX + 1;
+    const bboxH = maxY - minY + 1;
+    const finalH = Math.round(bboxH * 1.16);
+    const finalW = Math.round(finalH * 1.25);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = finalW; outCanvas.height = finalH;
+    const outCtx = outCanvas.getContext('2d');
+    if (!esTransparente) {
+      outCtx.fillStyle = `rgb(${refR},${refG},${refB})`;
+      outCtx.fillRect(0, 0, finalW, finalH);
+    }
+    const destX = Math.round((finalW - bboxW) / 2);
+    const destY = Math.round((finalH - bboxH) / 2);
+    outCtx.drawImage(srcCanvas, minX, minY, bboxW, bboxH, destX, destY, bboxW, bboxH);
+
+    const tipoSalida = esTransparente ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(res => outCanvas.toBlob(res, tipoSalida, 0.9));
+    if (!blob) return archivo;
+    const nombreBase = archivo.name.replace(/\.[^.]+$/, '');
+    return new File([blob], `${nombreBase}.${esTransparente ? 'png' : 'jpg'}`, { type: tipoSalida });
+  } catch (err) {
+    console.error('No se pudo ajustar la foto automaticamente, se sube tal cual:', err);
+    return archivo;
+  }
+}
+
 function poblarSelectCategorias() {
   const select = document.getElementById('nuevo-producto-categoria');
   select.innerHTML = categoriasDb.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
 }
 
-document.getElementById('nuevo-producto-foto').addEventListener('change', (e) => {
+let archivoFotoAjustado = null;
+
+document.getElementById('nuevo-producto-foto').addEventListener('change', async (e) => {
   const archivo = e.target.files[0];
+  archivoFotoAjustado = null;
   if (!archivo) return;
   const previewWrap = document.getElementById('preview-foto-producto-wrap');
-  document.getElementById('preview-foto-producto').src = URL.createObjectURL(archivo);
+  archivoFotoAjustado = await ajustarFotoProducto(archivo);
+  document.getElementById('preview-foto-producto').src = URL.createObjectURL(archivoFotoAjustado);
   previewWrap.classList.remove('oculto');
 });
 
@@ -935,8 +1005,9 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
 
   let fotoUrl = productoEditandoId ? productoEditandoFotoUrl : null;
   if (archivoFoto) {
-    const ruta = `${Date.now()}-${archivoFoto.name}`;
-    const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoFoto);
+    const archivoParaSubir = archivoFotoAjustado || archivoFoto;
+    const ruta = `${Date.now()}-${archivoParaSubir.name}`;
+    const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoParaSubir);
     if (!errorSubida) {
       fotoUrl = sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
     }
