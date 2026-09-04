@@ -125,6 +125,23 @@ main { padding: 20px; }
   border: none; background: none; font-size: 1.3rem; cursor: pointer;
 }
 
+#modal-menu .modal-caja { padding-top: 10px; }
+#modal-menu .modal-header {
+  position: relative;
+  margin-bottom: 6px;
+}
+#modal-menu .modal-header h2 {
+  width: 100%;
+  text-align: center;
+}
+#modal-menu .btn-cerrar {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+#tabs-menu { margin-bottom: 10px; }
+
 .fab-detalle {
   position: fixed;
   bottom: 24px;
