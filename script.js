@@ -587,6 +587,9 @@ function renderMetricas(ventas, mapaMesas) {
 
   const todasLasMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces);
   document.getElementById('metrica-mesa-top').textContent = todasLasMesas.length > 0 ? todasLasMesas[0].etiqueta : '—';
+  document.getElementById('metrica-mesa-top-monto').textContent = todasLasMesas.length > 0
+    ? `${formatoMoneda(Math.round(todasLasMesas[0].monto))} acum.`
+    : '';
   document.getElementById('resumen-mesas-top').textContent = todasLasMesas.length > 0
     ? `${todasLasMesas[0].etiqueta} · ${todasLasMesas[0].veces} ${todasLasMesas[0].veces === 1 ? 'vez' : 'veces'} · ${formatoMoneda(Math.round(todasLasMesas[0].monto))}`
     : 'Sin ventas en este período';
@@ -626,6 +629,9 @@ function renderMetricas(ventas, mapaMesas) {
     .sort((a, b) => b.promedio - a.promedio);
   const maxDiaSemana = diasOrdenados.length > 0 ? diasOrdenados[0].promedio : 0;
   document.getElementById('metrica-dia-top').textContent = diasOrdenados.length > 0 ? diasOrdenados[0].nombre : '—';
+  document.getElementById('metrica-dia-top-monto').textContent = diasOrdenados.length > 0
+    ? `${formatoMoneda(Math.round(diasOrdenados[0].promedio))} prom.`
+    : '';
   const listaDiaSemana = document.getElementById('lista-dia-semana-metricas');
   listaDiaSemana.innerHTML = diasOrdenados.length === 0
     ? '<p class="texto-vacio">Sin ventas en este período</p>'
