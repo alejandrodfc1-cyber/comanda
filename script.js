@@ -995,7 +995,12 @@ async function ajustarFotoProducto(archivo) {
     outCanvas.width = finalW; outCanvas.height = finalH;
     const outCtx = outCanvas.getContext('2d');
     if (!esTransparente) {
-      outCtx.fillStyle = `rgb(${refR},${refG},${refB})`;
+      // Si el fondo detectado se aleja bastante del blanco puro, se usa blanco puro
+      // igual (el mismo que el fondo de las tarjetas del menu), para que todas las
+      // fotos se vean sobre el mismo tono en vez de cada una con su propio matiz.
+      const desvioDeBlanco = Math.abs(refR - 255) + Math.abs(refG - 255) + Math.abs(refB - 255);
+      const colorRelleno = desvioDeBlanco < 30 ? [refR, refG, refB] : [255, 255, 255];
+      outCtx.fillStyle = `rgb(${colorRelleno[0]},${colorRelleno[1]},${colorRelleno[2]})`;
       outCtx.fillRect(0, 0, finalW, finalH);
     }
     const destX = Math.round((finalW - bboxW) / 2);
