@@ -2,24 +2,54 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let NEGOCIO_NOMBRE = 'La Españita';
 let NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
+let NOMBRE_APP = 'La Españita';
 let negocioTelefono = '';
 let turnoActivo = '1';
 
 async function cargarConfiguracion() {
   const { data } = await sb.from('configuracion').select('clave, valor')
-    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio']);
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app']);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
   NEGOCIO_DIRECCION = data?.find(d => d.clave === 'direccion_negocio')?.valor || NEGOCIO_DIRECCION;
+  NOMBRE_APP = data?.find(d => d.clave === 'nombre_app')?.valor || NOMBRE_APP;
   const input = document.getElementById('config-telefono');
   if (input) input.value = negocioTelefono;
   const inputNombre = document.getElementById('config-nombre-negocio');
   if (inputNombre) inputNombre.value = NEGOCIO_NOMBRE;
   const inputDireccion = document.getElementById('config-direccion-negocio');
   if (inputDireccion) inputDireccion.value = NEGOCIO_DIRECCION;
+  const inputNombreApp = document.getElementById('config-nombre-app');
+  if (inputNombreApp) inputNombreApp.value = NOMBRE_APP;
+  aplicarNombreApp();
   actualizarBotonTurno();
 }
+
+function aplicarNombreApp() {
+  const tituloApp = document.getElementById('titulo-app-nombre');
+  if (tituloApp) tituloApp.textContent = NOMBRE_APP;
+  const subtituloAdmin = document.getElementById('subtitulo-admin-nombre');
+  if (subtituloAdmin) subtituloAdmin.textContent = NOMBRE_APP;
+}
+
+document.getElementById('form-nombre-app').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('config-nombre-app').value.trim() || NOMBRE_APP;
+  const { error } = await sb.from('configuracion').upsert({ clave: 'nombre_app', valor: nombre }, { onConflict: 'clave' });
+  const mensaje = document.getElementById('config-nombre-app-msg');
+  if (error) {
+    mensaje.textContent = '✕ No se pudo guardar: ' + error.message;
+    mensaje.classList.add('mensaje-error');
+    mensaje.classList.remove('oculto');
+    return;
+  }
+  NOMBRE_APP = nombre;
+  aplicarNombreApp();
+  mensaje.textContent = '✓ Guardado';
+  mensaje.classList.remove('mensaje-error', 'oculto');
+  setTimeout(() => mensaje.classList.add('oculto'), 2500);
+});
 
 function actualizarBotonTurno() {
   const boton = document.getElementById('btn-turno');

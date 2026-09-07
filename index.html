@@ -10,7 +10,7 @@
 
 <div class="topbar-fija">
   <header>
-    <h1>🍽️ La Españita</h1>
+    <h1>🍽️ <span id="titulo-app-nombre">La Españita</span></h1>
   </header>
   <div class="barra-superior oculto" id="barra-superior">
     <button class="btn-icono-dashboard" onclick="abrirDashboard()" title="Panel de administración">
@@ -76,7 +76,7 @@
       <div class="modal-header">
         <div class="titulo-admin">
           <h2>⚙️ Administración</h2>
-          <small>La Españita</small>
+          <small id="subtitulo-admin-nombre">La Españita</small>
         </div>
         <button class="btn-cerrar" onclick="cerrarDashboard()">✕ Cerrar</button>
       </div>
@@ -109,6 +109,17 @@
         <div class="fila-botones-form">
           <button type="submit" class="btn btn-secundario">Guardar datos</button>
           <span id="config-guardado-msg" class="mensaje-guardado oculto">✓ Guardado</span>
+        </div>
+      </form>
+
+      <form id="form-nombre-app" class="form-admin">
+        <h3 class="titulo-form">Nombre que se muestra en la app (mesas y administración)</h3>
+        <label class="campo-form">Nombre a mostrar
+          <input type="text" id="config-nombre-app" placeholder="La Españita">
+        </label>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn btn-secundario">Guardar nombre</button>
+          <span id="config-nombre-app-msg" class="mensaje-guardado oculto">✓ Guardado</span>
         </div>
       </form>
     </div>
