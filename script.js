@@ -978,10 +978,8 @@ document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) 
   if (mesaEditandoId) {
     await sb.from('mesas').update({ nombre }).eq('id', mesaEditandoId);
   } else {
-    const { data } = await sb.from('mesas').select('id').order('id', { ascending: false }).limit(1);
-    const siguienteId = data && data.length > 0 ? data[0].id + 1 : 1;
     const siguienteOrden = Math.max(0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
-    await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [], orden: siguienteOrden });
+    await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden });
   }
   cancelarEdicionMesa();
   cargarMesas();
