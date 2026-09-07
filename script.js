@@ -947,8 +947,22 @@ function filaProductoAdminHtml(p) {
     <div class="acciones-fila-admin">
       <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
       <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
+      <button class="btn-toggle-visible" onclick="eliminarProducto(${p.id})">🗑️</button>
     </div>`;
   return fila;
+}
+
+async function eliminarProducto(id) {
+  const p = productosAdminCache.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`¿Eliminar definitivamente "${p.nombre}"?\n\nEsta acción no se puede deshacer. Las ventas ya registradas conservan su historial igual, pero el producto dejará de existir en el catálogo (Top20, Orden Menú, etc).`)) return;
+  const { error } = await sb.from('productos').delete().eq('id', id);
+  if (error) {
+    alert('No se pudo eliminar: ' + error.message);
+    return;
+  }
+  await cargarProductosAdmin();
+  cargarCategoriasYProductos();
 }
 
 function renderProductosAdmin(lista) {
