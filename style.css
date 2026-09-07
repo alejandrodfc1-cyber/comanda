@@ -323,6 +323,10 @@ main { padding: 20px; }
   background: #2c3e50;
   color: #fff;
 }
+#tabs-admin-secciones button.activa {
+  background: #27ae60;
+  color: #fff;
+}
 #tabs-turno-metricas button.activa,
 #tabs-vista-reportes button.activa,
 #tabs-periodo-metricas button.activa {
@@ -546,7 +550,7 @@ main { padding: 20px; }
   transform: rotate(-90deg);
   transition: transform .3s ease;
 }
-.titulo-colapsable.expandido .icono-colapso { transform: rotate(0deg); background: #e67e22; }
+.titulo-colapsable.expandido .icono-colapso { transform: rotate(0deg); background: #27ae60; }
 .campo-form {
   display: flex;
   flex-direction: column;
