@@ -563,12 +563,22 @@ document.querySelectorAll('#tabs-turno-metricas button').forEach(btn => {
   };
 });
 
+function reubicarBloquePeriodo(vista) {
+  const bloque = document.getElementById('bloque-periodo');
+  if (vista === 'detalle') {
+    document.getElementById('anchor-periodo-top').insertAdjacentElement('afterend', bloque);
+  } else {
+    document.getElementById('comparativas-rapidas').insertAdjacentElement('afterend', bloque);
+  }
+}
+
 document.querySelectorAll('#tabs-vista-reportes button').forEach(btn => {
   btn.onclick = () => {
     const vista = btn.dataset.vista;
     document.querySelectorAll('#tabs-vista-reportes button').forEach(b => b.classList.toggle('activa', b === btn));
     document.getElementById('reportes-vista-general').classList.toggle('oculto', vista !== 'general');
     document.getElementById('reportes-vista-detalle').classList.toggle('oculto', vista !== 'detalle');
+    reubicarBloquePeriodo(vista);
     document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
   };
 });
