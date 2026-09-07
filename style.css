@@ -644,6 +644,7 @@ main { padding: 20px; }
 .destacado-icono { margin-right: 4px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
+#bloque-periodo { margin-top: 24px; }
 .comparativa-fila {
   background: #fff;
   border: 1px solid #e5e5e5;
