@@ -470,6 +470,14 @@ main { padding: 20px; }
   font-size: .9rem;
 }
 .titulo-form { margin: 0; color: #2c3e50; }
+.campo-busqueda {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: .9rem;
+  margin: 10px 0;
+}
 .titulo-seccion-nueva {
   margin-top: 44px;
   padding-top: 24px;

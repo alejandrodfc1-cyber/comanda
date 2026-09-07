@@ -514,6 +514,7 @@ document.querySelectorAll('#tabs-vista-reportes button').forEach(btn => {
     document.querySelectorAll('#tabs-vista-reportes button').forEach(b => b.classList.toggle('activa', b === btn));
     document.getElementById('reportes-vista-general').classList.toggle('oculto', vista !== 'general');
     document.getElementById('reportes-vista-detalle').classList.toggle('oculto', vista !== 'detalle');
+    document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
   };
 });
 
@@ -860,8 +861,22 @@ let productoEditandoFotoUrl = null;
 async function cargarProductosAdmin() {
   const { data } = await sb.from('productos').select('*, categorias(nombre)').order('id');
   productosAdminCache = data || [];
-  renderProductosAdmin(productosAdminCache);
+  renderProductosAdmin(filtrarProductosAdmin());
 }
+
+function normalizarTexto(t) {
+  return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function filtrarProductosAdmin() {
+  const q = normalizarTexto(document.getElementById('buscar-producto').value.trim());
+  if (!q) return productosAdminCache;
+  return productosAdminCache.filter(p => normalizarTexto(p.nombre).includes(q));
+}
+
+document.getElementById('buscar-producto').addEventListener('input', () => {
+  renderProductosAdmin(filtrarProductosAdmin());
+});
 
 function renderProductosAdmin(lista) {
   const cont = document.getElementById('lista-admin-productos');
@@ -1174,6 +1189,8 @@ document.getElementById('form-nueva-categoria').addEventListener('submit', async
 
 let top20AdminCache = [];
 
+document.getElementById('buscar-top20-disponible').addEventListener('input', renderTop20Admin);
+
 async function cargarTop20Admin() {
   const { data } = await sb.from('productos').select('*, categorias(nombre)').eq('visible', true).order('id');
   top20AdminCache = data || [];
@@ -1184,7 +1201,9 @@ function renderTop20Admin() {
   const enTop20 = top20AdminCache
     .filter(p => p.top20)
     .sort((a, b) => (a.orden_top20 ?? 0) - (b.orden_top20 ?? 0));
-  const disponibles = top20AdminCache.filter(p => !p.top20);
+  let disponibles = top20AdminCache.filter(p => !p.top20);
+  const q = normalizarTexto(document.getElementById('buscar-top20-disponible').value.trim());
+  if (q) disponibles = disponibles.filter(p => normalizarTexto(p.nombre).includes(q));
 
   const contActual = document.getElementById('lista-top20-actual');
   contActual.innerHTML = enTop20.length
