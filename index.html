@@ -8,9 +8,18 @@
 </head>
 <body>
 
-<header>
-  <h1>🍽️ Comanda</h1>
-</header>
+<div class="topbar-fija">
+  <header>
+    <h1>🍽️ La Españita</h1>
+  </header>
+  <div class="barra-superior oculto" id="barra-superior">
+    <button class="btn-icono-dashboard" onclick="abrirDashboard()" title="Panel de administración">
+      <span class="icono-engranaje">⚙️</span> Administración
+    </button>
+    <button class="btn btn-turno" id="btn-turno" onclick="toggleTurno()" title="Tocar para cambiar de turno">🔁 Turno 1</button>
+    <button class="btn-salir" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+  </div>
+</div>
 
 <main id="vista-login">
   <form id="form-login" class="login-caja">
@@ -24,24 +33,21 @@
 </main>
 
 <main id="vista-mesas" class="oculto">
-  <div class="barra-superior">
-    <button class="btn-icono-dashboard" onclick="abrirDashboard()" title="Panel de administración">⚙️</button>
-    <button class="btn btn-turno" id="btn-turno" onclick="toggleTurno()" title="Tocar para cambiar de turno">Turno 1</button>
-    <button class="btn btn-secundario" onclick="cerrarSesion()">Cerrar sesión</button>
-  </div>
   <div id="grid-mesas"></div>
 </main>
 
 <!-- Modal: menú de la mesa -->
 <div id="modal-menu" class="modal oculto">
   <div class="modal-caja modal-grande">
-    <div class="modal-header">
-      <h2 id="titulo-mesa"></h2>
-      <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
+    <div class="mesa-fija">
+      <div class="modal-header">
+        <h2 id="titulo-mesa"></h2>
+        <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
+      </div>
+      <div class="categoria-tabs" id="tabs-menu"></div>
     </div>
 
     <div class="menu-lista" id="vista-menu-platos">
-      <div class="categoria-tabs" id="tabs-menu"></div>
       <div class="galeria-platos" id="galeria-menu"></div>
     </div>
 
@@ -66,19 +72,25 @@
 <!-- Modal: panel de administración -->
 <div id="modal-dashboard" class="modal oculto">
   <div class="modal-caja modal-grande">
-    <div class="modal-header">
-      <h2>⚙️ Administración</h2>
-      <button class="btn-cerrar" onclick="cerrarDashboard()">✕</button>
-    </div>
+    <div class="dashboard-fijo">
+      <div class="modal-header">
+        <div class="titulo-admin">
+          <h2>⚙️ Administración</h2>
+          <small>La Españita</small>
+        </div>
+        <button class="btn-cerrar" onclick="cerrarDashboard()">✕ Cerrar</button>
+      </div>
 
-    <div class="tabs-fijas">
-      <div class="categoria-tabs" id="tabs-admin-secciones">
-        <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Reportes</button>
-        <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
-        <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
-        <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
-        <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
-        <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
+      <div class="tabs-fijas">
+        <div class="categoria-tabs" id="tabs-admin-secciones">
+          <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Reportes</button>
+          <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
+          <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
+          <button id="tab-admin-orden" onclick="mostrarSeccionDashboard('orden')">Orden Menú</button>
+          <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
+          <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
+          <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
+        </div>
       </div>
     </div>
 
@@ -152,6 +164,12 @@
       <div id="lista-top20-actual"></div>
       <h3 class="titulo-form" style="margin-top:20px">Agregar al Top20</h3>
       <div id="lista-top20-disponibles" class="con-espacio-fab"></div>
+    </div>
+
+    <div id="seccion-admin-orden" class="oculto">
+      <h3 class="titulo-form">Orden dentro de cada categoría (arriba = primero)</h3>
+      <div class="categoria-tabs" id="tabs-orden-categorias"></div>
+      <div id="lista-orden-productos" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-metricas">

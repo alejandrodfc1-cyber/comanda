@@ -20,7 +20,9 @@ function actualizarBotonTurno() {
 }
 
 async function toggleTurno() {
-  turnoActivo = turnoActivo === '1' ? '2' : '1';
+  const siguienteTurno = turnoActivo === '1' ? '2' : '1';
+  if (!confirm(`¿Cambiar a Turno ${siguienteTurno}?`)) return;
+  turnoActivo = siguienteTurno;
   actualizarBotonTurno();
   await sb.from('configuracion').update({ valor: turnoActivo }).eq('clave', 'turno_activo');
 }
@@ -42,7 +44,7 @@ async function cargarCategoriasYProductos() {
   categoriasDb = cats || [];
   CATEGORIAS = ['Top20', ...categoriasDb.map(c => c.nombre)];
 
-  const { data: productos } = await sb.from('productos').select('*').eq('visible', true).order('id');
+  const { data: productos } = await sb.from('productos').select('*').eq('visible', true).order('categoria_id').order('orden_categoria');
   const mapaCategorias = Object.fromEntries(categoriasDb.map(c => [c.id, c.nombre]));
   MENU = (productos || []).map(p => ({
     id: p.id,
@@ -89,6 +91,7 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
 });
 
 async function cerrarSesion() {
+  if (!confirm('¿Cerrar sesión?')) return;
   await sb.auth.signOut();
 }
 
@@ -107,6 +110,7 @@ sb.auth.onAuthStateChange((_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
+  document.getElementById('barra-superior').classList.toggle('oculto', !haySesion);
   if (haySesion) { cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); }
 });
 
@@ -199,6 +203,7 @@ function actualizarVistaModal() {
   if (!mesa) return;
   const enMenu = vistaModal === 'menu';
   document.getElementById('vista-menu-platos').classList.toggle('oculto', !enMenu);
+  document.getElementById('tabs-menu').classList.toggle('oculto', !enMenu);
   document.getElementById('vista-detalle-mesa').classList.toggle('oculto', enMenu);
   const cantidadItems = mesa.pedido.reduce((s, i) => s + i.cantidad, 0);
   const fab = document.getElementById('btn-alternar-vista');
@@ -213,7 +218,12 @@ function renderTabsMenu() {
     const btn = document.createElement('button');
     btn.textContent = cat;
     btn.className = cat === categoriaActiva ? 'activa' : '';
-    btn.onclick = () => { categoriaActiva = cat; renderTabsMenu(); renderGaleriaMenu(); };
+    btn.onclick = () => {
+      categoriaActiva = cat;
+      renderTabsMenu();
+      renderGaleriaMenu();
+      document.querySelector('#modal-menu .modal-caja').scrollTop = 0;
+    };
     tabs.appendChild(btn);
   });
 }
@@ -461,13 +471,15 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias', 'top20', 'metricas', 'config'].forEach(s => {
+  ['mesas', 'productos', 'categorias', 'top20', 'orden', 'metricas', 'config'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
+  document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'metricas' || seccion === 'config');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config');
   if (seccion === 'top20') cargarTop20Admin();
+  if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
 }
 
@@ -1058,6 +1070,8 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   if (productoEditandoId) {
     await sb.from('productos').update(datos).eq('id', productoEditandoId);
   } else {
+    const enMismaCategoria = productosAdminCache.filter(p => String(p.categoria_id) === String(categoriaId));
+    datos.orden_categoria = Math.max(0, ...enMismaCategoria.map(p => p.orden_categoria ?? 0)) + 1;
     await sb.from('productos').insert(datos);
   }
 
@@ -1162,5 +1176,72 @@ async function moverTop20(id, direccion) {
   await sb.from('productos').update({ orden_top20: ordenB }).eq('id', a.id);
   await sb.from('productos').update({ orden_top20: ordenA }).eq('id', b.id);
   await cargarTop20Admin();
+  cargarCategoriasYProductos();
+}
+
+let ordenAdminCache = [];
+let categoriaOrdenActiva = null;
+
+async function cargarOrdenAdmin() {
+  const { data } = await sb.from('productos').select('*, categorias(nombre)').eq('visible', true).order('orden_categoria');
+  ordenAdminCache = data || [];
+  if (!categoriaOrdenActiva || !categoriasDb.some(c => c.nombre === categoriaOrdenActiva)) {
+    categoriaOrdenActiva = categoriasDb[0]?.nombre || null;
+  }
+  renderTabsOrdenAdmin();
+  renderOrdenAdmin();
+}
+
+function renderTabsOrdenAdmin() {
+  const tabs = document.getElementById('tabs-orden-categorias');
+  tabs.innerHTML = '';
+  categoriasDb.forEach(c => {
+    const btn = document.createElement('button');
+    btn.textContent = c.nombre;
+    btn.className = c.nombre === categoriaOrdenActiva ? 'activa' : '';
+    btn.onclick = () => { categoriaOrdenActiva = c.nombre; renderTabsOrdenAdmin(); renderOrdenAdmin(); };
+    tabs.appendChild(btn);
+  });
+}
+
+function listaOrdenCategoriaActiva() {
+  return ordenAdminCache
+    .filter(p => p.categorias?.nombre === categoriaOrdenActiva)
+    .sort((a, b) => (a.orden_categoria ?? a.id) - (b.orden_categoria ?? b.id));
+}
+
+function renderOrdenAdmin() {
+  const cont = document.getElementById('lista-orden-productos');
+  cont.innerHTML = '';
+  const lista = listaOrdenCategoriaActiva();
+  if (!lista.length) {
+    cont.innerHTML = '<p style="color:#666">No hay productos visibles en esta categoría.</p>';
+    return;
+  }
+  lista.forEach((p, i) => {
+    const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">${miniatura}</div>
+      <div class="info-admin"><strong>${p.nombre}</strong></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverOrdenCategoria(${p.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === lista.length - 1 ? 'disabled' : ''} onclick="moverOrdenCategoria(${p.id}, 1)">▼</button>
+      </div>`;
+    cont.appendChild(fila);
+  });
+}
+
+async function moverOrdenCategoria(id, direccion) {
+  const lista = listaOrdenCategoriaActiva();
+  const i = lista.findIndex(p => p.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= lista.length) return;
+  const a = lista[i], b = lista[j];
+  const ordenA = a.orden_categoria ?? a.id, ordenB = b.orden_categoria ?? b.id;
+  await sb.from('productos').update({ orden_categoria: ordenB }).eq('id', a.id);
+  await sb.from('productos').update({ orden_categoria: ordenA }).eq('id', b.id);
+  await cargarOrdenAdmin();
   cargarCategoriasYProductos();
 }
