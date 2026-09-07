@@ -170,7 +170,7 @@ sb.auth.onAuthStateChange((_event, session) => {
 });
 
 async function cargarMesas() {
-  const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('id');
+  const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden');
   if (error) { console.error(error); return; }
   mesas = data;
   if (mesaActivaId && !mesaActiva()) {
@@ -863,29 +863,76 @@ let mesasAdminCache = [];
 let mesaEditandoId = null;
 
 async function cargarMesasAdmin() {
-  const { data } = await sb.from('mesas').select('*').order('id');
+  const { data } = await sb.from('mesas').select('*').order('orden');
   mesasAdminCache = data || [];
-  renderMesasAdmin(mesasAdminCache);
+  renderMesasAdmin();
 }
 
-function renderMesasAdmin(lista) {
+function etiquetaMesa(mesa) {
+  return mesa.nombre || `Mesa ${mesa.id}`;
+}
+
+function listaMesasAdminFiltrada() {
+  const ordenadas = [...mesasAdminCache].sort((a, b) => (a.orden ?? a.id) - (b.orden ?? b.id));
+  const q = normalizarTexto(document.getElementById('buscar-mesa').value.trim());
+  if (!q) return ordenadas;
+  return ordenadas.filter(m => normalizarTexto(etiquetaMesa(m)).includes(q));
+}
+
+document.getElementById('buscar-mesa').addEventListener('input', renderMesasAdmin);
+
+function renderMesasAdmin() {
   const cont = document.getElementById('lista-admin-mesas');
   cont.innerHTML = '';
-  lista.forEach(mesa => {
+  const lista = listaMesasAdminFiltrada();
+  lista.forEach((mesa, i) => {
     const fila = document.createElement('div');
     fila.className = 'fila-admin' + (mesa.visible ? '' : ' oculta-item');
     fila.innerHTML = `
       <div class="miniatura">${mesa.nombre ? '🏷️' : mesa.id}</div>
       <div class="info-admin">
-        <strong>${mesa.nombre || `Mesa ${mesa.id}`}</strong>
+        <strong>${etiquetaMesa(mesa)}</strong>
         <span>${mesa.pedido.length > 0 ? 'Ocupada' : 'Libre'}</span>
       </div>
       <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverMesa(${mesa.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === lista.length - 1 ? 'disabled' : ''} onclick="moverMesa(${mesa.id}, 1)">▼</button>
         <button class="btn-editar-admin" onclick="editarMesa(${mesa.id})">✏️</button>
         <button class="btn-toggle-visible" onclick="toggleVisibleMesa(${mesa.id}, ${mesa.visible})">${mesa.visible ? '👁️ Visible' : '🚫 Oculta'}</button>
+        <button class="btn-toggle-visible" onclick="eliminarMesa(${mesa.id})">🗑️</button>
       </div>`;
     cont.appendChild(fila);
   });
+}
+
+async function moverMesa(id, direccion) {
+  const lista = listaMesasAdminFiltrada();
+  const i = lista.findIndex(m => m.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= lista.length) return;
+  const a = lista[i], b = lista[j];
+  const ordenA = a.orden ?? a.id, ordenB = b.orden ?? b.id;
+  await sb.from('mesas').update({ orden: ordenB }).eq('id', a.id);
+  await sb.from('mesas').update({ orden: ordenA }).eq('id', b.id);
+  await cargarMesasAdmin();
+  cargarMesas();
+}
+
+async function eliminarMesa(id) {
+  const mesa = mesasAdminCache.find(m => m.id === id);
+  if (!mesa) return;
+  const ocupada = mesa.pedido.length > 0;
+  const aviso = ocupada
+    ? `¡Atención! "${etiquetaMesa(mesa)}" tiene un pedido activo sin cobrar. ¿Eliminarla de todas formas? Se perderá ese pedido.`
+    : `¿Eliminar definitivamente "${etiquetaMesa(mesa)}"? Esta acción no se puede deshacer.`;
+  if (!confirm(aviso)) return;
+  const { error } = await sb.from('mesas').delete().eq('id', id);
+  if (error) {
+    alert('No se pudo eliminar: ' + error.message);
+    return;
+  }
+  await cargarMesasAdmin();
+  cargarMesas();
 }
 
 async function toggleVisibleMesa(id, actual) {
@@ -924,7 +971,8 @@ document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) 
   } else {
     const { data } = await sb.from('mesas').select('id').order('id', { ascending: false }).limit(1);
     const siguienteId = data && data.length > 0 ? data[0].id + 1 : 1;
-    await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [] });
+    const siguienteOrden = Math.max(0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
+    await sb.from('mesas').insert({ id: siguienteId, nombre, pedido: [], orden: siguienteOrden });
   }
   cancelarEdicionMesa();
   cargarMesas();
