@@ -326,9 +326,9 @@ main { padding: 20px; }
 #tabs-turno-metricas button.activa,
 #tabs-vista-reportes button.activa,
 #tabs-periodo-metricas button.activa {
-  background: linear-gradient(135deg, #ff416c, #ff9800);
+  background: #c0392b;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(255,65,108,.5);
+  box-shadow: 0 2px 6px rgba(192,57,43,.35);
 }
 
 .galeria-platos {
