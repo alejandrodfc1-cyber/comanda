@@ -202,15 +202,13 @@
     <div id="seccion-admin-metricas">
       <div class="destacado-metricas" id="destacado-producto-dia"></div>
 
-      <div class="categoria-tabs" id="tabs-vista-reportes">
-        <button data-vista="general" class="activa">General</button>
-        <button data-vista="detalle">Detalle</button>
-      </div>
-
-      <div class="filtro-turno-reportes">
-        <p class="texto-ayuda">Turno de caja (aplica a General y Detalle)</p>
-        <div class="categoria-tabs" id="tabs-turno-metricas">
-          <button data-turno="ambos" class="activa">Ambos (consolidado)</button>
+      <div class="filtros-reportes-fila">
+        <div class="categoria-tabs" id="tabs-vista-reportes">
+          <button data-vista="general" class="activa">General</button>
+          <button data-vista="detalle">Detalle</button>
+        </div>
+        <div class="categoria-tabs" id="tabs-turno-metricas" title="Turno de caja (aplica a General y Detalle)">
+          <button data-turno="ambos" class="activa">Ambos</button>
           <button data-turno="1">Turno 1</button>
           <button data-turno="2">Turno 2</button>
         </div>
