@@ -1253,6 +1253,10 @@ function renderTop20Admin() {
       <button class="btn-toggle-visible" onclick="agregarATop20(${p.id})">+ Agregar</button>`;
     contDisponibles.appendChild(fila);
   });
+
+  const encabezado = document.querySelector('#modal-dashboard .dashboard-fijo');
+  const buscadorFijo = document.getElementById('buscador-fijo-top20');
+  if (encabezado && buscadorFijo) buscadorFijo.style.top = `${encabezado.offsetHeight}px`;
 }
 
 async function agregarATop20(id) {

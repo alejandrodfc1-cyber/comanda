@@ -488,6 +488,12 @@ main { padding: 20px; }
   font-size: .9rem;
   margin: 10px 0;
 }
+.buscador-fijo-top20 {
+  position: sticky;
+  z-index: 4;
+  background: #fff;
+  padding-top: 6px;
+}
 .titulo-seccion-nueva {
   margin-top: 44px;
   padding-top: 24px;
