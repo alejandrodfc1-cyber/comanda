@@ -597,7 +597,7 @@ async function cargarMetricas() {
 function toggleColapso(contenidoId, tituloEl) {
   const contenido = document.getElementById(contenidoId);
   const colapsado = contenido.classList.toggle('oculto');
-  tituloEl.querySelector('.icono-colapso').textContent = colapsado ? '▸' : '▾';
+  tituloEl.classList.toggle('expandido', !colapsado);
 }
 
 function renderMetricas(ventas, mapaMesas) {
