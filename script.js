@@ -589,6 +589,7 @@ function inicioPeriodo(periodo) {
   if (periodo === 'hoy') return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
   if (periodo === 'semana') return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - 6);
   if (periodo === 'mes') return new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  if (periodo === 'año') return new Date(ahora.getFullYear(), 0, 1);
   return null;
 }
 
