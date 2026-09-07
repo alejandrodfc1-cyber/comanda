@@ -648,9 +648,21 @@ main { padding: 20px; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .5px;
-  padding-left: 4px;
+  text-align: center;
 }
 .filtros-reportes-fila .categoria-tabs { min-width: 0; margin: 0; }
+#tabs-turno-metricas {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%);
+}
+@media (max-width: 400px) {
+  .filtros-reportes-fila { gap: 8px; }
+  .filtro-grupo:first-child { padding-right: 8px; }
+  .filtros-reportes-fila button {
+    font-size: .64rem;
+    padding: 7px 7px;
+  }
+}
 
 .destacado-metricas {
   background: linear-gradient(135deg, #fff3e0, #ffe8d6);
