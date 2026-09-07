@@ -533,14 +533,14 @@ function mostrarSeccionDashboard(seccion) {
   });
   document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
 }
 
 function guardarDesdeFlotante() {
-  const formId = { mesas: 'form-nueva-mesa', productos: 'form-nuevo-producto' }[seccionActivaDashboard];
+  const formId = { productos: 'form-nuevo-producto' }[seccionActivaDashboard];
   if (formId) document.getElementById(formId).requestSubmit();
 }
 
