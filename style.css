@@ -210,10 +210,10 @@ main { padding: 20px; }
   gap: 8px;
   margin: 0;
   padding: 8px 20px;
-  background: linear-gradient(135deg, #2c3e50, #3d6485);
+  background: linear-gradient(135deg, #219150, #27ae60);
   color: #fff;
   border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(44,62,80,.35);
+  box-shadow: 0 4px 14px rgba(33,145,80,.35);
   font-size: 1.05rem;
   letter-spacing: .2px;
 }
@@ -222,14 +222,14 @@ main { padding: 20px; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #2ecc71;
+  background: #fff;
   flex-shrink: 0;
   animation: pulso-mesa-activa 1.8s ease-out infinite;
 }
 @keyframes pulso-mesa-activa {
-  0% { box-shadow: 0 0 0 0 rgba(46,204,113,.65); }
-  70% { box-shadow: 0 0 0 9px rgba(46,204,113,0); }
-  100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,.65); }
+  70% { box-shadow: 0 0 0 9px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
 }
 #modal-menu .btn-cerrar {
   position: absolute;
@@ -475,6 +475,7 @@ main { padding: 20px; }
 .btn-secundario { background: #7f8c8d; }
 .btn-peligro { background: #c0392b; }
 .btn-guardar { background: #27ae60; }
+.btn-turquesa { background: #16a085; }
 .btn-turno { background: #16a085; font-weight: 600; }
 
 .form-admin {

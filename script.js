@@ -348,6 +348,9 @@ function cambiarCantidad(platoId, delta) {
 function eliminarDelPedido(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
+  const item = mesa.pedido.find(i => i.id === platoId);
+  if (!item) return;
+  if (!confirm(`¿Quitar "${item.nombre}" del pedido?`)) return;
   mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
   renderPedido();
   guardarPedido(mesa);
