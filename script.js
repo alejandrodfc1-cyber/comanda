@@ -1069,6 +1069,12 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
 
   const datos = { nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl };
   if (productoEditandoId) {
+    const original = productosAdminCache.find(p => p.id === productoEditandoId);
+    const cambioDeCategoria = original && String(original.categoria_id) !== String(categoriaId);
+    if (cambioDeCategoria) {
+      const enNuevaCategoria = productosAdminCache.filter(p => String(p.categoria_id) === String(categoriaId));
+      datos.orden_categoria = Math.max(0, ...enNuevaCategoria.map(p => p.orden_categoria ?? 0)) + 1;
+    }
     await sb.from('productos').update(datos).eq('id', productoEditandoId);
   } else {
     const enMismaCategoria = productosAdminCache.filter(p => String(p.categoria_id) === String(categoriaId));
