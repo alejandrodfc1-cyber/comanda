@@ -926,18 +926,22 @@ async function eliminarMesa(id) {
     ? `¡Atención! "${etiquetaMesa(mesa)}" tiene un pedido activo sin cobrar. ¿Eliminarla de todas formas? Se perderá ese pedido.`
     : `¿Eliminar definitivamente "${etiquetaMesa(mesa)}"? Esta acción no se puede deshacer.`;
   if (!confirm(aviso)) return;
-  const { data, error } = await sb.from('mesas').delete().eq('id', id).select();
-  if (error) {
-    alert('No se pudo eliminar: ' + error.message);
-    return;
-  }
-  if (!data || data.length === 0) {
-    alert(`No se pudo eliminar "${etiquetaMesa(mesa)}": el servidor no confirmó el borrado (puede ser un problema de conexión). Intenta de nuevo.`);
+  try {
+    const { data, error } = await sb.from('mesas').delete().eq('id', id).select();
+    if (error) {
+      alert('No se pudo eliminar: ' + error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      alert(`No se pudo eliminar "${etiquetaMesa(mesa)}": el servidor no confirmó el borrado (puede ser un problema de conexión). Intenta de nuevo.`);
+      return;
+    }
+  } catch (err) {
+    alert(`No se pudo eliminar "${etiquetaMesa(mesa)}" por un problema de conexión. Revisa tu internet/WiFi e intenta de nuevo.`);
+  } finally {
     await cargarMesasAdmin();
-    return;
+    cargarMesas();
   }
-  await cargarMesasAdmin();
-  cargarMesas();
 }
 
 async function toggleVisibleMesa(id, actual) {
