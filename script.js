@@ -560,6 +560,7 @@ document.querySelectorAll('#tabs-turno-metricas button').forEach(btn => {
     turnoFiltro = btn.dataset.turno;
     document.querySelectorAll('#tabs-turno-metricas button').forEach(b => b.classList.toggle('activa', b === btn));
     cargarMetricas();
+    cargarComparativas();
   };
 });
 
@@ -784,7 +785,9 @@ async function cargarComparativas() {
   const mesAnteriorFin = new Date(ahora.getFullYear(), ahora.getMonth() - 1, Math.min(diaDelMes, ultimoDiaMesAnterior) + 1);
 
   const desde = mesAnteriorIni < semanaAnteriorIni ? mesAnteriorIni : semanaAnteriorIni;
-  const { data } = await sb.from('ventas').select('items, total, creado_en').gte('creado_en', desde.toISOString());
+  let query = sb.from('ventas').select('items, total, creado_en').gte('creado_en', desde.toISOString());
+  if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
+  const { data } = await query;
   const ventas = data || [];
 
   const sumaEntre = (ini, fin) => ventas
