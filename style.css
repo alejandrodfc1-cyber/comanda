@@ -709,8 +709,10 @@ main { padding: 20px; }
   border-radius: 999px;
 }
 
-.fila-botones-form { display: flex; gap: 8px; }
+.fila-botones-form { display: flex; gap: 8px; align-items: center; }
 .fila-botones-form .btn { flex: 1; }
+.mensaje-guardado { color: #27ae60; font-weight: 600; font-size: .85rem; }
+.mensaje-guardado.mensaje-error { color: #c0392b; }
 
 .con-espacio-fab { padding-bottom: 70px; }
 

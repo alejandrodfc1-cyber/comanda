@@ -39,14 +39,24 @@ document.getElementById('form-telefono-negocio').addEventListener('submit', asyn
   const telefono = document.getElementById('config-telefono').value.trim();
   const nombre = document.getElementById('config-nombre-negocio').value.trim() || NEGOCIO_NOMBRE;
   const direccion = document.getElementById('config-direccion-negocio').value.trim() || NEGOCIO_DIRECCION;
-  await sb.from('configuracion').upsert([
+  const { error } = await sb.from('configuracion').upsert([
     { clave: 'telefono', valor: telefono },
     { clave: 'nombre_negocio', valor: nombre },
     { clave: 'direccion_negocio', valor: direccion },
   ], { onConflict: 'clave' });
+  const mensaje = document.getElementById('config-guardado-msg');
+  if (error) {
+    mensaje.textContent = '✕ No se pudo guardar: ' + error.message;
+    mensaje.classList.add('mensaje-error');
+    mensaje.classList.remove('oculto');
+    return;
+  }
   negocioTelefono = telefono;
   NEGOCIO_NOMBRE = nombre;
   NEGOCIO_DIRECCION = direccion;
+  mensaje.textContent = '✓ Guardado';
+  mensaje.classList.remove('mensaje-error', 'oculto');
+  setTimeout(() => mensaje.classList.add('oculto'), 2500);
 });
 
 let MENU = [];
