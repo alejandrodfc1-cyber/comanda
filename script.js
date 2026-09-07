@@ -806,9 +806,12 @@ async function cargarComparativas() {
     : `<span class="destacado-icono">📋</span> Aún no hay ventas registradas hoy`;
 }
 
+const COMPARATIVA_ICONOS = ['📅', '📆', '🗓️'];
+const COMPARATIVA_COLORES = ['#2980b9', '#8e44ad', '#16a085'];
+
 function renderComparativas(filas) {
   const cont = document.getElementById('comparativas-rapidas');
-  cont.innerHTML = filas.map(f => {
+  cont.innerHTML = filas.map((f, i) => {
     const sinDatos = f.anterior === 0 && f.actual === 0;
     const delta = f.anterior > 0 ? ((f.actual - f.anterior) / f.anterior * 100) : (f.actual > 0 ? 100 : 0);
     const sinCambio = sinDatos || delta === 0;
@@ -818,23 +821,28 @@ function renderComparativas(filas) {
     const pctAnterior = (f.anterior / max * 100).toFixed(1);
     const pctActual = (f.actual / max * 100).toFixed(1);
     return `
-      <div class="comparativa-fila">
+      <div class="comparativa-fila" style="--color-comp:${COMPARATIVA_COLORES[i % 3]}">
         <div class="comparativa-cabecera">
-          <span class="comparativa-titulo">${f.titulo}</span>
+          <span class="comparativa-titulo"><span class="comparativa-icono">${COMPARATIVA_ICONOS[i % 3]}</span>${f.titulo}</span>
           <span class="comparativa-delta ${sinCambio ? 'neutro' : (positivo ? 'positivo' : 'negativo')}">${deltaTexto}</span>
         </div>
         <div class="comparativa-barra-linea">
           <span class="comparativa-barra-etq">${f.anteriorLabel}</span>
-          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" style="width:${pctAnterior}%"></div></div>
+          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" data-ancho="${pctAnterior}" style="width:0%"></div></div>
           <span class="comparativa-barra-valor">${formatoMoneda(Math.round(f.anterior))}</span>
         </div>
         <div class="comparativa-barra-linea actual">
           <span class="comparativa-barra-etq">${f.actualLabel}</span>
-          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" style="width:${pctActual}%"></div></div>
+          <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" data-ancho="${pctActual}" style="width:0%"></div></div>
           <span class="comparativa-barra-valor">${formatoMoneda(Math.round(f.actual))}</span>
         </div>
       </div>`;
   }).join('');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    cont.querySelectorAll('.comparativa-barra-relleno').forEach(el => {
+      el.style.width = `${el.dataset.ancho}%`;
+    });
+  }));
 }
 
 let mesasAdminCache = [];

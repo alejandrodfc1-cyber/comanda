@@ -638,10 +638,14 @@ main { padding: 20px; }
 .comparativa-fila {
   background: #fff;
   border: 1px solid #e5e5e5;
+  border-left: 4px solid var(--color-comp, #2c3e50);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  transition: transform .15s ease, box-shadow .15s ease;
 }
+.comparativa-fila:active { transform: scale(.99); }
 .comparativa-cabecera {
   display: flex;
   justify-content: space-between;
@@ -650,6 +654,7 @@ main { padding: 20px; }
   margin-bottom: 10px;
 }
 .comparativa-titulo { font-size: .78rem; color: #555; font-weight: 600; }
+.comparativa-icono { margin-right: 6px; }
 .comparativa-delta {
   flex-shrink: 0;
   font-weight: 700;
