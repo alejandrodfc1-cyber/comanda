@@ -457,6 +457,7 @@ function abrirDashboard() {
   mostrarSeccionDashboard('metricas');
   cancelarEdicionMesa();
   cancelarEdicionProducto();
+  cancelarEdicionCategoria();
   cargarMesasAdmin();
   cargarProductosAdmin();
   renderCategoriasAdmin();
@@ -1080,17 +1081,72 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   cerrarDashboard();
 });
 
+let categoriaEditandoId = null;
+
 function renderCategoriasAdmin() {
   const cont = document.getElementById('lista-admin-categorias');
   cont.innerHTML = '';
-  categoriasDb.forEach(c => {
+  const ordenadas = [...categoriasDb].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  ordenadas.forEach((c, i) => {
     const fila = document.createElement('div');
     fila.className = 'fila-admin';
     fila.innerHTML = `
       <div class="miniatura">📂</div>
-      <div class="info-admin"><strong>${c.nombre}</strong></div>`;
+      <div class="info-admin"><strong>${c.nombre}</strong></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverCategoria(${c.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === ordenadas.length - 1 ? 'disabled' : ''} onclick="moverCategoria(${c.id}, 1)">▼</button>
+        <button class="btn-editar-admin" onclick="editarCategoria(${c.id})">✏️</button>
+        <button class="btn-toggle-visible" onclick="eliminarCategoria(${c.id})">🗑️</button>
+      </div>`;
     cont.appendChild(fila);
   });
+}
+
+function editarCategoria(id) {
+  const c = categoriasDb.find(x => x.id === id);
+  if (!c) return;
+  categoriaEditandoId = id;
+  document.getElementById('nueva-categoria-nombre').value = c.nombre;
+  document.getElementById('btn-guardar-categoria').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-categoria').classList.remove('oculto');
+  document.getElementById('nueva-categoria-nombre').focus();
+}
+
+function cancelarEdicionCategoria() {
+  categoriaEditandoId = null;
+  document.getElementById('nueva-categoria-nombre').value = '';
+  document.getElementById('btn-guardar-categoria').textContent = '+ Agregar categoría';
+  document.getElementById('btn-cancelar-categoria').classList.add('oculto');
+}
+
+async function moverCategoria(id, direccion) {
+  const ordenadas = [...categoriasDb].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+  const i = ordenadas.findIndex(c => c.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= ordenadas.length) return;
+  const a = ordenadas[i], b = ordenadas[j];
+  const ordenA = a.orden ?? 0, ordenB = b.orden ?? 0;
+  await sb.from('categorias').update({ orden: ordenB }).eq('id', a.id);
+  await sb.from('categorias').update({ orden: ordenA }).eq('id', b.id);
+  await cargarCategoriasYProductos();
+  renderCategoriasAdmin();
+}
+
+async function eliminarCategoria(id) {
+  const c = categoriasDb.find(x => x.id === id);
+  if (!c) return;
+  const { count } = await sb.from('productos').select('id', { count: 'exact', head: true }).eq('categoria_id', id);
+  if (count > 0) {
+    alert(`No se puede eliminar "${c.nombre}": todavía tiene ${count} producto(s) asignado(s). Cámbialos de categoría primero desde Productos.`);
+    return;
+  }
+  if (!confirm(`¿Eliminar la categoría "${c.nombre}"?`)) return;
+  await sb.from('categorias').delete().eq('id', id);
+  if (categoriaEditandoId === id) cancelarEdicionCategoria();
+  await cargarCategoriasYProductos();
+  renderCategoriasAdmin();
+  poblarSelectCategorias();
 }
 
 document.getElementById('form-nueva-categoria').addEventListener('submit', async (e) => {
@@ -1098,9 +1154,13 @@ document.getElementById('form-nueva-categoria').addEventListener('submit', async
   const nombreInput = document.getElementById('nueva-categoria-nombre');
   const nombre = nombreInput.value.trim();
   if (!nombre) return;
-  const siguienteOrden = categoriasDb.length > 0 ? Math.max(...categoriasDb.map(c => c.orden)) + 1 : 1;
-  await sb.from('categorias').insert({ nombre, orden: siguienteOrden });
-  nombreInput.value = '';
+  if (categoriaEditandoId) {
+    await sb.from('categorias').update({ nombre }).eq('id', categoriaEditandoId);
+  } else {
+    const siguienteOrden = categoriasDb.length > 0 ? Math.max(...categoriasDb.map(c => c.orden)) + 1 : 1;
+    await sb.from('categorias').insert({ nombre, orden: siguienteOrden });
+  }
+  cancelarEdicionCategoria();
   await cargarCategoriasYProductos();
   renderCategoriasAdmin();
   poblarSelectCategorias();

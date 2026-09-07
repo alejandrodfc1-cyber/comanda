@@ -154,9 +154,12 @@
     <div id="seccion-admin-categorias" class="oculto">
       <form id="form-nueva-categoria" class="form-admin">
         <input type="text" id="nueva-categoria-nombre" placeholder="Nombre de categoría" required>
-        <button type="submit" class="btn">+ Agregar categoría</button>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn" id="btn-guardar-categoria">+ Agregar categoría</button>
+          <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-categoria" onclick="cancelarEdicionCategoria()">Cancelar</button>
+        </div>
       </form>
-      <div id="lista-admin-categorias"></div>
+      <div id="lista-admin-categorias" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-top20" class="oculto">
