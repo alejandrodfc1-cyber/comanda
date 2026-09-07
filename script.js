@@ -1,16 +1,23 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const NEGOCIO_NOMBRE = 'La Españita';
-const NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
+let NEGOCIO_NOMBRE = 'La Españita';
+let NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
 let negocioTelefono = '';
 let turnoActivo = '1';
 
 async function cargarConfiguracion() {
-  const { data } = await sb.from('configuracion').select('clave, valor').in('clave', ['telefono', 'turno_activo']);
+  const { data } = await sb.from('configuracion').select('clave, valor')
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio']);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
+  NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
+  NEGOCIO_DIRECCION = data?.find(d => d.clave === 'direccion_negocio')?.valor || NEGOCIO_DIRECCION;
   const input = document.getElementById('config-telefono');
   if (input) input.value = negocioTelefono;
+  const inputNombre = document.getElementById('config-nombre-negocio');
+  if (inputNombre) inputNombre.value = NEGOCIO_NOMBRE;
+  const inputDireccion = document.getElementById('config-direccion-negocio');
+  if (inputDireccion) inputDireccion.value = NEGOCIO_DIRECCION;
   actualizarBotonTurno();
 }
 
@@ -29,9 +36,17 @@ async function toggleTurno() {
 
 document.getElementById('form-telefono-negocio').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const valor = document.getElementById('config-telefono').value.trim();
-  await sb.from('configuracion').update({ valor }).eq('clave', 'telefono');
-  negocioTelefono = valor;
+  const telefono = document.getElementById('config-telefono').value.trim();
+  const nombre = document.getElementById('config-nombre-negocio').value.trim() || NEGOCIO_NOMBRE;
+  const direccion = document.getElementById('config-direccion-negocio').value.trim() || NEGOCIO_DIRECCION;
+  await sb.from('configuracion').upsert([
+    { clave: 'telefono', valor: telefono },
+    { clave: 'nombre_negocio', valor: nombre },
+    { clave: 'direccion_negocio', valor: direccion },
+  ], { onConflict: 'clave' });
+  negocioTelefono = telefono;
+  NEGOCIO_NOMBRE = nombre;
+  NEGOCIO_DIRECCION = direccion;
 });
 
 let MENU = [];
