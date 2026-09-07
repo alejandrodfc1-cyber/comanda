@@ -623,6 +623,10 @@ main { padding: 20px; }
 }
 .btn-editar-admin:disabled { opacity: .3; cursor: default; }
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
+@media (max-width: 420px) {
+  .fila-admin { flex-wrap: wrap; }
+  .acciones-fila-admin { flex-basis: 100%; justify-content: flex-end; margin-top: 8px; }
+}
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
 .texto-ayuda { color: #999; font-size: .78rem; margin: 4px 0 12px; }
