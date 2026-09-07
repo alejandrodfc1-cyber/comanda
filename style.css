@@ -625,7 +625,6 @@ main { padding: 20px; }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
 .texto-ayuda { color: #999; font-size: .78rem; margin: 4px 0 12px; }
-.filtro-turno-reportes { margin: 12px 0 16px; }
 .filtros-reportes-fila {
   display: flex;
   align-items: flex-start;
