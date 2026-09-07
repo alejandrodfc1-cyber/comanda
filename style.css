@@ -559,15 +559,19 @@ main { padding: 20px; }
 }
 .fila-admin .info-admin { flex: 1; min-width: 0; }
 .fila-admin .info-admin strong { display: block; }
-#lista-top-productos-metricas .miniatura {
+#lista-top-productos-metricas .miniatura,
+#lista-mesas-metricas .miniatura {
   border-radius: 50%;
   font-weight: 800;
   color: #fff;
   background: #b0b8c0;
 }
-#lista-top-productos-metricas .fila-admin:nth-child(1) .miniatura { background: linear-gradient(135deg, #f6d365, #c9971e); box-shadow: 0 2px 6px rgba(201,151,30,.5); }
-#lista-top-productos-metricas .fila-admin:nth-child(2) .miniatura { background: linear-gradient(135deg, #dde3e8, #9aa5ae); box-shadow: 0 2px 6px rgba(154,165,174,.5); }
-#lista-top-productos-metricas .fila-admin:nth-child(3) .miniatura { background: linear-gradient(135deg, #d8975a, #a5642e); box-shadow: 0 2px 6px rgba(165,100,46,.5); }
+#lista-top-productos-metricas .fila-admin:nth-child(1) .miniatura,
+#lista-mesas-metricas .fila-admin:nth-child(1) .miniatura { background: linear-gradient(135deg, #f6d365, #c9971e); box-shadow: 0 2px 6px rgba(201,151,30,.5); }
+#lista-top-productos-metricas .fila-admin:nth-child(2) .miniatura,
+#lista-mesas-metricas .fila-admin:nth-child(2) .miniatura { background: linear-gradient(135deg, #dde3e8, #9aa5ae); box-shadow: 0 2px 6px rgba(154,165,174,.5); }
+#lista-top-productos-metricas .fila-admin:nth-child(3) .miniatura,
+#lista-mesas-metricas .fila-admin:nth-child(3) .miniatura { background: linear-gradient(135deg, #d8975a, #a5642e); box-shadow: 0 2px 6px rgba(165,100,46,.5); }
 .fila-admin .info-admin span { color: #666; font-size: .8rem; }
 .fila-admin.oculta-item { opacity: .45; }
 .btn-toggle-visible, .btn-editar-admin {
