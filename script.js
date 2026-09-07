@@ -878,25 +878,42 @@ document.getElementById('buscar-producto').addEventListener('input', () => {
   renderProductosAdmin(filtrarProductosAdmin());
 });
 
+function filaProductoAdminHtml(p) {
+  const utilidad = p.precio - p.costo;
+  const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
+  const fila = document.createElement('div');
+  fila.className = 'fila-admin' + (p.visible ? '' : ' oculta-item');
+  fila.innerHTML = `
+    <div class="miniatura">${miniatura}</div>
+    <div class="info-admin">
+      <strong>${p.nombre}</strong>
+      <span>Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)} · Stock ${p.inventario}</span>
+    </div>
+    <div class="acciones-fila-admin">
+      <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
+      <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
+    </div>`;
+  return fila;
+}
+
 function renderProductosAdmin(lista) {
   const cont = document.getElementById('lista-admin-productos');
   cont.innerHTML = '';
+  const grupos = new Map();
   lista.forEach(p => {
-    const utilidad = p.precio - p.costo;
-    const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
-    const fila = document.createElement('div');
-    fila.className = 'fila-admin' + (p.visible ? '' : ' oculta-item');
-    fila.innerHTML = `
-      <div class="miniatura">${miniatura}</div>
-      <div class="info-admin">
-        <strong>${p.nombre}</strong>
-        <span>${p.categorias?.nombre || ''} · Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)} · Stock ${p.inventario}</span>
-      </div>
-      <div class="acciones-fila-admin">
-        <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
-        <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
-      </div>`;
-    cont.appendChild(fila);
+    const nombreCat = p.categorias?.nombre || 'Sin categoría';
+    if (!grupos.has(nombreCat)) grupos.set(nombreCat, []);
+    grupos.get(nombreCat).push(p);
+  });
+  const ordenCategoria = Object.fromEntries(categoriasDb.map(c => [c.nombre, c.orden ?? 0]));
+  const nombresCategorias = [...grupos.keys()].sort((a, b) => (ordenCategoria[a] ?? 999) - (ordenCategoria[b] ?? 999));
+
+  nombresCategorias.forEach(nombreCat => {
+    const encabezado = document.createElement('h4');
+    encabezado.className = 'encabezado-grupo-productos';
+    encabezado.textContent = nombreCat;
+    cont.appendChild(encabezado);
+    grupos.get(nombreCat).forEach(p => cont.appendChild(filaProductoAdminHtml(p)));
   });
 }
 
