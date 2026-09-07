@@ -696,7 +696,7 @@ main { padding: 20px; }
   transition: width .4s ease;
 }
 .comparativa-barra-linea.actual .comparativa-barra-relleno {
-  background: linear-gradient(90deg, #2c3e50, #3d6485);
+  background: linear-gradient(90deg, #219150, #27ae60);
 }
 .comparativa-barra-valor {
   font-size: .72rem;
@@ -770,7 +770,7 @@ main { padding: 20px; }
 .barra-dia-relleno {
   width: 100%;
   min-height: 2px;
-  background: linear-gradient(180deg, #3d8bd4, #2c3e50);
+  background: linear-gradient(180deg, #4bcf85, #219150);
   border-radius: 6px 6px 0 0;
   transition: height .4s ease;
 }
