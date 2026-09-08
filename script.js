@@ -208,7 +208,8 @@ function renderMesas() {
     const btn = document.createElement('button');
     btn.className = 'mesa' + (ocupada ? ' ocupada' : '');
     const etiqueta = mesa.nombre || mesa.id;
-    const claseEtiqueta = mesa.nombre ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
+    const esSoloNumero = /^\d+$/.test(String(etiqueta));
+    const claseEtiqueta = mesa.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
     btn.innerHTML = `<span class="${claseEtiqueta}">${etiqueta}</span>` +
       (ocupada ? `<small>${formatoMoneda(totalMesa(mesa))}</small>` : '<small>Libre</small>');
     btn.onclick = () => abrirModalMenu(mesa.id);
