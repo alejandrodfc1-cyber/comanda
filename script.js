@@ -806,6 +806,7 @@ function renderMetricas(ventas, mapaMesas) {
 
   const categoriasOrdenadas = Object.entries(tallyCategorias).sort((a, b) => b[1] - a[1]);
   const maxCategoria = categoriasOrdenadas.length > 0 ? categoriasOrdenadas[0][1] : 0;
+  const totalCategorias = categoriasOrdenadas.reduce((s, [, monto]) => s + monto, 0);
   const listaCats = document.getElementById('lista-categorias-metricas');
   listaCats.innerHTML = categoriasOrdenadas.length === 0
     ? '<p class="texto-vacio">Sin ventas en este período</p>'
@@ -813,7 +814,8 @@ function renderMetricas(ventas, mapaMesas) {
       <div class="barra-categoria">
         <div class="barra-categoria-etiqueta"><span>${nombre}</span><span>${formatoMoneda(Math.round(monto))}</span></div>
         <div class="barra-categoria-fondo"><div class="barra-categoria-relleno" style="width:${maxCategoria ? (monto / maxCategoria * 100) : 0}%"></div></div>
-      </div>`).join('');
+      </div>`).join('') + `
+      <div class="categoria-total-fila"><span>Total</span><span>${formatoMoneda(Math.round(totalCategorias))}</span></div>`;
 
   const tallyDias = {};
   ventas.forEach(v => {

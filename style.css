@@ -887,6 +887,17 @@ main { padding: 20px; }
 .barra-categoria:nth-child(6n+4) .barra-categoria-relleno { background: linear-gradient(90deg, #d4a017, #f1c40f); }
 .barra-categoria:nth-child(6n+5) .barra-categoria-relleno { background: linear-gradient(90deg, #d81b60, #ec7ea6); }
 .barra-categoria:nth-child(6n+6) .barra-categoria-relleno { background: linear-gradient(90deg, #e67e22, #f0a35c); }
+.categoria-total-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  font-weight: 800;
+  font-size: .95rem;
+  color: #22303d;
+}
 
 .fila-botones-form { display: flex; gap: 8px; align-items: center; }
 .fila-botones-form .btn { flex: 1; }
