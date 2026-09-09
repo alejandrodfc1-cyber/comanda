@@ -1097,6 +1097,13 @@ function filaProductoAdminHtml(p) {
   return fila;
 }
 
+function rutaStorageProducto(url) {
+  if (!url) return null;
+  const marcador = '/object/public/productos/';
+  const i = url.indexOf(marcador);
+  return i === -1 ? null : url.slice(i + marcador.length);
+}
+
 async function eliminarProducto(id) {
   const p = productosAdminCache.find(x => x.id === id);
   if (!p) return;
@@ -1106,6 +1113,8 @@ async function eliminarProducto(id) {
     alert('No se pudo eliminar: ' + error.message);
     return;
   }
+  const rutaFoto = rutaStorageProducto(p.foto_url);
+  if (rutaFoto) sb.storage.from('productos').remove([rutaFoto]);
   await cargarProductosAdmin();
   cargarCategoriasYProductos();
 }
@@ -1354,6 +1363,94 @@ async function ajustarFotoProducto(archivo) {
   }
 }
 
+async function limitarResolucionImagen(archivo, maxLado) {
+  try {
+    const bitmap = await createImageBitmap(archivo);
+    const w = bitmap.width, h = bitmap.height;
+    const ladoMayor = Math.max(w, h);
+    if (ladoMayor <= maxLado) return archivo;
+    const escala = maxLado / ladoMayor;
+    const nuevoW = Math.round(w * escala);
+    const nuevoH = Math.round(h * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = nuevoW; canvas.height = nuevoH;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, nuevoW, nuevoH);
+    const tipo = archivo.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(res => canvas.toBlob(res, tipo, 0.85));
+    if (!blob) return archivo;
+    return new File([blob], archivo.name, { type: tipo });
+  } catch (err) {
+    console.error('No se pudo reducir la imagen', err);
+    return archivo;
+  }
+}
+
+document.getElementById('btn-limpiar-fotos').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-limpiar-fotos');
+  const resultado = document.getElementById('resultado-limpieza-fotos');
+  if (!confirm('Esto va a borrar fotos de productos que ya no se usan y a reducir el tamaño de las que sí. Puede tardar unos minutos si hay muchas fotos. ¿Continuar?')) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+  resultado.classList.add('oculto', 'mensaje-error');
+
+  try {
+    const { data: archivos, error: errorListar } = await sb.storage.from('productos').list('', { limit: 1000 });
+    if (errorListar) throw errorListar;
+    const { data: productosConFoto, error: errorProductos } = await sb.from('productos').select('id, foto_url').not('foto_url', 'is', null);
+    if (errorProductos) throw errorProductos;
+
+    const rutasEnUso = new Set(productosConFoto.map(p => rutaStorageProducto(p.foto_url)).filter(Boolean));
+    const huerfanos = (archivos || []).map(a => a.name).filter(nombre => !rutasEnUso.has(nombre));
+
+    let huerfanosEliminados = 0;
+    if (huerfanos.length > 0) {
+      const { error: errorBorrar } = await sb.storage.from('productos').remove(huerfanos);
+      if (!errorBorrar) huerfanosEliminados = huerfanos.length;
+    }
+
+    let fotosOptimizadas = 0;
+    let pesoAntes = 0;
+    let pesoDespues = 0;
+    for (const p of productosConFoto) {
+      const ruta = rutaStorageProducto(p.foto_url);
+      if (!ruta || !rutasEnUso.has(ruta)) continue;
+      try {
+        const { data: blobOriginal, error: errorDescarga } = await sb.storage.from('productos').download(ruta);
+        if (errorDescarga || !blobOriginal) continue;
+        if (blobOriginal.size < 150 * 1024) continue;
+        const archivoOriginal = new File([blobOriginal], ruta.split('/').pop(), { type: blobOriginal.type });
+        const reducido = await limitarResolucionImagen(archivoOriginal, 1000);
+        if (!reducido || reducido.size >= blobOriginal.size) continue;
+        const nuevaRuta = `${Date.now()}-${archivoOriginal.name}`;
+        const { error: errorSubida } = await sb.storage.from('productos').upload(nuevaRuta, reducido);
+        if (errorSubida) continue;
+        const nuevaUrl = sb.storage.from('productos').getPublicUrl(nuevaRuta).data.publicUrl;
+        const { error: errorUpdate } = await sb.from('productos').update({ foto_url: nuevaUrl }).eq('id', p.id);
+        if (errorUpdate) { sb.storage.from('productos').remove([nuevaRuta]); continue; }
+        await sb.storage.from('productos').remove([ruta]);
+        fotosOptimizadas++;
+        pesoAntes += blobOriginal.size;
+        pesoDespues += reducido.size;
+      } catch (err) { console.error('Error optimizando foto', ruta, err); }
+    }
+
+    const ahorradoKB = Math.round((pesoAntes - pesoDespues) / 1024);
+    resultado.textContent = `Listo: ${huerfanosEliminados} foto(s) huérfana(s) eliminada(s), ${fotosOptimizadas} foto(s) optimizada(s)` + (ahorradoKB > 0 ? ` (ahorraste ${ahorradoKB} KB)` : '') + '.';
+    resultado.classList.remove('oculto');
+    await cargarProductosAdmin();
+    cargarCategoriasYProductos();
+  } catch (err) {
+    resultado.textContent = 'Ocurrió un problema: ' + (err.message || err);
+    resultado.classList.remove('oculto');
+    resultado.classList.add('mensaje-error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Limpiar y optimizar fotos';
+  }
+});
+
 function poblarSelectCategorias() {
   const select = document.getElementById('nuevo-producto-categoria');
   select.innerHTML = categoriasDb.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
@@ -1387,11 +1484,14 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
 
   let fotoUrl = productoEditandoId ? productoEditandoFotoUrl : null;
   if (archivoFoto) {
+    const fotoUrlAnterior = fotoUrl;
     const archivoParaSubir = archivoFotoAjustado || archivoFoto;
     const ruta = `${Date.now()}-${archivoParaSubir.name}`;
     const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoParaSubir);
     if (!errorSubida) {
       fotoUrl = sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
+      const rutaAnterior = rutaStorageProducto(fotoUrlAnterior);
+      if (rutaAnterior) sb.storage.from('productos').remove([rutaAnterior]);
     }
   }
 
