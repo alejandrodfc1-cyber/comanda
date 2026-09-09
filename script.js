@@ -1143,8 +1143,8 @@ function editarProducto(id) {
   productoEditandoFotoUrl = p.foto_url;
   document.getElementById('nuevo-producto-nombre').value = p.nombre;
   document.getElementById('nuevo-producto-categoria').value = p.categoria_id;
-  document.getElementById('nuevo-producto-costo').value = p.costo;
-  document.getElementById('nuevo-producto-precio').value = p.precio;
+  document.getElementById('nuevo-producto-costo').value = p.costo ? Number(p.costo).toLocaleString('es-CO') : '';
+  document.getElementById('nuevo-producto-precio').value = p.precio ? Number(p.precio).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
   document.getElementById('titulo-form-producto').textContent = `✏️ Editando: ${p.nombre}`;
   document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
@@ -1173,9 +1173,28 @@ function cancelarEdicionProducto() {
   document.getElementById('margen-producto-info').classList.add('oculto');
 }
 
+function valorNumericoInput(id) {
+  return Number(document.getElementById(id).value.replace(/\D/g, '')) || 0;
+}
+
+function formatearMilesEnInput(e) {
+  const input = e.target;
+  const cursor = input.selectionStart;
+  const digitosAntes = input.value.slice(0, cursor).replace(/\D/g, '').length;
+  const soloDigitos = input.value.replace(/\D/g, '');
+  input.value = soloDigitos ? Number(soloDigitos).toLocaleString('es-CO') : '';
+  let contados = 0, nuevaPos = input.value.length;
+  for (let i = 0; i < input.value.length; i++) {
+    if (/\d/.test(input.value[i])) contados++;
+    if (contados === digitosAntes) { nuevaPos = i + 1; break; }
+  }
+  if (digitosAntes === 0) nuevaPos = 0;
+  input.setSelectionRange(nuevaPos, nuevaPos);
+}
+
 function actualizarMargenProducto() {
-  const costo = Number(document.getElementById('nuevo-producto-costo').value) || 0;
-  const precio = Number(document.getElementById('nuevo-producto-precio').value) || 0;
+  const costo = valorNumericoInput('nuevo-producto-costo');
+  const precio = valorNumericoInput('nuevo-producto-precio');
   const info = document.getElementById('margen-producto-info');
   if (!costo && !precio) { info.classList.add('oculto'); return; }
   const margen = precio - costo;
@@ -1185,8 +1204,13 @@ function actualizarMargenProducto() {
   info.classList.remove('oculto');
   info.classList.toggle('margen-negativo', margen <= 0);
 }
-document.getElementById('nuevo-producto-costo').addEventListener('input', actualizarMargenProducto);
-document.getElementById('nuevo-producto-precio').addEventListener('input', actualizarMargenProducto);
+
+function alEscribirMontoProducto(e) {
+  formatearMilesEnInput(e);
+  actualizarMargenProducto();
+}
+document.getElementById('nuevo-producto-costo').addEventListener('input', alEscribirMontoProducto);
+document.getElementById('nuevo-producto-precio').addEventListener('input', alEscribirMontoProducto);
 
 // Encuentra el grupo de pixeles "contenido" conectados entre si mas grande dentro
 // de la mascara, y devuelve su recuadro. Usa una pila en vez de recursion para
@@ -1315,10 +1339,15 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   e.preventDefault();
   const nombre = document.getElementById('nuevo-producto-nombre').value.trim();
   const categoriaId = document.getElementById('nuevo-producto-categoria').value;
-  const costo = Number(document.getElementById('nuevo-producto-costo').value) || 0;
-  const precio = Number(document.getElementById('nuevo-producto-precio').value) || 0;
+  const costo = valorNumericoInput('nuevo-producto-costo');
+  const precio = valorNumericoInput('nuevo-producto-precio');
   const inventario = Number(document.getElementById('nuevo-producto-inventario').value) || 0;
   const archivoFoto = document.getElementById('nuevo-producto-foto').files[0];
+
+  if (precio > 0 && precio <= costo) {
+    const continuar = confirm(`El precio de venta (${formatoMoneda(precio)}) es menor o igual al costo (${formatoMoneda(costo)}). ¿Guardar de todas formas? Por ejemplo, si es una promoción.`);
+    if (!continuar) return;
+  }
 
   let fotoUrl = productoEditandoId ? productoEditandoFotoUrl : null;
   if (archivoFoto) {
