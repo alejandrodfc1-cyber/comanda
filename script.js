@@ -321,7 +321,8 @@ function mesaActiva() {
 
 async function guardarPedido(mesa) {
   const { error } = await sb.from('mesas').update({ pedido: mesa.pedido, abierta_en: mesa.abierta_en }).eq('id', mesa.id);
-  if (error) console.error(error);
+  if (error) { console.error(error); return false; }
+  return true;
 }
 
 function agregarPlato(platoId) {
@@ -393,6 +394,8 @@ function renderPedido() {
   renderGaleriaMenu();
 }
 
+let cobroEnProceso = false;
+
 async function cerrarMesa() {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -400,23 +403,46 @@ async function cerrarMesa() {
     alert('La mesa no tiene pedidos.');
     return;
   }
+  if (cobroEnProceso) return;
 
-  const duracionMinutos = mesa.abierta_en
-    ? Math.round((Date.now() - new Date(mesa.abierta_en).getTime()) / 60000)
-    : null;
+  const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
+  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))}? Esta acción cierra la mesa.`)) return;
 
-  const { data: venta } = await sb.from('ventas').insert({
-    mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo)
-  }).select().single();
+  cobroEnProceso = true;
+  const btnCobrar = document.getElementById('btn-cobrar');
+  if (btnCobrar) { btnCobrar.disabled = true; btnCobrar.textContent = 'Procesando...'; }
 
-  mostrarRecibo(mesa, venta?.id);
+  try {
+    const duracionMinutos = mesa.abierta_en
+      ? Math.round((Date.now() - new Date(mesa.abierta_en).getTime()) / 60000)
+      : null;
 
-  mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
-  mesa.pedido = [];
-  mesa.abierta_en = null;
-  await guardarPedido(mesa);
+    const { data: venta, error } = await sb.from('ventas').insert({
+      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo)
+    }).select().single();
 
-  cerrarModalMenu();
+    if (error || !venta) {
+      alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
+      return;
+    }
+
+    mostrarRecibo(mesa, venta.id);
+
+    mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
+    mesa.pedido = [];
+    mesa.abierta_en = null;
+    const mesaLimpiada = await guardarPedido(mesa);
+    if (!mesaLimpiada) {
+      alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
+    }
+
+    cerrarModalMenu();
+  } catch (err) {
+    alert('No se pudo registrar el cobro por un problema de conexión. El pedido no se perdió: vuelve a intentar "Cobrar".');
+  } finally {
+    cobroEnProceso = false;
+    if (btnCobrar) { btnCobrar.disabled = false; btnCobrar.textContent = '💰 Cobrar'; }
+  }
 }
 
 let reciboActual = null;
