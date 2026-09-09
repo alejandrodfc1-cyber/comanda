@@ -178,6 +178,19 @@
         <div class="margen-producto oculto" id="margen-producto-info">
           Margen: <strong id="margen-producto-monto">$0</strong> <span id="margen-producto-pct"></span>
         </div>
+
+        <div class="calculadora-precio">
+          <div class="calculadora-precio-cabecera">
+            <span>🎯 Fijar precio según % de margen</span>
+            <span class="calculadora-precio-pct" id="calc-precio-pct-valor">30%</span>
+          </div>
+          <input type="range" id="calc-precio-pct" min="5" max="80" value="30" step="1" class="calculadora-precio-slider">
+          <div class="calculadora-precio-pie">
+            <span id="calc-precio-sugerido">Ingresa el costo para ver el precio sugerido</span>
+            <button type="button" class="btn-usar-precio" id="btn-usar-precio-sugerido" disabled>Usar este precio</button>
+          </div>
+        </div>
+
         <label class="campo-form">📦 Inventario (stock disponible)
           <input type="number" id="nuevo-producto-inventario" placeholder="0" min="0">
         </label>

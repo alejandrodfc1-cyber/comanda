@@ -1150,6 +1150,7 @@ function editarProducto(id) {
   document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-producto').classList.remove('oculto');
   actualizarMargenProducto();
+  actualizarCalculadoraPrecio();
   const previewWrap = document.getElementById('preview-foto-producto-wrap');
   if (p.foto_url) {
     document.getElementById('preview-foto-producto').src = p.foto_url;
@@ -1171,6 +1172,7 @@ function cancelarEdicionProducto() {
   document.getElementById('btn-cancelar-producto').classList.add('oculto');
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
   document.getElementById('margen-producto-info').classList.add('oculto');
+  actualizarCalculadoraPrecio();
 }
 
 function valorNumericoInput(id) {
@@ -1211,6 +1213,30 @@ function alEscribirMontoProducto(e) {
 }
 document.getElementById('nuevo-producto-costo').addEventListener('input', alEscribirMontoProducto);
 document.getElementById('nuevo-producto-precio').addEventListener('input', alEscribirMontoProducto);
+
+function actualizarCalculadoraPrecio() {
+  const costo = valorNumericoInput('nuevo-producto-costo');
+  const pct = Number(document.getElementById('calc-precio-pct').value);
+  const btnUsarPrecio = document.getElementById('btn-usar-precio-sugerido');
+  document.getElementById('calc-precio-pct-valor').textContent = `${pct}%`;
+  if (!costo) {
+    document.getElementById('calc-precio-sugerido').textContent = 'Ingresa el costo para ver el precio sugerido';
+    btnUsarPrecio.disabled = true;
+    delete btnUsarPrecio.dataset.precio;
+    return;
+  }
+  const precioSugerido = Math.round(costo / (1 - pct / 100));
+  document.getElementById('calc-precio-sugerido').innerHTML = `Precio sugerido: <strong>${formatoMoneda(precioSugerido)}</strong>`;
+  btnUsarPrecio.disabled = false;
+  btnUsarPrecio.dataset.precio = precioSugerido;
+}
+document.getElementById('calc-precio-pct').addEventListener('input', actualizarCalculadoraPrecio);
+document.getElementById('nuevo-producto-costo').addEventListener('input', actualizarCalculadoraPrecio);
+document.getElementById('btn-usar-precio-sugerido').addEventListener('click', function () {
+  if (!this.dataset.precio) return;
+  document.getElementById('nuevo-producto-precio').value = Number(this.dataset.precio).toLocaleString('es-CO');
+  actualizarMargenProducto();
+});
 
 // Encuentra el grupo de pixeles "contenido" conectados entre si mas grande dentro
 // de la mascara, y devuelve su recuadro. Usa una pila en vez de recursion para

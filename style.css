@@ -521,6 +521,50 @@ main { padding: 20px; }
 .margen-producto strong { color: #1e8449; }
 .margen-producto.margen-negativo { background: #fdecea; }
 .margen-producto.margen-negativo strong { color: #c0392b; }
+.calculadora-precio {
+  background: #eafaf1;
+  border: 1px solid #d4f0e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: -2px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.calculadora-precio-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .8rem;
+  font-weight: 600;
+  color: #1e8449;
+}
+.calculadora-precio-pct { font-weight: 800; font-size: .95rem; }
+.calculadora-precio-slider {
+  width: 100%;
+  accent-color: #27ae60;
+}
+.calculadora-precio-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: .78rem;
+  color: #444;
+}
+.btn-usar-precio {
+  border: none;
+  background: #27ae60;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-usar-precio:disabled { background: #b8c0c6; cursor: default; }
 .selector-archivo-form {
   display: inline-flex;
   align-items: center;
