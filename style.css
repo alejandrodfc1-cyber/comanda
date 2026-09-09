@@ -744,8 +744,8 @@ main { padding: 20px; }
   filter: grayscale(1);
 }
 .btn-toggle-cocina.activo {
-  background: #f2a765;
-  border-color: #e8935a;
+  background: #f5b881;
+  border-color: #eba468;
   opacity: 1;
   filter: none;
 }
