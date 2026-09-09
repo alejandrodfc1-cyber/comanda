@@ -543,7 +543,7 @@ main { padding: 20px; }
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #2c3e50;
+  background: #27ae60;
   color: #fff;
   display: flex;
   align-items: center;
@@ -551,9 +551,9 @@ main { padding: 20px; }
   font-size: .85rem;
   flex-shrink: 0;
   transform: rotate(-90deg);
-  transition: transform .3s ease;
+  transition: transform .3s ease, background .15s ease;
 }
-.titulo-colapsable.expandido .icono-colapso { transform: rotate(0deg); background: #27ae60; }
+.titulo-colapsable.expandido .icono-colapso { transform: rotate(0deg); background: #16a085; }
 .campo-form {
   display: flex;
   flex-direction: column;
