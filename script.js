@@ -462,6 +462,7 @@ async function cerrarMesa() {
     mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
     mesa.pedido = [];
     mesa.abierta_en = null;
+    delete comandaCocinaEnviada[mesa.id];
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
@@ -474,6 +475,44 @@ async function cerrarMesa() {
     cobroEnProceso = false;
     if (btnCobrar) { btnCobrar.disabled = false; btnCobrar.textContent = '💰 Cobrar'; }
   }
+}
+
+const comandaCocinaEnviada = {};
+
+function imprimirComandaCocina() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  if (mesa.pedido.length === 0) {
+    alert('La mesa no tiene productos para enviar a cocina.');
+    return;
+  }
+  const ahora = new Date();
+  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
+  const esActualizacion = !!comandaCocinaEnviada[mesa.id];
+
+  const ANCHO = 32;
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
+  const separador = '-'.repeat(ANCHO) + '\n';
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
+
+  let t = `${BOLD_ON}${centrar(esActualizacion ? 'ACTUALIZACIÓN DE PEDIDO' : 'COMANDA DE COCINA')}${BOLD_OFF}\n`;
+  t += separador;
+  t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
+  t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
+  t += separador;
+  mesa.pedido.forEach(item => {
+    t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
+  });
+  t += separador;
+
+  const textoCodificado = encodeURI(t);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+  comandaCocinaEnviada[mesa.id] = true;
 }
 
 let reciboActual = null;
