@@ -637,6 +637,11 @@ main { padding: 20px; }
   gap: 12px;
   margin: 12px 0 16px;
 }
+.dashboard-fijo .filtros-reportes-fila {
+  margin: 0;
+  padding: 8px 0 10px;
+  border-top: 1px solid #eee;
+}
 .filtro-grupo {
   display: flex;
   flex-direction: column;
@@ -672,6 +677,7 @@ main { padding: 20px; }
 }
 
 .destacado-metricas {
+  display: none;
   background: linear-gradient(135deg, #fff3e0, #ffe8d6);
   border-radius: 10px;
   padding: 10px 14px;
@@ -682,6 +688,11 @@ main { padding: 20px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
 #bloque-periodo { margin-top: 24px; }
+.dashboard-fijo #bloque-periodo.bloque-periodo-fijo {
+  margin: 0;
+  padding: 8px 0 10px;
+  border-top: 1px solid #eee;
+}
 .comparativa-fila {
   background: #fff;
   border: 1px solid #e5e5e5;

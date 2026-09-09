@@ -536,6 +536,9 @@ function mostrarSeccionDashboard(seccion) {
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
   document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
+  document.getElementById('filtros-reportes-fila').classList.toggle('oculto', seccion !== 'metricas');
+  const bloquePeriodo = document.getElementById('bloque-periodo');
+  bloquePeriodo.classList.toggle('oculto', seccion !== 'metricas' && bloquePeriodo.classList.contains('bloque-periodo-fijo'));
   const fab = document.getElementById('btn-guardar-flotante');
   fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas');
   if (seccion === 'top20') cargarTop20Admin();
@@ -571,9 +574,11 @@ document.querySelectorAll('#tabs-turno-metricas button').forEach(btn => {
 function reubicarBloquePeriodo(vista) {
   const bloque = document.getElementById('bloque-periodo');
   if (vista === 'detalle') {
-    document.getElementById('anchor-periodo-top').insertAdjacentElement('afterend', bloque);
+    document.getElementById('filtros-reportes-fila').insertAdjacentElement('afterend', bloque);
+    bloque.classList.add('bloque-periodo-fijo');
   } else {
     document.getElementById('comparativas-rapidas').insertAdjacentElement('afterend', bloque);
+    bloque.classList.remove('bloque-periodo-fijo');
   }
 }
 

@@ -92,6 +92,24 @@
           <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
         </div>
       </div>
+
+      <div class="filtros-reportes-fila" id="filtros-reportes-fila">
+        <div class="filtro-grupo">
+          <span class="filtro-grupo-etiqueta">Vista</span>
+          <div class="categoria-tabs" id="tabs-vista-reportes">
+            <button data-vista="general" class="activa">General</button>
+            <button data-vista="detalle">Detalle</button>
+          </div>
+        </div>
+        <div class="filtro-grupo filtro-grupo-flex">
+          <span class="filtro-grupo-etiqueta">Turno de caja</span>
+          <div class="categoria-tabs" id="tabs-turno-metricas">
+            <button data-turno="ambos" class="activa">Ambos</button>
+            <button data-turno="1">Turno 1</button>
+            <button data-turno="2">Turno 2</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="seccion-admin-config" class="oculto">
@@ -203,24 +221,6 @@
 
     <div id="seccion-admin-metricas">
       <div class="destacado-metricas" id="destacado-producto-dia"></div>
-
-      <div class="filtros-reportes-fila">
-        <div class="filtro-grupo">
-          <span class="filtro-grupo-etiqueta">Vista</span>
-          <div class="categoria-tabs" id="tabs-vista-reportes">
-            <button data-vista="general" class="activa">General</button>
-            <button data-vista="detalle">Detalle</button>
-          </div>
-        </div>
-        <div class="filtro-grupo filtro-grupo-flex">
-          <span class="filtro-grupo-etiqueta">Turno de caja</span>
-          <div class="categoria-tabs" id="tabs-turno-metricas">
-            <button data-turno="ambos" class="activa">Ambos</button>
-            <button data-turno="1">Turno 1</button>
-            <button data-turno="2">Turno 2</button>
-          </div>
-        </div>
-      </div>
 
       <div id="anchor-periodo-top"></div>
 
