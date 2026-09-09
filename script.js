@@ -325,6 +325,23 @@ async function guardarPedido(mesa) {
   return true;
 }
 
+let avisoSyncPedidoMostrado = false;
+async function sincronizarItemPedido(llamadaRpc) {
+  try {
+    const { error } = await llamadaRpc();
+    if (error) throw error;
+  } catch (err) {
+    console.error(err);
+    await cargarMesas();
+    renderPedido();
+    if (!avisoSyncPedidoMostrado) {
+      avisoSyncPedidoMostrado = true;
+      alert('Problema de conexión al guardar el pedido. Se restauró la última versión guardada del servidor — revisa la mesa antes de seguir.');
+      setTimeout(() => { avisoSyncPedidoMostrado = false; }, 5000);
+    }
+  }
+}
+
 function agregarPlato(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -334,7 +351,10 @@ function agregarPlato(platoId) {
   if (item) item.cantidad++;
   else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
   renderPedido();
-  guardarPedido(mesa);
+  sincronizarItemPedido(() => sb.rpc('agregar_item_pedido', {
+    p_mesa_id: mesa.id, p_item_id: plato.id, p_nombre: plato.nombre,
+    p_precio: plato.precio, p_icono: plato.icono || null, p_foto_url: plato.foto_url || null,
+  }));
 }
 
 function cambiarCantidad(platoId, delta) {
@@ -344,7 +364,9 @@ function cambiarCantidad(platoId, delta) {
   item.cantidad += delta;
   if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
   renderPedido();
-  guardarPedido(mesa);
+  sincronizarItemPedido(() => sb.rpc('cambiar_cantidad_item_pedido', {
+    p_mesa_id: mesa.id, p_item_id: platoId, p_delta: delta,
+  }));
 }
 
 function eliminarDelPedido(platoId) {
@@ -355,7 +377,9 @@ function eliminarDelPedido(platoId) {
   if (!confirm(`¿Quitar "${item.nombre}" del pedido?`)) return;
   mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
   renderPedido();
-  guardarPedido(mesa);
+  sincronizarItemPedido(() => sb.rpc('quitar_item_pedido', {
+    p_mesa_id: mesa.id, p_item_id: platoId,
+  }));
 }
 
 function renderPedido() {
