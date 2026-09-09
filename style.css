@@ -744,16 +744,10 @@ main { padding: 20px; }
   filter: grayscale(1);
 }
 .btn-toggle-cocina.activo {
-  background: #e67e22;
-  border-color: #e67e22;
-  box-shadow: 0 0 0 2px rgba(230,126,34,.25);
+  background: #f2a765;
+  border-color: #e8935a;
   opacity: 1;
   filter: none;
-}
-#lista-admin-productos .info-admin strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 @media (max-width: 420px) {
@@ -761,16 +755,13 @@ main { padding: 20px; }
   .acciones-fila-admin { flex-basis: 100%; justify-content: flex-end; margin-top: 8px; }
   #lista-top20-actual .fila-admin,
   #lista-admin-categorias .fila-admin,
-  #lista-orden-productos .fila-admin,
-  #lista-admin-productos .fila-admin { flex-wrap: nowrap; }
+  #lista-orden-productos .fila-admin { flex-wrap: nowrap; }
   #lista-top20-actual .acciones-fila-admin,
   #lista-admin-categorias .acciones-fila-admin,
-  #lista-orden-productos .acciones-fila-admin,
-  #lista-admin-productos .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
+  #lista-orden-productos .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
   #lista-top20-actual .info-admin strong,
   #lista-admin-categorias .info-admin strong,
-  #lista-orden-productos .info-admin strong,
-  #lista-admin-productos .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lista-orden-productos .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
