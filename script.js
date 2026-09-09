@@ -1146,9 +1146,10 @@ function editarProducto(id) {
   document.getElementById('nuevo-producto-costo').value = p.costo;
   document.getElementById('nuevo-producto-precio').value = p.precio;
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
-  document.getElementById('titulo-form-producto').textContent = `Editando: ${p.nombre}`;
+  document.getElementById('titulo-form-producto').textContent = `✏️ Editando: ${p.nombre}`;
   document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-producto').classList.remove('oculto');
+  actualizarMargenProducto();
   const previewWrap = document.getElementById('preview-foto-producto-wrap');
   if (p.foto_url) {
     document.getElementById('preview-foto-producto').src = p.foto_url;
@@ -1165,11 +1166,27 @@ function cancelarEdicionProducto() {
   productoEditandoFotoUrl = null;
   archivoFotoAjustado = null;
   document.getElementById('form-nuevo-producto').reset();
-  document.getElementById('titulo-form-producto').textContent = 'Nuevo producto';
+  document.getElementById('titulo-form-producto').textContent = '🍽️ Nuevo producto';
   document.getElementById('btn-guardar-producto').textContent = '+ Agregar producto';
   document.getElementById('btn-cancelar-producto').classList.add('oculto');
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
+  document.getElementById('margen-producto-info').classList.add('oculto');
 }
+
+function actualizarMargenProducto() {
+  const costo = Number(document.getElementById('nuevo-producto-costo').value) || 0;
+  const precio = Number(document.getElementById('nuevo-producto-precio').value) || 0;
+  const info = document.getElementById('margen-producto-info');
+  if (!costo && !precio) { info.classList.add('oculto'); return; }
+  const margen = precio - costo;
+  const pct = precio > 0 ? Math.round((margen / precio) * 100) : 0;
+  document.getElementById('margen-producto-monto').textContent = formatoMoneda(margen);
+  document.getElementById('margen-producto-pct').textContent = `(${pct}%)`;
+  info.classList.remove('oculto');
+  info.classList.toggle('margen-negativo', margen <= 0);
+}
+document.getElementById('nuevo-producto-costo').addEventListener('input', actualizarMargenProducto);
+document.getElementById('nuevo-producto-precio').addEventListener('input', actualizarMargenProducto);
 
 // Encuentra el grupo de pixeles "contenido" conectados entre si mas grande dentro
 // de la mascara, y devuelve su recuadro. Usa una pila en vez de recursion para

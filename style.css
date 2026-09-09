@@ -491,6 +491,56 @@ main { padding: 20px; }
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: .9rem;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.form-admin input:focus, .form-admin select:focus {
+  outline: none;
+  border-color: #27ae60;
+  box-shadow: 0 0 0 3px rgba(39,174,96,.15);
+}
+.formulario-tarjeta {
+  background: #fafbfc;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px 14px;
+  border-bottom: 1px solid #eee;
+}
+.fila-campos-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.margen-producto {
+  font-size: .8rem;
+  color: #444;
+  background: #eafaf1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: -2px;
+}
+.margen-producto strong { color: #1e8449; }
+.margen-producto.margen-negativo { background: #fdecea; }
+.margen-producto.margen-negativo strong { color: #c0392b; }
+.selector-archivo-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: #eceff1;
+  border: 1px solid #d8dcdf;
+  color: #2c3e50;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.selector-archivo-form:active { background: #dfe3e6; }
+.input-archivo-oculto {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  opacity: 0;
 }
 .titulo-form { margin: 0; color: #2c3e50; }
 .campo-busqueda {

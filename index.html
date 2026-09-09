@@ -159,30 +159,37 @@
     </div>
 
     <div id="seccion-admin-productos" class="oculto">
-      <form id="form-nuevo-producto" class="form-admin">
-        <h3 class="titulo-form" id="titulo-form-producto">Nuevo producto</h3>
-        <label class="campo-form">Nombre del producto
+      <form id="form-nuevo-producto" class="form-admin formulario-tarjeta">
+        <h3 class="titulo-form" id="titulo-form-producto">🍽️ Nuevo producto</h3>
+        <label class="campo-form">🏷️ Nombre del producto
           <input type="text" id="nuevo-producto-nombre" placeholder="Ej: Completo Italiano" required>
         </label>
-        <label class="campo-form">Categoría
+        <label class="campo-form">📂 Categoría
           <select id="nuevo-producto-categoria" required></select>
         </label>
-        <label class="campo-form">Costo (lo que te cuesta hacerlo)
-          <input type="number" id="nuevo-producto-costo" placeholder="0" min="0" required>
-        </label>
-        <label class="campo-form">Precio de venta
-          <input type="number" id="nuevo-producto-precio" placeholder="0" min="0" required>
-        </label>
-        <label class="campo-form">Inventario (stock disponible)
+        <div class="fila-campos-form">
+          <label class="campo-form">💵 Costo
+            <input type="number" id="nuevo-producto-costo" placeholder="0" min="0" required>
+          </label>
+          <label class="campo-form">💰 Precio de venta
+            <input type="number" id="nuevo-producto-precio" placeholder="0" min="0" required>
+          </label>
+        </div>
+        <div class="margen-producto oculto" id="margen-producto-info">
+          Margen: <strong id="margen-producto-monto">$0</strong> <span id="margen-producto-pct"></span>
+        </div>
+        <label class="campo-form">📦 Inventario (stock disponible)
           <input type="number" id="nuevo-producto-inventario" placeholder="0" min="0">
         </label>
-        <label class="campo-form">Foto del producto
+        <div class="campo-form">
+          <span>📷 Foto del producto</span>
           <div class="preview-foto-form oculto" id="preview-foto-producto-wrap">
             <img id="preview-foto-producto" src="" alt="Foto actual">
             <span>Foto actual — elige otro archivo para reemplazarla</span>
           </div>
-          <input type="file" id="nuevo-producto-foto" accept="image/*">
-        </label>
+          <label class="selector-archivo-form" for="nuevo-producto-foto">📎 Elegir foto...</label>
+          <input type="file" id="nuevo-producto-foto" accept="image/*" class="input-archivo-oculto">
+        </div>
         <div class="fila-botones-form">
           <button type="submit" class="btn" id="btn-guardar-producto">+ Agregar producto</button>
           <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-producto" onclick="cancelarEdicionProducto()">Cancelar</button>
