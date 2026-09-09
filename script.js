@@ -518,7 +518,7 @@ function imprimirComandaCocina() {
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
   const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
 
-  let t = `${BOLD_ON}${centrar(esActualizacion ? 'ACTUALIZACIÓN DE PEDIDO' : 'COMANDA DE COCINA')}${BOLD_OFF}\n`;
+  let t = `${BOLD_ON}${centrar(esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA')}${BOLD_OFF}\n`;
   t += separador;
   t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
