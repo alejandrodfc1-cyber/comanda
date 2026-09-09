@@ -657,6 +657,19 @@ main { padding: 20px; }
   font-weight: 600;
   color: #555;
 }
+.campo-checkbox-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #555;
+}
+.campo-checkbox-form input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: #27ae60;
+  flex-shrink: 0;
+}
 .preview-foto-form {
   display: flex;
   align-items: center;
@@ -718,19 +731,40 @@ main { padding: 20px; }
   flex-shrink: 0;
 }
 .btn-editar-admin:disabled { opacity: .3; cursor: default; }
+.btn-toggle-cocina {
+  border: 1px solid #d8dcdf;
+  background: #eceff1;
+  color: #b0b8c0;
+  border-radius: 6px;
+  padding: 6px 9px;
+  cursor: pointer;
+  font-size: .85rem;
+  flex-shrink: 0;
+  opacity: .5;
+  filter: grayscale(1);
+}
+.btn-toggle-cocina.activo {
+  background: #fdf0e2;
+  border-color: #f0d4ac;
+  opacity: 1;
+  filter: none;
+}
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 @media (max-width: 420px) {
   .fila-admin { flex-wrap: wrap; }
   .acciones-fila-admin { flex-basis: 100%; justify-content: flex-end; margin-top: 8px; }
   #lista-top20-actual .fila-admin,
   #lista-admin-categorias .fila-admin,
-  #lista-orden-productos .fila-admin { flex-wrap: nowrap; }
+  #lista-orden-productos .fila-admin,
+  #lista-admin-productos .fila-admin { flex-wrap: nowrap; }
   #lista-top20-actual .acciones-fila-admin,
   #lista-admin-categorias .acciones-fila-admin,
-  #lista-orden-productos .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
+  #lista-orden-productos .acciones-fila-admin,
+  #lista-admin-productos .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
   #lista-top20-actual .info-admin strong,
   #lista-admin-categorias .info-admin strong,
-  #lista-orden-productos .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lista-orden-productos .info-admin strong,
+  #lista-admin-productos .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }

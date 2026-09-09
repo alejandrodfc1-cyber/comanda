@@ -109,6 +109,7 @@ async function cargarCategoriasYProductos() {
     icono: p.icono,
     foto_url: p.foto_url,
     categoria: mapaCategorias[p.categoria_id],
+    prepara_cocina: p.prepara_cocina,
   }));
 
   TOP20_IDS = (productos || [])
@@ -486,6 +487,14 @@ function imprimirComandaCocina() {
     alert('La mesa no tiene productos para enviar a cocina.');
     return;
   }
+  const itemsCocina = mesa.pedido.filter(item => {
+    const producto = MENU.find(p => p.id === item.id);
+    return producto ? producto.prepara_cocina !== false : true;
+  });
+  if (itemsCocina.length === 0) {
+    alert('Ningún producto de este pedido se prepara en cocina (por ejemplo, son solo bebidas embotelladas).');
+    return;
+  }
   const ahora = new Date();
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
@@ -505,7 +514,7 @@ function imprimirComandaCocina() {
   t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
   t += separador;
-  mesa.pedido.forEach(item => {
+  itemsCocina.forEach(item => {
     t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
   });
   t += separador;
@@ -1130,6 +1139,7 @@ function filaProductoAdminHtml(p) {
     </div>
     <div class="acciones-fila-admin">
       <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
+      <button class="btn-toggle-cocina${p.prepara_cocina ? ' activo' : ''}" onclick="toggleCocinaProducto(${p.id}, ${p.prepara_cocina})" title="${p.prepara_cocina ? 'Va a cocina' : 'No va a cocina'}">🍳</button>
       <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
       <button class="btn-toggle-visible" onclick="eliminarProducto(${p.id})">🗑️</button>
     </div>`;
@@ -1184,6 +1194,12 @@ async function toggleVisibleProducto(id, actual) {
   cargarProductosAdmin();
 }
 
+async function toggleCocinaProducto(id, actual) {
+  await sb.from('productos').update({ prepara_cocina: !actual }).eq('id', id);
+  cargarProductosAdmin();
+  cargarCategoriasYProductos();
+}
+
 function editarProducto(id) {
   const p = productosAdminCache.find(x => x.id === id);
   if (!p) return;
@@ -1191,6 +1207,7 @@ function editarProducto(id) {
   productoEditandoFotoUrl = p.foto_url;
   document.getElementById('nuevo-producto-nombre').value = p.nombre;
   document.getElementById('nuevo-producto-categoria').value = p.categoria_id;
+  document.getElementById('nuevo-producto-cocina').checked = p.prepara_cocina !== false;
   document.getElementById('nuevo-producto-costo').value = p.costo ? Number(p.costo).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-precio').value = p.precio ? Number(p.precio).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
@@ -1514,6 +1531,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   const costo = valorNumericoInput('nuevo-producto-costo');
   const precio = valorNumericoInput('nuevo-producto-precio');
   const inventario = Number(document.getElementById('nuevo-producto-inventario').value) || 0;
+  const preparaCocina = document.getElementById('nuevo-producto-cocina').checked;
   const archivoFoto = document.getElementById('nuevo-producto-foto').files[0];
 
   if (precio > 0 && precio <= costo) {
@@ -1534,7 +1552,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
     }
   }
 
-  const datos = { nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl };
+  const datos = { nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl, prepara_cocina: preparaCocina };
   if (productoEditandoId) {
     const original = productosAdminCache.find(p => p.id === productoEditandoId);
     const cambioDeCategoria = original && String(original.categoria_id) !== String(categoriaId);
