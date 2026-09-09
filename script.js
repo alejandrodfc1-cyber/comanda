@@ -193,7 +193,7 @@ function formatoMoneda(n) {
 }
 
 function formatoMonedaCompacto(n) {
-  if (Math.abs(n) >= 100000000) {
+  if (Math.abs(n) >= 10000000) {
     return '$' + (n / 1000000).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
   }
   return formatoMoneda(n);
