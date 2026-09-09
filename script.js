@@ -478,7 +478,7 @@ async function cerrarMesa() {
   }
 }
 
-const comandaCocinaEnviada = {};
+const comandaCocinaEnviada = {}; // { [mesaId]: { [itemId]: cantidad ya enviada a cocina } }
 
 function imprimirComandaCocina() {
   const mesa = mesaActiva();
@@ -487,18 +487,27 @@ function imprimirComandaCocina() {
     alert('La mesa no tiene productos para enviar a cocina.');
     return;
   }
-  const itemsCocina = mesa.pedido.filter(item => {
+  const yaEnviado = comandaCocinaEnviada[mesa.id] || {};
+  const esActualizacion = Object.keys(yaEnviado).length > 0;
+
+  const itemsDeCocina = mesa.pedido.filter(item => {
     const producto = MENU.find(p => p.id === item.id);
     return producto ? producto.prepara_cocina !== false : true;
   });
+  // Solo lo nuevo desde el ultimo envio: si ya se mandaron 2 y ahora hay 3, se imprime solo 1.
+  const itemsCocina = itemsDeCocina
+    .map(item => ({ ...item, cantidad: item.cantidad - (yaEnviado[item.id] || 0) }))
+    .filter(item => item.cantidad > 0);
+
   if (itemsCocina.length === 0) {
-    alert('Ningún producto de este pedido se prepara en cocina (por ejemplo, son solo bebidas embotelladas).');
+    alert(esActualizacion
+      ? 'No hay productos nuevos para enviar a cocina — ya se enviaron todos los que hay en el pedido.'
+      : 'Ningún producto de este pedido se prepara en cocina (por ejemplo, son solo bebidas embotelladas).');
     return;
   }
   const ahora = new Date();
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
-  const esActualizacion = !!comandaCocinaEnviada[mesa.id];
 
   const ANCHO = 32;
   const centrar = (linea) => {
@@ -521,7 +530,10 @@ function imprimirComandaCocina() {
 
   const textoCodificado = encodeURI(t);
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
-  comandaCocinaEnviada[mesa.id] = true;
+
+  const nuevoEstado = { ...yaEnviado };
+  itemsDeCocina.forEach(item => { nuevoEstado[item.id] = item.cantidad; });
+  comandaCocinaEnviada[mesa.id] = nuevoEstado;
 }
 
 let reciboActual = null;
