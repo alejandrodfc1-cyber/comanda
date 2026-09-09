@@ -192,6 +192,13 @@ function formatoMoneda(n) {
   return '$' + n.toLocaleString('es-CO');
 }
 
+function formatoMonedaCompacto(n) {
+  if (Math.abs(n) >= 100000000) {
+    return '$' + (n / 1000000).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'M';
+  }
+  return formatoMoneda(n);
+}
+
 function formatoDuracion(minutos) {
   if (minutos == null) return '—';
   const total = Math.round(minutos);
@@ -719,10 +726,10 @@ function renderMetricas(ventas, mapaMesas) {
     });
   });
 
-  document.getElementById('metrica-total-vendido').textContent = formatoMoneda(Math.round(totalVendido));
+  document.getElementById('metrica-total-vendido').textContent = formatoMonedaCompacto(Math.round(totalVendido));
   document.getElementById('metrica-n-ventas').textContent = nVentas;
-  document.getElementById('metrica-ticket-promedio').textContent = formatoMoneda(Math.round(ticketPromedio));
-  document.getElementById('metrica-ganancia').textContent = formatoMoneda(Math.round(ganancia));
+  document.getElementById('metrica-ticket-promedio').textContent = formatoMonedaCompacto(Math.round(ticketPromedio));
+  document.getElementById('metrica-ganancia').textContent = formatoMonedaCompacto(Math.round(ganancia));
   document.getElementById('metrica-tiempo-mesa').textContent = formatoDuracion(duracionPromedio);
 
   const todasLasMesas = Object.values(tallyMesas).sort((a, b) => b.veces - a.veces);
