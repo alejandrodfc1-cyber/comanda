@@ -627,9 +627,15 @@ main { padding: 20px; }
 @media (max-width: 420px) {
   .fila-admin { flex-wrap: wrap; }
   .acciones-fila-admin { flex-basis: 100%; justify-content: flex-end; margin-top: 8px; }
-  #lista-top20-actual .fila-admin { flex-wrap: nowrap; }
-  #lista-top20-actual .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
-  #lista-top20-actual .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #lista-top20-actual .fila-admin,
+  #lista-admin-categorias .fila-admin,
+  #lista-orden-productos .fila-admin { flex-wrap: nowrap; }
+  #lista-top20-actual .acciones-fila-admin,
+  #lista-admin-categorias .acciones-fila-admin,
+  #lista-orden-productos .acciones-fila-admin { flex-basis: auto; margin-top: 0; }
+  #lista-top20-actual .info-admin strong,
+  #lista-admin-categorias .info-admin strong,
+  #lista-orden-productos .info-admin strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 .texto-vacio { color: #999; font-size: .85rem; font-style: italic; padding: 10px 0; }
