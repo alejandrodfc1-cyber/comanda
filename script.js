@@ -519,7 +519,7 @@ function imprimirComandaCocina() {
     return;
   }
   const ahora = new Date();
-  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
 
   const ANCHO = 32;
