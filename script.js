@@ -1317,8 +1317,16 @@ async function ajustarFotoProducto(archivo) {
     const finalH = Math.round(Math.max(bboxH / RELLENO_MIN, bboxW / (RELLENO_MIN * RATIO_OBJETIVO)));
     const finalW = Math.round(finalH * RATIO_OBJETIVO);
 
+    // Tope de resolucion de salida: en la app nunca se muestra una foto de producto
+    // a mas de unos cientos de px, asi que subir el original a resolucion completa
+    // del celular (varios MB) solo gasta espacio de almacenamiento y datos moviles.
+    const MAX_LADO = 1000;
+    const escala = finalW > MAX_LADO ? MAX_LADO / finalW : 1;
+    const finalWSalida = Math.round(finalW * escala);
+    const finalHSalida = Math.round(finalH * escala);
+
     const outCanvas = document.createElement('canvas');
-    outCanvas.width = finalW; outCanvas.height = finalH;
+    outCanvas.width = finalWSalida; outCanvas.height = finalHSalida;
     const outCtx = outCanvas.getContext('2d');
     if (!esTransparente) {
       // Si el fondo detectado se aleja bastante del blanco puro, se usa blanco puro
@@ -1327,14 +1335,16 @@ async function ajustarFotoProducto(archivo) {
       const desvioDeBlanco = Math.abs(refR - 255) + Math.abs(refG - 255) + Math.abs(refB - 255);
       const colorRelleno = desvioDeBlanco < 30 ? [refR, refG, refB] : [255, 255, 255];
       outCtx.fillStyle = `rgb(${colorRelleno[0]},${colorRelleno[1]},${colorRelleno[2]})`;
-      outCtx.fillRect(0, 0, finalW, finalH);
+      outCtx.fillRect(0, 0, finalWSalida, finalHSalida);
     }
-    const destX = Math.round((finalW - bboxW) / 2);
-    const destY = Math.round((finalH - bboxH) / 2);
-    outCtx.drawImage(srcCanvas, minX, minY, bboxW, bboxH, destX, destY, bboxW, bboxH);
+    const destW = Math.round(bboxW * escala);
+    const destH = Math.round(bboxH * escala);
+    const destX = Math.round((finalWSalida - destW) / 2);
+    const destY = Math.round((finalHSalida - destH) / 2);
+    outCtx.drawImage(srcCanvas, minX, minY, bboxW, bboxH, destX, destY, destW, destH);
 
     const tipoSalida = esTransparente ? 'image/png' : 'image/jpeg';
-    const blob = await new Promise(res => outCanvas.toBlob(res, tipoSalida, 0.9));
+    const blob = await new Promise(res => outCanvas.toBlob(res, tipoSalida, 0.85));
     if (!blob) return archivo;
     const nombreBase = archivo.name.replace(/\.[^.]+$/, '');
     return new File([blob], `${nombreBase}.${esTransparente ? 'png' : 'jpg'}`, { type: tipoSalida });
