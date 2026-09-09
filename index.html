@@ -91,6 +91,7 @@
           <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
           <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
           <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
+          <button id="tab-admin-usuarios" onclick="mostrarSeccionDashboard('usuarios')">Usuarios</button>
         </div>
       </div>
 
@@ -150,6 +151,15 @@
         </div>
         <div id="resultado-limpieza-fotos" class="mensaje-guardado oculto"></div>
       </div>
+    </div>
+
+    <div id="seccion-admin-usuarios" class="oculto">
+      <div class="form-admin">
+        <h3 class="titulo-form">➕ Agregar una persona nueva</h3>
+        <p class="texto-ayuda">Pide que la persona cree su propia cuenta desde la pantalla de inicio de sesión ("Crear cuenta (primera vez)"), con su correo y una contraseña. Apenas aparezca en la lista de abajo, asígnale el rol correcto.</p>
+      </div>
+      <input type="text" id="buscar-usuario" class="campo-busqueda" placeholder="🔍 Buscar por correo...">
+      <div id="lista-admin-usuarios" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-mesas" class="oculto">

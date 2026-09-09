@@ -163,11 +163,13 @@ async function crearCuenta() {
 }
 
 let rolUsuario = null;
+let usuarioActualId = null;
 
 async function cargarRolUsuario(userId) {
+  usuarioActualId = userId;
   const { data } = await sb.from('perfiles').select('rol').eq('id', userId).single();
   rolUsuario = data?.rol || 'mesero';
-  document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario !== 'admin');
+  document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario === 'mesero');
 }
 
 sb.auth.onAuthStateChange((_event, session) => {
@@ -180,6 +182,7 @@ sb.auth.onAuthStateChange((_event, session) => {
     cargarRolUsuario(session.user.id);
   } else {
     rolUsuario = null;
+    usuarioActualId = null;
   }
 });
 
@@ -642,19 +645,25 @@ function imprimirConRawBT() {
 }
 
 function abrirDashboard() {
-  if (rolUsuario !== 'admin') {
-    alert('Esta sección es solo para administradores.');
+  if (rolUsuario !== 'admin' && rolUsuario !== 'cajero') {
+    alert('Esta sección es solo para administradores y cajeros.');
     return;
   }
+  const esAdmin = rolUsuario === 'admin';
   document.getElementById('modal-dashboard').classList.remove('oculto');
+  ['top20', 'productos', 'orden', 'mesas', 'categorias', 'config', 'usuarios'].forEach(s => {
+    document.getElementById(`tab-admin-${s}`).classList.toggle('oculto', !esAdmin);
+  });
   mostrarSeccionDashboard('metricas');
-  cancelarEdicionMesa();
-  cancelarEdicionProducto();
-  cancelarEdicionCategoria();
-  cargarMesasAdmin();
-  cargarProductosAdmin();
-  renderCategoriasAdmin();
-  poblarSelectCategorias();
+  if (esAdmin) {
+    cancelarEdicionMesa();
+    cancelarEdicionProducto();
+    cancelarEdicionCategoria();
+    cargarMesasAdmin();
+    cargarProductosAdmin();
+    renderCategoriasAdmin();
+    poblarSelectCategorias();
+  }
 }
 
 function cerrarDashboard() {
@@ -665,7 +674,7 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias', 'top20', 'orden', 'metricas', 'config'].forEach(s => {
+  ['mesas', 'productos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
@@ -674,10 +683,11 @@ function mostrarSeccionDashboard(seccion) {
   const bloquePeriodo = document.getElementById('bloque-periodo');
   bloquePeriodo.classList.toggle('oculto', seccion !== 'metricas' && bloquePeriodo.classList.contains('bloque-periodo-fijo'));
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
+  if (seccion === 'usuarios') cargarUsuariosAdmin();
 }
 
 function guardarDesdeFlotante() {
@@ -1227,6 +1237,63 @@ async function toggleCocinaProducto(id, actual) {
   await sb.from('productos').update({ prepara_cocina: !actual }).eq('id', id);
   cargarProductosAdmin();
   cargarCategoriasYProductos();
+}
+
+let usuariosAdminCache = [];
+const ETIQUETAS_ROL = { admin: 'Admin', cajero: 'Cajero', mesero: 'Mesero' };
+const ICONO_ROL = { admin: '👑', cajero: '💵', mesero: '🧑‍🍳' };
+
+async function cargarUsuariosAdmin() {
+  const { data, error } = await sb.from('perfiles').select('*');
+  if (error) { console.error(error); return; }
+  usuariosAdminCache = data || [];
+  renderUsuariosAdmin();
+}
+
+function listaUsuariosFiltrada() {
+  const ordenados = [...usuariosAdminCache].sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+  const q = normalizarTexto(document.getElementById('buscar-usuario').value.trim());
+  if (!q) return ordenados;
+  return ordenados.filter(u => normalizarTexto(u.email || '').includes(q));
+}
+
+document.getElementById('buscar-usuario').addEventListener('input', renderUsuariosAdmin);
+
+function renderUsuariosAdmin() {
+  const cont = document.getElementById('lista-admin-usuarios');
+  const lista = listaUsuariosFiltrada();
+  cont.innerHTML = lista.length === 0
+    ? '<p class="texto-vacio">No hay usuarios que coincidan.</p>'
+    : lista.map(u => {
+      const esUnoMismo = u.id === usuarioActualId;
+      return `
+      <div class="fila-admin">
+        <div class="miniatura">${ICONO_ROL[u.rol] || '👤'}</div>
+        <div class="info-admin">
+          <strong>${u.email || '(sin correo)'}</strong>
+          <span>${ETIQUETAS_ROL[u.rol] || u.rol}${esUnoMismo ? ' · Tu cuenta' : ''}</span>
+        </div>
+        <div class="acciones-fila-admin">
+          <select class="selector-rol-usuario" onchange="cambiarRolUsuario('${u.id}', this.value)" ${esUnoMismo ? 'disabled title="No puedes cambiar tu propio rol"' : ''}>
+            <option value="mesero" ${u.rol === 'mesero' ? 'selected' : ''}>Mesero</option>
+            <option value="cajero" ${u.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
+            <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>
+          </select>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+async function cambiarRolUsuario(id, nuevoRol) {
+  const usuario = usuariosAdminCache.find(u => u.id === id);
+  if (!usuario) return;
+  if (!confirm(`¿Cambiar el rol de "${usuario.email}" a "${ETIQUETAS_ROL[nuevoRol]}"?`)) {
+    renderUsuariosAdmin();
+    return;
+  }
+  const { error } = await sb.from('perfiles').update({ rol: nuevoRol }).eq('id', id);
+  if (error) alert('No se pudo cambiar el rol: ' + error.message);
+  cargarUsuariosAdmin();
 }
 
 function editarProducto(id) {

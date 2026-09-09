@@ -731,6 +731,17 @@ main { padding: 20px; }
   flex-shrink: 0;
 }
 .btn-editar-admin:disabled { opacity: .3; cursor: default; }
+#lista-admin-usuarios .info-admin strong { overflow-wrap: break-word; }
+.selector-rol-usuario {
+  padding: 7px 8px;
+  border: 1px solid #d8dcdf;
+  border-radius: 6px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: #2c3e50;
+  background: #fff;
+}
+.selector-rol-usuario:disabled { opacity: .5; background: #f0f0f0; }
 .btn-toggle-cocina {
   border: 1px solid #d8dcdf;
   background: #eceff1;
