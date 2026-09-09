@@ -14,8 +14,12 @@ Write-Host "Sirviendo $root en el puerto $Port (accesible desde la red local)"
 while ($true) {
   $client = $listener.AcceptTcpClient()
   try {
-    $client.ReceiveTimeout = 2000
-    $client.SendTimeout = 2000
+    $client.ReceiveTimeout = 5000
+    $client.SendTimeout = 5000
+    # Evita que Close() corte la conexion de golpe (RST) mientras todavia hay
+    # datos por enviar -- sin esto, archivos grandes (como script.js) se cortaban
+    # a medias de forma intermitente.
+    $client.LingerState = New-Object System.Net.Sockets.LingerOption($true, 2)
     $stream = $client.GetStream()
     $reader = New-Object System.IO.StreamReader($stream)
     $requestLine = $reader.ReadLine()
