@@ -162,12 +162,25 @@ async function crearCuenta() {
   document.getElementById('login-error').textContent = error ? error.message : 'Cuenta creada. Revisa tu correo si pide confirmación, luego presiona Entrar.';
 }
 
+let rolUsuario = null;
+
+async function cargarRolUsuario(userId) {
+  const { data } = await sb.from('perfiles').select('rol').eq('id', userId).single();
+  rolUsuario = data?.rol || 'mesero';
+  document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario !== 'admin');
+}
+
 sb.auth.onAuthStateChange((_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
   document.getElementById('barra-superior').classList.toggle('oculto', !haySesion);
-  if (haySesion) { cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); }
+  if (haySesion) {
+    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion();
+    cargarRolUsuario(session.user.id);
+  } else {
+    rolUsuario = null;
+  }
 });
 
 async function cargarMesas() {
@@ -629,6 +642,10 @@ function imprimirConRawBT() {
 }
 
 function abrirDashboard() {
+  if (rolUsuario !== 'admin') {
+    alert('Esta sección es solo para administradores.');
+    return;
+  }
   document.getElementById('modal-dashboard').classList.remove('oculto');
   mostrarSeccionDashboard('metricas');
   cancelarEdicionMesa();
