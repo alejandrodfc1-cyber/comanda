@@ -697,6 +697,8 @@ main { padding: 20px; }
 
 .comparativas-rapidas { margin-bottom: 8px; }
 #bloque-periodo { margin-top: 24px; }
+#bloque-periodo:not(.bloque-periodo-fijo) { scroll-snap-align: start; }
+#modal-dashboard .modal-caja { scroll-snap-type: y proximity; }
 .dashboard-fijo #bloque-periodo.bloque-periodo-fijo {
   margin: 0;
   padding: 8px 0 10px;
@@ -778,35 +780,50 @@ main { padding: 20px; }
 .metricas-tarjetas {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .metrica-tarjeta {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 9px;
   background: #fff;
-  border-radius: 12px;
-  padding: 14px 12px 12px;
+  border-radius: 10px;
+  padding: 9px 10px;
   border: 1px solid #eee;
   border-left: 4px solid var(--color-metrica, #2c3e50);
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
   transition: transform .15s ease, box-shadow .15s ease;
   overflow: hidden;
 }
-.metrica-tarjeta::after {
-  content: '';
-  position: absolute;
-  top: -20px; right: -20px;
-  width: 70px; height: 70px;
-  border-radius: 50%;
-  background: var(--color-metrica, #2c3e50);
-  opacity: .08;
-}
 .metrica-tarjeta:active { transform: scale(.97); }
-.metrica-icono { font-size: 1.15rem; margin-bottom: 2px; }
-.metrica-valor { font-size: 1.3rem; font-weight: 800; color: #22303d; }
-.metrica-etiqueta { font-size: .75rem; color: #666; position: relative; }
+.metrica-icono {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+  background: #eef1f3;
+  background: color-mix(in srgb, var(--color-metrica, #2c3e50) 16%, #fff);
+}
+.metrica-info { min-width: 0; display: flex; flex-direction: column; }
+.metrica-valor {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #22303d;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metrica-etiqueta {
+  font-size: .68rem;
+  color: #666;
+  line-height: 1.25;
+}
 
 .metrica-verde    { --color-metrica: #27ae60; }
 .metrica-azul     { --color-metrica: #2980b9; }
