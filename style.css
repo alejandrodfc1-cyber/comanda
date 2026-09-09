@@ -175,7 +175,7 @@ main { padding: 20px; }
   margin-top: -4px;
 }
 .btn-cerrar {
-  border: none; cursor: pointer; font-size: 1.1rem; font-weight: 700;
+  border: 1px solid #ccd2d6; cursor: pointer; font-size: 1.1rem; font-weight: 700;
   color: #2c3e50; background: #e4e7ea;
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
