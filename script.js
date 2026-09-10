@@ -230,12 +230,14 @@ function renderMesas() {
   mesas.forEach(mesa => {
     const ocupada = mesa.pedido.length > 0;
     const btn = document.createElement('button');
-    btn.className = 'mesa' + (ocupada ? ' ocupada' : '');
+    btn.className = 'mesa' + (ocupada ? ' ocupada' : '') + (mesa.cuenta_solicitada ? ' pide-cuenta' : '');
     const etiqueta = mesa.nombre || mesa.id;
     const esSoloNumero = /^\d+$/.test(String(etiqueta));
     const claseEtiqueta = mesa.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
-    btn.innerHTML = `<span class="${claseEtiqueta}">${etiqueta}</span>` +
-      (ocupada ? `<small>${formatoMoneda(totalMesa(mesa))}</small>` : '<small>Libre</small>');
+    const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
+    btn.innerHTML = (mesa.cuenta_solicitada ? '<span class="badge-pide-cuenta">🔔</span>' : '') +
+      `<span class="${claseEtiqueta}">${etiqueta}</span>` +
+      (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>');
     btn.onclick = () => abrirModalMenu(mesa.id);
     grid.appendChild(btn);
   });
@@ -249,11 +251,12 @@ function toggleExpandido(itemId) {
   renderPedido();
 }
 
-let cuentaRevelada = false;
-
-function revelarCuenta() {
-  cuentaRevelada = true;
+async function pedirCuentaACaja() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  mesa.cuenta_solicitada = true;
   renderPedido();
+  await sb.from('mesas').update({ cuenta_solicitada: true }).eq('id', mesa.id);
 }
 
 function abrirModalMenu(mesaId) {
@@ -261,7 +264,6 @@ function abrirModalMenu(mesaId) {
   if (!mesaAbierta) return;
   mesaActivaId = mesaId;
   itemExpandidoId = null;
-  cuentaRevelada = false;
   categoriaActiva = 'Top20';
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
@@ -269,6 +271,10 @@ function abrirModalMenu(mesaId) {
   renderListaMenu();
   renderPedido();
   document.getElementById('modal-menu').classList.remove('oculto');
+  if (rolUsuario !== 'mesero' && mesaAbierta.cuenta_solicitada) {
+    mesaAbierta.cuenta_solicitada = false;
+    sb.from('mesas').update({ cuenta_solicitada: false }).eq('id', mesaId);
+  }
 }
 
 function cerrarModalMenu() {
@@ -417,7 +423,8 @@ function eliminarDelPedido(platoId) {
 function renderPedido() {
   const mesa = mesaActiva();
   if (!mesa) return;
-  const ocultarMontos = rolUsuario === 'mesero' && !cuentaRevelada;
+  const esMesero = rolUsuario === 'mesero';
+  const ocultarMontos = esMesero;
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
@@ -451,8 +458,10 @@ function renderPedido() {
   document.getElementById('propina-pedido').textContent = formatoMoneda(propina);
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
-  document.getElementById('btn-revelar-cuenta').classList.toggle('oculto', !ocultarMontos);
-  document.getElementById('btn-cobrar').classList.toggle('oculto', rolUsuario === 'mesero');
+  document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
+  document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada);
+  document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
+  document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
   actualizarVistaModal();
   renderGaleriaMenu();
 }
