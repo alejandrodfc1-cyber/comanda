@@ -259,6 +259,20 @@ async function pedirCuentaACaja() {
   await sb.from('mesas').update({ cuenta_solicitada: true }).eq('id', mesa.id);
 }
 
+async function toggleTotalVisibleMesero() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const nuevoValor = !mesa.total_visible_mesero;
+  mesa.total_visible_mesero = nuevoValor;
+  const datos = { total_visible_mesero: nuevoValor };
+  if (nuevoValor && mesa.cuenta_solicitada) {
+    mesa.cuenta_solicitada = false;
+    datos.cuenta_solicitada = false;
+  }
+  renderPedido();
+  await sb.from('mesas').update(datos).eq('id', mesa.id);
+}
+
 function abrirModalMenu(mesaId) {
   const mesaAbierta = mesas.find(m => m.id === mesaId);
   if (!mesaAbierta) return;
@@ -424,7 +438,7 @@ function renderPedido() {
   const mesa = mesaActiva();
   if (!mesa) return;
   const esMesero = rolUsuario === 'mesero';
-  const ocultarMontos = esMesero;
+  const ocultarMontos = esMesero && !mesa.total_visible_mesero;
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
@@ -459,9 +473,12 @@ function renderPedido() {
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
-  document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada);
+  document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada || !!mesa.total_visible_mesero);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
+  const btnMostrarTotal = document.getElementById('btn-mostrar-total-mesero');
+  btnMostrarTotal.classList.toggle('oculto', esMesero);
+  btnMostrarTotal.textContent = mesa.total_visible_mesero ? '🙈 Ocultar total al mesero' : '👁️ Mostrar total al mesero';
   actualizarVistaModal();
   renderGaleriaMenu();
 }
@@ -503,7 +520,10 @@ async function cerrarMesa() {
     mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
     mesa.pedido = [];
     mesa.abierta_en = null;
+    mesa.cuenta_solicitada = false;
+    mesa.total_visible_mesero = false;
     delete comandaCocinaEnviada[mesa.id];
+    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false }).eq('id', mesa.id);
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
