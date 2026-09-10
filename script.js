@@ -249,11 +249,19 @@ function toggleExpandido(itemId) {
   renderPedido();
 }
 
+let cuentaRevelada = false;
+
+function revelarCuenta() {
+  cuentaRevelada = true;
+  renderPedido();
+}
+
 function abrirModalMenu(mesaId) {
   const mesaAbierta = mesas.find(m => m.id === mesaId);
   if (!mesaAbierta) return;
   mesaActivaId = mesaId;
   itemExpandidoId = null;
+  cuentaRevelada = false;
   categoriaActiva = 'Top20';
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
@@ -409,6 +417,7 @@ function eliminarDelPedido(platoId) {
 function renderPedido() {
   const mesa = mesaActiva();
   if (!mesa) return;
+  const ocultarMontos = rolUsuario === 'mesero' && !cuentaRevelada;
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   mesa.pedido.forEach(item => {
@@ -418,11 +427,14 @@ function renderPedido() {
     el.className = 'item-pedido';
     el.onclick = () => toggleExpandido(item.id);
     const iconoItemHtml = item.foto_url ? `<img src="${item.foto_url}" alt="">` : (item.icono || '🍽️');
+    const detalleTexto = ocultarMontos
+      ? `Cantidad: ${item.cantidad}`
+      : `${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}`;
     el.innerHTML = `
       <span class="item-icono">${iconoItemHtml}</span>
       <div class="item-info">
         <span class="item-nombre">${item.nombre}</span>
-        <span class="item-detalle">${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}</span>
+        <span class="item-detalle">${detalleTexto}</span>
       </div>
       ${expandido ? `
       <div class="item-acciones" onclick="event.stopPropagation()">
@@ -438,6 +450,9 @@ function renderPedido() {
   document.getElementById('total-pedido').textContent = formatoMoneda(total);
   document.getElementById('propina-pedido').textContent = formatoMoneda(propina);
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
+  document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
+  document.getElementById('btn-revelar-cuenta').classList.toggle('oculto', !ocultarMontos);
+  document.getElementById('btn-cobrar').classList.toggle('oculto', rolUsuario === 'mesero');
   actualizarVistaModal();
   renderGaleriaMenu();
 }

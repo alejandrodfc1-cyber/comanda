@@ -53,11 +53,12 @@
 
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
       <div id="lista-pedido"></div>
-      <div class="resumen-total">
+      <div class="resumen-total" id="resumen-total">
         <div class="linea-resumen">Total: <span id="total-pedido">$0</span></div>
         <div class="linea-resumen linea-propina">Propina (10%): <span id="propina-pedido">$0</span></div>
         <div class="linea-resumen linea-total-final">Total + propina: <span id="total-con-propina">$0</span></div>
       </div>
+      <button class="btn btn-turquesa oculto" id="btn-revelar-cuenta" onclick="revelarCuenta()">👁️ Mostrar cuenta (si la piden)</button>
       <button class="btn btn-cocina" id="btn-comanda-cocina" onclick="imprimirComandaCocina()">🍳 Enviar a cocina</button>
       <div class="acciones-modal">
         <button class="btn btn-guardar" onclick="cerrarModalMenu()">💾 Guardar</button>
