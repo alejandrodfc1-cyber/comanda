@@ -518,6 +518,7 @@ function guardarNotaItem() {
   else delete item.nota;
   const platoId = itemNotaEditandoId;
   cerrarModalNota();
+  if (itemExpandidoId === platoId) itemExpandidoId = null;
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('actualizar_nota_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: platoId, p_nota: notaLimpia || null,
