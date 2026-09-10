@@ -422,6 +422,15 @@ async function sincronizarItemPedido(llamadaRpc) {
   }
 }
 
+function limpiarSolicitudCuentaPorCambioPedido(mesa) {
+  // Si el pedido crece despues de haber pedido la cuenta, esa solicitud quedo
+  // desactualizada (hay algo nuevo por enviar a cocina) -- se limpia sola para
+  // que "Enviar a cocina" vuelva a estar disponible.
+  if (!mesa.cuenta_solicitada) return;
+  mesa.cuenta_solicitada = false;
+  sb.from('mesas').update({ cuenta_solicitada: false }).eq('id', mesa.id);
+}
+
 function agregarPlato(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -430,6 +439,7 @@ function agregarPlato(platoId) {
   if (mesa.pedido.length === 0 && !mesa.abierta_en) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
   else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
+  limpiarSolicitudCuentaPorCambioPedido(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('agregar_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: plato.id, p_nombre: plato.nombre,
@@ -443,6 +453,7 @@ function cambiarCantidad(platoId, delta) {
   const item = mesa.pedido.find(i => i.id === platoId);
   item.cantidad += delta;
   if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
+  else if (delta > 0) limpiarSolicitudCuentaPorCambioPedido(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('cambiar_cantidad_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: platoId, p_delta: delta,
@@ -503,7 +514,9 @@ function renderPedido() {
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
   const sinCierreEnCurso = !mesa.cuenta_solicitada && !mesa.total_visible_mesero;
   const hayPendienteCocina = itemsPendientesCocina(mesa).length > 0;
-  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !sinCierreEnCurso || !hayPendienteCocina);
+  // "Enviar a cocina" solo depende de si hay algo pendiente -- si piden la
+  // cuenta y despues agregan un producto mas, tiene que poder enviarse igual.
+  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !hayPendienteCocina);
   document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !sinCierreEnCurso || hayPendienteCocina);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
