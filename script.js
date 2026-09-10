@@ -1589,6 +1589,39 @@ function poblarSelectInsumos() {
   if (actual) select.value = actual;
 }
 
+function etiquetaEmpaqueInsumo(i) {
+  if (!i.unidades_por_caja) return '';
+  return i.unidad === 'ml' && i.contenido_por_unidad
+    ? ` · caja de ${i.unidades_por_caja} x ${i.contenido_por_unidad}ml`
+    : ` · caja de ${i.unidades_por_caja}`;
+}
+
+function cantidadDesdeCajas(i, cajas, sueltas) {
+  const totalUnidades = (Number(cajas) || 0) * (Number(i.unidades_por_caja) || 0) + (Number(sueltas) || 0);
+  return i.unidad === 'ml' ? totalUnidades * (Number(i.contenido_por_unidad) || 0) : totalUnidades;
+}
+
+function pedirCantidadInsumo(i, tituloAccion) {
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
+  if (!i.unidades_por_caja) {
+    const cantidad = prompt(`${tituloAccion} de "${i.nombre}" (en ${unidadTexto}):`, i.unidad === 'ml' ? '750' : '1');
+    if (cantidad === null) return null;
+    const monto = Number(cantidad);
+    if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return null; }
+    return monto;
+  }
+  const cajasStr = prompt(`${tituloAccion} de "${i.nombre}" — ¿cuántas CAJAS completas (de ${i.unidades_por_caja})?`, '0');
+  if (cajasStr === null) return null;
+  const sueltasStr = prompt('¿Y cuántas unidades SUELTAS, fuera de caja?', '0');
+  if (sueltasStr === null) return null;
+  const cajas = Number(cajasStr) || 0;
+  const sueltas = Number(sueltasStr) || 0;
+  const total = cantidadDesdeCajas(i, cajas, sueltas);
+  if (total <= 0) { alert('La cantidad debe ser mayor a cero.'); return null; }
+  if (!confirm(`${cajas} caja(s) x ${i.unidades_por_caja} + ${sueltas} suelta(s) = ${total}${unidadTexto}. ¿Confirmar?`)) return null;
+  return total;
+}
+
 function renderInsumosAdmin() {
   const cont = document.getElementById('lista-admin-insumos');
   if (!cont) return;
@@ -1603,7 +1636,7 @@ function renderInsumosAdmin() {
       <div class="fila-admin">
         <div class="miniatura">${agotado ? '🔴' : (bajo ? '🟡' : '📦')}</div>
         <div class="info-admin">
-          <strong>${i.nombre}</strong>
+          <strong>${i.nombre}</strong><small>${etiquetaEmpaqueInsumo(i)}</small>
           <span>🏬 Bodega: ${i.stock_bodega}${unidadTexto} · <span class="${claseStock}">🍾 Barra: ${i.stock_barra}${unidadTexto}${bajo ? ' · ¡reponer!' : ''}</span></span>
         </div>
         <div class="acciones-fila-admin">
@@ -1616,6 +1649,39 @@ function renderInsumosAdmin() {
       }).join('');
 }
 
+function actualizarCampoContenidoInsumo() {
+  const esMl = document.getElementById('nuevo-insumo-unidad').value === 'ml';
+  document.getElementById('campo-insumo-contenido-wrap').classList.toggle('oculto', !esMl);
+  actualizarTotalStockInicialInsumo();
+}
+
+function insumoDesdeFormularioInsumo() {
+  return {
+    unidad: document.getElementById('nuevo-insumo-unidad').value,
+    unidades_por_caja: Number(document.getElementById('nuevo-insumo-unidades-caja').value) || null,
+    contenido_por_unidad: Number(document.getElementById('nuevo-insumo-contenido').value) || null,
+  };
+}
+
+function actualizarModoStockInicialInsumo() {
+  if (insumoEditandoId) return;
+  const tieneCaja = !!Number(document.getElementById('nuevo-insumo-unidades-caja').value);
+  document.getElementById('campo-insumo-stock-wrap').classList.toggle('oculto', tieneCaja);
+  document.getElementById('campo-insumo-stock-cajas-wrap').classList.toggle('oculto', !tieneCaja);
+  document.getElementById('texto-stock-inicial-calculado').classList.toggle('oculto', !tieneCaja);
+  if (tieneCaja) actualizarTotalStockInicialInsumo();
+}
+
+function actualizarTotalStockInicialInsumo() {
+  const i = insumoDesdeFormularioInsumo();
+  if (!i.unidades_por_caja) return;
+  const cajas = Number(document.getElementById('nuevo-insumo-stock-cajas').value) || 0;
+  const sueltas = Number(document.getElementById('nuevo-insumo-stock-sueltas').value) || 0;
+  const total = cantidadDesdeCajas(i, cajas, sueltas);
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
+  document.getElementById('texto-stock-inicial-calculado').textContent = `= ${total}${unidadTexto} en bodega`;
+}
+
 function editarInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
@@ -1623,7 +1689,12 @@ function editarInsumo(id) {
   document.getElementById('nuevo-insumo-nombre').value = i.nombre;
   document.getElementById('nuevo-insumo-unidad').value = i.unidad;
   document.getElementById('nuevo-insumo-stock-minimo').value = i.stock_minimo;
+  document.getElementById('nuevo-insumo-unidades-caja').value = i.unidades_por_caja ?? '';
+  document.getElementById('nuevo-insumo-contenido').value = i.contenido_por_unidad ?? '';
   document.getElementById('campo-insumo-stock-wrap').classList.add('oculto');
+  document.getElementById('campo-insumo-stock-cajas-wrap').classList.add('oculto');
+  document.getElementById('texto-stock-inicial-calculado').classList.add('oculto');
+  actualizarCampoContenidoInsumo();
   document.getElementById('titulo-form-insumo').textContent = `✏️ Editando: ${i.nombre}`;
   document.getElementById('btn-guardar-insumo').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-insumo').classList.remove('oculto');
@@ -1633,7 +1704,10 @@ function editarInsumo(id) {
 function cancelarEdicionInsumo() {
   insumoEditandoId = null;
   document.getElementById('form-nuevo-insumo').reset();
+  document.getElementById('campo-insumo-stock-cajas-wrap').classList.add('oculto');
+  document.getElementById('texto-stock-inicial-calculado').classList.add('oculto');
   document.getElementById('campo-insumo-stock-wrap').classList.remove('oculto');
+  actualizarCampoContenidoInsumo();
   document.getElementById('titulo-form-insumo').textContent = '📦 Nuevo insumo';
   document.getElementById('btn-guardar-insumo').textContent = '+ Agregar insumo';
   document.getElementById('btn-cancelar-insumo').classList.add('oculto');
@@ -1642,11 +1716,8 @@ function cancelarEdicionInsumo() {
 async function reponerInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
-  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
-  const cantidad = prompt(`Reposición mensual a BODEGA de "${i.nombre}" (en ${unidadTexto}):\nBodega actual: ${i.stock_bodega}${unidadTexto}`, i.unidad === 'ml' ? '750' : '1');
-  if (cantidad === null) return;
-  const monto = Number(cantidad);
-  if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return; }
+  const monto = pedirCantidadInsumo(i, 'Reposición a BODEGA');
+  if (monto === null) return;
   const { error } = await sb.from('insumos').update({ stock_bodega: Number(i.stock_bodega) + monto }).eq('id', id);
   if (error) { alert('No se pudo reponer: ' + error.message); return; }
   await cargarInsumosAdmin();
@@ -1655,11 +1726,8 @@ async function reponerInsumo(id) {
 async function traspasarInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
-  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
-  const cantidad = prompt(`¿Cuánto se traspasa de BODEGA a BARRA de "${i.nombre}" (en ${unidadTexto})?\nBodega: ${i.stock_bodega}${unidadTexto} · Barra: ${i.stock_barra}${unidadTexto}`, '');
-  if (cantidad === null) return;
-  const monto = Number(cantidad);
-  if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return; }
+  const monto = pedirCantidadInsumo(i, 'Traspaso de BODEGA a BARRA');
+  if (monto === null) return;
   const { error } = await sb.rpc('traspasar_insumo', { p_insumo_id: id, p_cantidad: monto });
   if (error) { alert('No se pudo traspasar: ' + error.message); return; }
   await cargarInsumosAdmin();
@@ -1684,12 +1752,18 @@ document.getElementById('form-nuevo-insumo').addEventListener('submit', async (e
   const nombre = document.getElementById('nuevo-insumo-nombre').value.trim();
   const unidad = document.getElementById('nuevo-insumo-unidad').value;
   const stockMinimo = Number(document.getElementById('nuevo-insumo-stock-minimo').value) || 0;
+  const unidadesPorCaja = Number(document.getElementById('nuevo-insumo-unidades-caja').value) || null;
+  const contenidoPorUnidad = unidad === 'ml' ? (Number(document.getElementById('nuevo-insumo-contenido').value) || null) : null;
   if (!nombre) return;
   if (insumoEditandoId) {
-    await sb.from('insumos').update({ nombre, unidad, stock_minimo: stockMinimo }).eq('id', insumoEditandoId);
+    await sb.from('insumos').update({ nombre, unidad, stock_minimo: stockMinimo, unidades_por_caja: unidadesPorCaja, contenido_por_unidad: contenidoPorUnidad }).eq('id', insumoEditandoId);
   } else {
-    const stockInicial = Number(document.getElementById('nuevo-insumo-stock').value) || 0;
-    await sb.from('insumos').insert({ nombre, unidad, stock_minimo: stockMinimo, stock_bodega: stockInicial });
+    const stockInicial = unidadesPorCaja
+      ? cantidadDesdeCajas({ unidad, unidades_por_caja: unidadesPorCaja, contenido_por_unidad: contenidoPorUnidad },
+          Number(document.getElementById('nuevo-insumo-stock-cajas').value) || 0,
+          Number(document.getElementById('nuevo-insumo-stock-sueltas').value) || 0)
+      : Number(document.getElementById('nuevo-insumo-stock').value) || 0;
+    await sb.from('insumos').insert({ nombre, unidad, stock_minimo: stockMinimo, stock_bodega: stockInicial, unidades_por_caja: unidadesPorCaja, contenido_por_unidad: contenidoPorUnidad });
   }
   cancelarEdicionInsumo();
   await cargarInsumosAdmin();
@@ -1706,13 +1780,37 @@ function iniciarConteo(ubicacion) {
   document.getElementById('titulo-panel-conteo').textContent = `Conteo físico — ${etiqueta}`;
   document.getElementById('conteo-insumo-nota').value = '';
   const campo = ubicacion === 'bodega' ? 'stock_bodega' : 'stock_barra';
-  document.getElementById('lista-conteo-insumos').innerHTML = insumosCache.map(i => `
+  document.getElementById('lista-conteo-insumos').innerHTML = insumosCache.map(i => {
+    const unidadTexto = i.unidad === 'ml' ? 'ml' : 'u.';
+    if (i.unidades_por_caja) {
+      return `
+    <div class="fila-conteo-insumo fila-conteo-cajas">
+      <span class="fila-conteo-nombre">${i.nombre} <small>(teórico: ${i[campo]}${unidadTexto}${etiquetaEmpaqueInsumo(i)})</small></span>
+      <div class="conteo-cajas-inputs">
+        <input type="number" class="campo-conteo-cajas" id="conteo-cajas-${i.id}" placeholder="Cajas" value="0" min="0" step="1" oninput="actualizarTotalConteoCaja(${i.id})">
+        <input type="number" class="campo-conteo-sueltas" id="conteo-sueltas-${i.id}" placeholder="Sueltas" value="0" min="0" step="1" oninput="actualizarTotalConteoCaja(${i.id})">
+        <span class="conteo-total-calculado" id="conteo-total-${i.id}">= 0${unidadTexto}</span>
+      </div>
+    </div>`;
+    }
+    return `
     <div class="fila-conteo-insumo">
-      <span class="fila-conteo-nombre">${i.nombre} <small>(teórico: ${i[campo]}${i.unidad === 'ml' ? 'ml' : 'u.'})</small></span>
+      <span class="fila-conteo-nombre">${i.nombre} <small>(teórico: ${i[campo]}${unidadTexto})</small></span>
       <input type="number" class="campo-conteo-fisico" id="conteo-fisico-${i.id}" value="${i[campo]}" min="0" step="0.01">
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('panel-conteo-insumos').classList.remove('oculto');
   document.getElementById('panel-conteo-insumos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function actualizarTotalConteoCaja(insumoId) {
+  const i = insumosCache.find(x => x.id === insumoId);
+  if (!i) return;
+  const cajas = Number(document.getElementById(`conteo-cajas-${insumoId}`).value) || 0;
+  const sueltas = Number(document.getElementById(`conteo-sueltas-${insumoId}`).value) || 0;
+  const total = cantidadDesdeCajas(i, cajas, sueltas);
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'u.';
+  document.getElementById(`conteo-total-${insumoId}`).textContent = `= ${total}${unidadTexto}`;
 }
 
 function cancelarConteo() {
@@ -1722,10 +1820,17 @@ function cancelarConteo() {
 
 async function guardarConteoInsumos() {
   if (!conteoUbicacionActual) return;
-  const items = insumosCache.map(i => ({
-    insumo_id: i.id,
-    cantidad_fisica: Number(document.getElementById(`conteo-fisico-${i.id}`).value) || 0,
-  }));
+  const items = insumosCache.map(i => {
+    let cantidadFisica;
+    if (i.unidades_por_caja) {
+      const cajas = Number(document.getElementById(`conteo-cajas-${i.id}`).value) || 0;
+      const sueltas = Number(document.getElementById(`conteo-sueltas-${i.id}`).value) || 0;
+      cantidadFisica = cantidadDesdeCajas(i, cajas, sueltas);
+    } else {
+      cantidadFisica = Number(document.getElementById(`conteo-fisico-${i.id}`).value) || 0;
+    }
+    return { insumo_id: i.id, cantidad_fisica: cantidadFisica };
+  });
   const nota = document.getElementById('conteo-insumo-nota').value.trim() || null;
   const { error } = await sb.rpc('guardar_conteo_insumo', { p_ubicacion: conteoUbicacionActual, p_items: items, p_nota: nota });
   if (error) { alert('No se pudo guardar el conteo: ' + error.message); return; }

@@ -284,17 +284,33 @@
         <label class="campo-form">Nombre
           <input type="text" id="nuevo-insumo-nombre" placeholder="Ej: Vino Cabernet, Pisco" required>
         </label>
+        <label class="campo-form">Unidad
+          <select id="nuevo-insumo-unidad" onchange="actualizarCampoContenidoInsumo()">
+            <option value="ml">Mililitros (ml)</option>
+            <option value="unidades">Unidades</option>
+          </select>
+        </label>
+        <p class="texto-ayuda">¿Se retira/cuenta por caja (ej: vino en cajas de 12, pisco en cajas de 6)? Complétalo y podrás cargar todo en cajas — el sistema calcula las unidades solo.</p>
         <div class="fila-campos-form">
-          <label class="campo-form">Unidad
-            <select id="nuevo-insumo-unidad">
-              <option value="ml">Mililitros (ml)</option>
-              <option value="unidades">Unidades</option>
-            </select>
+          <label class="campo-form">Unidades por caja (opcional)
+            <input type="number" id="nuevo-insumo-unidades-caja" placeholder="Ej: 12" min="1" step="1" oninput="actualizarModoStockInicialInsumo()">
           </label>
-          <label class="campo-form" id="campo-insumo-stock-wrap">Stock inicial en bodega
-            <input type="number" id="nuevo-insumo-stock" placeholder="0" min="0" step="0.01">
+          <label class="campo-form" id="campo-insumo-contenido-wrap">Contenido por botella (ml)
+            <input type="number" id="nuevo-insumo-contenido" placeholder="Ej: 750" min="0" step="0.01">
           </label>
         </div>
+        <label class="campo-form" id="campo-insumo-stock-wrap">Stock inicial en bodega
+          <input type="number" id="nuevo-insumo-stock" placeholder="0" min="0" step="0.01">
+        </label>
+        <div class="fila-campos-form oculto" id="campo-insumo-stock-cajas-wrap">
+          <label class="campo-form">Cajas completas
+            <input type="number" id="nuevo-insumo-stock-cajas" placeholder="0" min="0" step="1" oninput="actualizarTotalStockInicialInsumo()">
+          </label>
+          <label class="campo-form">Sueltas
+            <input type="number" id="nuevo-insumo-stock-sueltas" placeholder="0" min="0" step="1" oninput="actualizarTotalStockInicialInsumo()">
+          </label>
+        </div>
+        <p class="texto-ayuda oculto" id="texto-stock-inicial-calculado"></p>
         <label class="campo-form">Alertar cuando el stock de barra baje de
           <input type="number" id="nuevo-insumo-stock-minimo" placeholder="Ej: 200" min="0" step="0.01">
         </label>

@@ -846,6 +846,17 @@ main { padding: 20px; }
   font-size: .9rem;
   text-align: right;
 }
+.fila-conteo-cajas { flex-wrap: wrap; }
+.conteo-cajas-inputs { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.campo-conteo-cajas, .campo-conteo-sueltas {
+  width: 64px;
+  padding: 8px 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: .85rem;
+  text-align: center;
+}
+.conteo-total-calculado { font-size: .8rem; font-weight: 700; color: #16a085; min-width: 60px; }
 .fila-historial-conteo { align-items: flex-start; }
 .fila-diferencia-conteo {
   display: flex; justify-content: space-between; gap: 8px;
