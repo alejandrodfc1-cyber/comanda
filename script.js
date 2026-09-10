@@ -192,6 +192,8 @@ async function cargarMesas() {
   mesas = data;
   if (mesaActivaId && !mesaActiva()) {
     cerrarModalMenu();
+  } else if (mesaActivaId) {
+    renderPedido();
   }
   renderMesas();
 }
