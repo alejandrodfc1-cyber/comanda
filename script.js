@@ -502,8 +502,9 @@ function renderPedido() {
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
   const sinCierreEnCurso = !mesa.cuenta_solicitada && !mesa.total_visible_mesero;
-  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !sinCierreEnCurso || itemsPendientesCocina(mesa).length === 0);
-  document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada || !!mesa.total_visible_mesero);
+  const hayPendienteCocina = itemsPendientesCocina(mesa).length > 0;
+  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !sinCierreEnCurso || !hayPendienteCocina);
+  document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !sinCierreEnCurso || hayPendienteCocina);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
   const btnMostrarTotal = document.getElementById('btn-mostrar-total-mesero');
