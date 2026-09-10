@@ -132,6 +132,18 @@ main { padding: 20px; }
   font-size: .95rem;
   animation: pulso-pide-cuenta 1.4s ease-in-out infinite;
 }
+.badge-cuentas-pendientes {
+  background: #f39c12;
+  color: #fff;
+  font-weight: 700;
+  font-size: .82rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: pulso-pide-cuenta 1.4s ease-in-out infinite;
+}
 @keyframes pulso-pide-cuenta {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.3); }
@@ -171,12 +183,14 @@ main { padding: 20px; }
 
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .titulo-admin {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
 }
 .titulo-admin h2 { margin: 0; }
 .titulo-admin small {

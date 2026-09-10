@@ -187,15 +187,35 @@ sb.auth.onAuthStateChange((_event, session) => {
 });
 
 async function cargarMesas() {
+  const mesaAntes = mesaActivaId ? mesaActiva() : null;
+  const teniaPedidoAntes = !!mesaAntes && mesaAntes.pedido.length > 0;
   const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden');
   if (error) { console.error(error); return; }
   mesas = data;
   if (mesaActivaId && !mesaActiva()) {
     cerrarModalMenu();
   } else if (mesaActivaId) {
-    renderPedido();
+    const mesaAhora = mesaActiva();
+    if (teniaPedidoAntes && mesaAhora.pedido.length === 0) {
+      // La mesa que tenia abierta se cobro/vacio desde otro dispositivo mientras
+      // la miraba -- la vuelve a la grilla en vez de dejarla atascada con un
+      // pedido vacio que ya no existe.
+      cerrarModalMenu();
+    } else {
+      renderPedido();
+    }
   }
   renderMesas();
+  actualizarBadgeCuentasPendientes();
+}
+
+function actualizarBadgeCuentasPendientes() {
+  const badge = document.getElementById('badge-cuentas-pendientes');
+  if (!badge) return;
+  const pendientes = mesas.filter(m => m.cuenta_solicitada).length;
+  badge.classList.toggle('oculto', pendientes === 0);
+  badge.textContent = `🔔 ${pendientes}`;
+  badge.title = pendientes === 1 ? '1 mesa pide la cuenta' : `${pendientes} mesas piden la cuenta`;
 }
 
 sb
