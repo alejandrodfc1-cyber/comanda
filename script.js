@@ -529,7 +529,23 @@ function renderPedido() {
 
 let cobroEnProceso = false;
 
-async function cerrarMesa() {
+function mostrarPanelMetodoPago() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  if (mesa.pedido.length === 0) {
+    alert('La mesa no tiene pedidos.');
+    return;
+  }
+  document.getElementById('panel-metodo-pago').classList.remove('oculto');
+}
+
+function ocultarPanelMetodoPago() {
+  document.getElementById('panel-metodo-pago').classList.add('oculto');
+}
+
+const ETIQUETAS_METODO_PAGO = { efectivo: 'efectivo', tarjeta: 'tarjeta', transferencia: 'transferencia' };
+
+async function cerrarMesa(metodoPago) {
   const mesa = mesaActiva();
   if (!mesa) return;
   if (mesa.pedido.length === 0) {
@@ -539,8 +555,10 @@ async function cerrarMesa() {
   if (cobroEnProceso) return;
 
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
-  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))}? Esta acción cierra la mesa.`)) return;
+  const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
+  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`)) return;
 
+  ocultarPanelMetodoPago();
   cobroEnProceso = true;
   const btnCobrar = document.getElementById('btn-cobrar');
   if (btnCobrar) { btnCobrar.disabled = true; btnCobrar.textContent = 'Procesando...'; }
@@ -551,7 +569,7 @@ async function cerrarMesa() {
       : null;
 
     const { data: venta, error } = await sb.from('ventas').insert({
-      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo)
+      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago
     }).select().single();
 
     if (error || !venta) {

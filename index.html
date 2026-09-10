@@ -66,7 +66,16 @@
       <div class="acciones-modal">
         <button class="btn btn-guardar" onclick="cerrarModalMenu()">💾 Guardar</button>
         <button class="btn btn-turquesa" onclick="alternarVistaModal()">🍽️ Menú</button>
-        <button class="btn btn-peligro" id="btn-cobrar" onclick="cerrarMesa()">💰 Cobrar</button>
+        <button class="btn btn-peligro" id="btn-cobrar" onclick="mostrarPanelMetodoPago()">💰 Cobrar</button>
+      </div>
+      <div class="panel-metodo-pago oculto" id="panel-metodo-pago">
+        <span class="panel-metodo-pago-titulo">¿Cómo pagó?</span>
+        <div class="fila-metodos-pago">
+          <button class="btn-metodo-pago" onclick="cerrarMesa('efectivo')">💵 Efectivo</button>
+          <button class="btn-metodo-pago" onclick="cerrarMesa('tarjeta')">💳 Tarjeta</button>
+          <button class="btn-metodo-pago" onclick="cerrarMesa('transferencia')">📱 Transferencia</button>
+        </div>
+        <button class="btn-cancelar-metodo-pago" onclick="ocultarPanelMetodoPago()">Cancelar</button>
       </div>
     </div>
 

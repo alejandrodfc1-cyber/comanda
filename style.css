@@ -508,6 +508,49 @@ main { padding: 20px; }
   font-size: .8rem;
   white-space: nowrap;
 }
+.panel-metodo-pago {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f6f7f8;
+  border: 1px solid #eaeaea;
+}
+.panel-metodo-pago-titulo {
+  display: block;
+  font-weight: 700;
+  font-size: .85rem;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.fila-metodos-pago { display: flex; gap: 8px; }
+.btn-metodo-pago {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: #27ae60;
+  color: #fff;
+  padding: 12px 4px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: .74rem;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: normal;
+  word-break: break-word;
+}
+.btn-metodo-pago:active { transform: scale(.97); }
+.btn-cancelar-metodo-pago {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: .8rem;
+  cursor: pointer;
+  padding: 6px;
+}
 .btn {
   background: #27ae60; color: #fff; border: none;
   padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: .9rem;
