@@ -735,17 +735,11 @@ function imprimirComandaCocina() {
 
 let reciboActual = null;
 
-function mostrarRecibo(mesa, numeroRecibo) {
-  const ahora = new Date();
-  const fecha = ahora.toLocaleDateString('es-CL');
-  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-  const total = totalMesa(mesa);
+function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion }) {
   const propina = Math.round(total * 0.10);
-  const etiquetaMesa = mesa.nombre || mesa.id;
+  reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion };
 
-  reciboActual = { pedido: [...mesa.pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa };
-
-  const filasItems = mesa.pedido.map(item => `
+  const filasItems = pedido.map(item => `
     <div class="recibo-fila">
       <span>${item.nombre}${item.nota ? `<br><small>📝 ${item.nota}</small>` : ''}</span>
       <span>${item.cantidad} x ${formatoMoneda(item.precio)}</span>
@@ -757,7 +751,7 @@ function mostrarRecibo(mesa, numeroRecibo) {
     <div class="recibo-centrado">${negocioTelefono}</div>
     <div class="recibo-mesa-grande">MESA : ${etiquetaMesa}</div>
     <hr>
-    <div>Recibo N.° ${numeroRecibo ?? ''}</div>
+    <div>Recibo N.° ${numeroRecibo ?? ''}${esReimpresion ? ' (REIMPRESIÓN)' : ''}</div>
     <div>${fecha} · ${hora}</div>
     <hr>
     ${filasItems}
@@ -769,6 +763,36 @@ function mostrarRecibo(mesa, numeroRecibo) {
     <div class="recibo-centrado">¡Gracias por tu visita!</div>
   `;
   document.getElementById('modal-recibo').classList.remove('oculto');
+}
+
+function mostrarRecibo(mesa, numeroRecibo) {
+  const ahora = new Date();
+  renderRecibo({
+    pedido: mesa.pedido,
+    numeroRecibo,
+    etiquetaMesa: mesa.nombre || mesa.id,
+    fecha: ahora.toLocaleDateString('es-CL'),
+    hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    total: totalMesa(mesa),
+  });
+}
+
+function reimprimirVenta(ventaId) {
+  const venta = ventasCache.find(v => v.id === ventaId);
+  if (!venta) {
+    alert('No se encontró esa venta — vuelve a cargar los reportes e intenta de nuevo.');
+    return;
+  }
+  const fechaVenta = new Date(venta.creado_en);
+  renderRecibo({
+    pedido: venta.items || [],
+    numeroRecibo: venta.id,
+    etiquetaMesa: mapaMesasCache[venta.mesa_id] || `Mesa ${venta.mesa_id}`,
+    fecha: fechaVenta.toLocaleDateString('es-CL'),
+    hora: fechaVenta.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    total: Number(venta.total),
+    esReimpresion: true,
+  });
 }
 
 function cerrarRecibo() {
@@ -800,7 +824,7 @@ function imprimirConRawBT() {
   t += `${centrarChico(negocioTelefono)}${FUENTE_A}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
-  t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}\n`;
+  t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}${r.esReimpresion ? ' (REIMPRESION)' : ''}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
   const MAX_NOMBRE_PRODUCTO = 18;
@@ -928,9 +952,12 @@ function inicioPeriodo(periodo) {
   return null;
 }
 
+let ventasCache = [];
+let mapaMesasCache = {};
+
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('mesa_id, items, total, creado_en, duracion_minutos, metodo_pago').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
@@ -1122,6 +1149,35 @@ function renderMetricas(ventas, mapaMesas) {
         <span class="barra-dia-etiqueta">${dia}/${mes}</span>
       </div>`;
       }).join('');
+
+  ventasCache = ventas;
+  mapaMesasCache = mapaMesas;
+  const etiquetasMetodoHistorial = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+  const MAX_HISTORIAL = 50;
+  const recientes = [...ventas].sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en)).slice(0, MAX_HISTORIAL);
+  document.getElementById('resumen-historial-ventas').textContent = nVentas > 0
+    ? `${nVentas} venta${nVentas === 1 ? '' : 's'} en este período`
+    : 'Sin ventas en este período';
+  const listaHistorial = document.getElementById('lista-historial-ventas');
+  listaHistorial.innerHTML = (recientes.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : recientes.map(v => {
+        const fecha = new Date(v.creado_en);
+        const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+        const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
+        const metodo = etiquetasMetodoHistorial[v.metodo_pago] || 'Sin especificar';
+        return `
+      <div class="fila-admin">
+        <span class="miniatura">🧾</span>
+        <div class="info-admin">
+          <strong>${etiquetaMesa} · ${formatoMoneda(Math.round(Number(v.total)))}</strong>
+          <span>${fechaTexto} · ${metodo}</span>
+        </div>
+        <div class="acciones-fila-admin">
+          <button class="btn-editar-admin" onclick="reimprimirVenta(${v.id})" title="Reimprimir recibo">🖨️</button>
+        </div>
+      </div>`;
+      }).join('')) + (nVentas > recientes.length ? `<p class="texto-ayuda">Mostrando las ${recientes.length} ventas más recientes de ${nVentas}.</p>` : '');
 }
 
 function inicioDia(fecha) {
