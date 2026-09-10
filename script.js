@@ -203,6 +203,12 @@ sb
   .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, cargarMesas)
   .subscribe();
 
+// Respaldo por si el canal en tiempo real se desconecta en silencio (pasa con
+// WebSockets que quedan abiertos muchas horas, ej. la compu de caja siempre
+// prendida) -- sin esto, avisos como "pedir cuenta" podrian no llegar nunca
+// hasta recargar la pagina a mano.
+setInterval(() => { if (rolUsuario) cargarMesas(); }, 20000);
+
 function totalMesa(mesa) {
   return mesa.pedido.reduce((s, i) => s + i.precio * i.cantidad, 0);
 }
