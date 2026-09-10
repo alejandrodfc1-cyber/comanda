@@ -501,6 +501,7 @@ function renderPedido() {
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
+  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !!mesa.cuenta_solicitada);
   document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada || !!mesa.total_visible_mesero);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
