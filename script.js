@@ -460,16 +460,61 @@ function cambiarCantidad(platoId, delta) {
   }));
 }
 
+const NOTAS_RAPIDAS = [
+  'Sin cebolla', 'Poca cebolla', 'Sin tomate', 'Sin mayo', 'Sin ají',
+  'Extra ají', 'Sin sal', 'Poca sal', 'Término medio', 'Bien cocido',
+  'Extra queso', 'Sin hielo',
+];
+
+let itemNotaEditandoId = null;
+
 function editarNotaItem(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
   const item = mesa.pedido.find(i => i.id === platoId);
   if (!item) return;
-  const nota = prompt(`Nota para "${item.nombre}" (ej: sin cebolla, término medio):`, item.nota || '');
-  if (nota === null) return;
-  const notaLimpia = nota.trim();
+  itemNotaEditandoId = platoId;
+  document.getElementById('nota-item-titulo').textContent = `📝 Nota: ${item.nombre}`;
+  document.getElementById('chips-notas-rapidas').innerHTML = NOTAS_RAPIDAS
+    .map(n => `<button type="button" class="chip-nota" onclick="agregarNotaRapida('${n.replace(/'/g, "\\'")}')">${n}</button>`)
+    .join('');
+  document.getElementById('campo-nota-item').value = item.nota || '';
+  sincronizarChipsNota();
+  document.getElementById('modal-nota-item').classList.remove('oculto');
+}
+
+function sincronizarChipsNota() {
+  const actuales = document.getElementById('campo-nota-item').value.split(',').map(s => s.trim()).filter(Boolean);
+  document.querySelectorAll('#chips-notas-rapidas .chip-nota').forEach(btn => {
+    btn.classList.toggle('activa', actuales.includes(btn.textContent));
+  });
+}
+
+function agregarNotaRapida(texto) {
+  const campo = document.getElementById('campo-nota-item');
+  const actuales = campo.value.split(',').map(s => s.trim()).filter(Boolean);
+  const idx = actuales.indexOf(texto);
+  if (idx >= 0) actuales.splice(idx, 1);
+  else actuales.push(texto);
+  campo.value = actuales.join(', ');
+  sincronizarChipsNota();
+}
+
+function cerrarModalNota() {
+  document.getElementById('modal-nota-item').classList.add('oculto');
+  itemNotaEditandoId = null;
+}
+
+function guardarNotaItem() {
+  const mesa = mesaActiva();
+  if (!mesa || itemNotaEditandoId === null) return;
+  const item = mesa.pedido.find(i => i.id === itemNotaEditandoId);
+  if (!item) return;
+  const notaLimpia = document.getElementById('campo-nota-item').value.trim();
   if (notaLimpia) item.nota = notaLimpia;
   else delete item.nota;
+  const platoId = itemNotaEditandoId;
+  cerrarModalNota();
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('actualizar_nota_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: platoId, p_nota: notaLimpia || null,

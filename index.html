@@ -413,6 +413,22 @@
   </div>
 </div>
 
+<!-- Modal: nota de item -->
+<div id="modal-nota-item" class="modal oculto">
+  <div class="modal-caja">
+    <div class="modal-header">
+      <h3 class="titulo-form" id="nota-item-titulo">Nota</h3>
+      <button class="btn-cerrar" onclick="cerrarModalNota()">✕</button>
+    </div>
+    <div class="chips-notas-rapidas" id="chips-notas-rapidas"></div>
+    <textarea id="campo-nota-item" class="campo-nota-item" rows="3" maxlength="200" placeholder="Otra indicación..." oninput="sincronizarChipsNota()"></textarea>
+    <div class="acciones-modal">
+      <button class="btn btn-secundario" onclick="cerrarModalNota()">Cancelar</button>
+      <button class="btn" onclick="guardarNotaItem()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="script.js"></script>

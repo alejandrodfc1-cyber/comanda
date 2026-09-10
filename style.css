@@ -541,6 +541,32 @@ main { padding: 20px; }
   word-break: break-word;
 }
 .btn-metodo-pago:active { transform: scale(.97); }
+.chips-notas-rapidas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip-nota {
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  color: #2c3e50;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.chip-nota.activa { background: #16a085; border-color: #16a085; color: #fff; }
+.campo-nota-item {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: .9rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.campo-nota-item:focus {
+  outline: none;
+  border-color: #27ae60;
+  box-shadow: 0 0 0 3px rgba(39,174,96,.15);
+}
 .btn-cancelar-metodo-pago {
   display: block;
   width: 100%;
