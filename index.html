@@ -280,7 +280,7 @@
     <div id="seccion-admin-insumos" class="oculto">
       <form id="form-nuevo-insumo" class="form-admin formulario-tarjeta">
         <h3 class="titulo-form" id="titulo-form-insumo">📦 Nuevo insumo</h3>
-        <p class="texto-ayuda">Un insumo es lo que se compra (una botella, un barril) y del que salen varias ventas: copas, cortos, combinados. Vincúlalo a los productos correspondientes desde "Productos".</p>
+        <p class="texto-ayuda">Un insumo es lo que se compra (una botella, un barril): licores, vinos, piscos, rones. Vive en dos lugares — Bodega (depósito) y Barra (lo que se vende) — y se traspasa de uno a otro. Vincúlalo a los productos correspondientes desde "Productos".</p>
         <label class="campo-form">Nombre
           <input type="text" id="nuevo-insumo-nombre" placeholder="Ej: Vino Cabernet, Pisco" required>
         </label>
@@ -291,11 +291,11 @@
               <option value="unidades">Unidades</option>
             </select>
           </label>
-          <label class="campo-form">Stock actual
+          <label class="campo-form" id="campo-insumo-stock-wrap">Stock inicial en bodega
             <input type="number" id="nuevo-insumo-stock" placeholder="0" min="0" step="0.01">
           </label>
         </div>
-        <label class="campo-form">Alertar cuando el stock baje de
+        <label class="campo-form">Alertar cuando el stock de barra baje de
           <input type="number" id="nuevo-insumo-stock-minimo" placeholder="Ej: 200" min="0" step="0.01">
         </label>
         <div class="fila-botones-form">
@@ -304,6 +304,34 @@
         </div>
       </form>
       <div id="lista-admin-insumos" class="con-espacio-fab"></div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">🔍 Auditoría de inventario</h3>
+      <p class="texto-ayuda">Cuenta físicamente lo que hay y compáralo con lo que el sistema calcula (teórico). Al guardar, el stock de esa ubicación se corrige al valor contado.</p>
+      <div class="fila-botones-form">
+        <button type="button" class="btn btn-turquesa" onclick="iniciarConteo('bodega')">🏬 Contar Bodega</button>
+        <button type="button" class="btn btn-turquesa" onclick="iniciarConteo('barra')">🍾 Contar Barra</button>
+      </div>
+
+      <div id="panel-conteo-insumos" class="oculto panel-metodo-pago">
+        <span class="panel-metodo-pago-titulo" id="titulo-panel-conteo"></span>
+        <div id="lista-conteo-insumos"></div>
+        <label class="campo-form">Nota (opcional)
+          <input type="text" id="conteo-insumo-nota" placeholder="Ej: conteo de cierre de mes">
+        </label>
+        <div class="fila-botones-form">
+          <button type="button" class="btn btn-secundario" onclick="cancelarConteo()">Cancelar</button>
+          <button type="button" class="btn" onclick="guardarConteoInsumos()">💾 Guardar conteo</button>
+        </div>
+      </div>
+
+      <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('lista-historial-conteos', this)">
+        <div class="titulo-fila">
+          <span class="titulo-texto">🕓 Historial de auditorías</span>
+          <span class="icono-colapso">▾</span>
+        </div>
+        <span class="resumen-colapsado" id="resumen-historial-conteos"></span>
+      </h3>
+      <div id="lista-historial-conteos" class="oculto con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-categorias" class="oculto">

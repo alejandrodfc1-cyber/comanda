@@ -831,6 +831,27 @@ main { padding: 20px; }
 .fila-admin.oculta-item { opacity: .45; }
 .texto-stock-bajo { color: #b8860b; font-weight: 700; }
 .texto-stock-agotado { color: #c0392b; font-weight: 700; }
+.fila-conteo-insumo {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+.fila-conteo-nombre { flex: 1; min-width: 0; font-size: .88rem; }
+.fila-conteo-nombre small { color: #888; display: block; font-size: .74rem; }
+.campo-conteo-fisico {
+  width: 90px; flex-shrink: 0;
+  padding: 8px 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: .9rem;
+  text-align: right;
+}
+.fila-historial-conteo { align-items: flex-start; }
+.fila-diferencia-conteo {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: .78rem;
+  padding: 3px 0;
+}
 .btn-toggle-visible, .btn-editar-admin {
   border: 1px solid #d8dcdf;
   background: #eceff1;

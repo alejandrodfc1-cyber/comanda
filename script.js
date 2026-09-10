@@ -869,8 +869,9 @@ function abrirDashboard() {
     cancelarEdicionProducto();
     cancelarEdicionCategoria();
     cancelarEdicionInsumo();
+    cancelarConteo();
     cargarMesasAdmin();
-    cargarInsumosAdmin().then(() => { cargarProductosAdmin(); poblarSelectInsumos(); });
+    cargarInsumosAdmin().then(() => { cargarProductosAdmin(); poblarSelectInsumos(); cargarHistorialConteos(); });
     renderCategoriasAdmin();
     poblarSelectCategorias();
   }
@@ -1594,8 +1595,8 @@ function renderInsumosAdmin() {
   cont.innerHTML = insumosCache.length === 0
     ? '<p class="texto-vacio">Sin insumos registrados todavía.</p>'
     : insumosCache.map(i => {
-        const bajo = Number(i.stock) <= Number(i.stock_minimo);
-        const agotado = Number(i.stock) <= 0;
+        const bajo = Number(i.stock_barra) <= Number(i.stock_minimo);
+        const agotado = Number(i.stock_barra) <= 0;
         const claseStock = agotado ? 'texto-stock-agotado' : (bajo ? 'texto-stock-bajo' : '');
         const unidadTexto = i.unidad === 'ml' ? 'ml' : 'u.';
         return `
@@ -1603,10 +1604,11 @@ function renderInsumosAdmin() {
         <div class="miniatura">${agotado ? '🔴' : (bajo ? '🟡' : '📦')}</div>
         <div class="info-admin">
           <strong>${i.nombre}</strong>
-          <span class="${claseStock}">Stock: ${i.stock}${unidadTexto} ${bajo ? '· ¡reponer!' : ''}</span>
+          <span>🏬 Bodega: ${i.stock_bodega}${unidadTexto} · <span class="${claseStock}">🍾 Barra: ${i.stock_barra}${unidadTexto}${bajo ? ' · ¡reponer!' : ''}</span></span>
         </div>
         <div class="acciones-fila-admin">
-          <button class="btn-editar-admin" onclick="reponerInsumo(${i.id})" title="Reponer stock">➕</button>
+          <button class="btn-editar-admin" onclick="traspasarInsumo(${i.id})" title="Traspasar de bodega a barra">🔄</button>
+          <button class="btn-editar-admin" onclick="reponerInsumo(${i.id})" title="Reponer bodega (compra)">📥</button>
           <button class="btn-editar-admin" onclick="editarInsumo(${i.id})" title="Editar">✏️</button>
           <button class="btn-toggle-visible" onclick="eliminarInsumoAdmin(${i.id})" title="Eliminar">🗑️</button>
         </div>
@@ -1620,8 +1622,8 @@ function editarInsumo(id) {
   insumoEditandoId = id;
   document.getElementById('nuevo-insumo-nombre').value = i.nombre;
   document.getElementById('nuevo-insumo-unidad').value = i.unidad;
-  document.getElementById('nuevo-insumo-stock').value = i.stock;
   document.getElementById('nuevo-insumo-stock-minimo').value = i.stock_minimo;
+  document.getElementById('campo-insumo-stock-wrap').classList.add('oculto');
   document.getElementById('titulo-form-insumo').textContent = `✏️ Editando: ${i.nombre}`;
   document.getElementById('btn-guardar-insumo').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-insumo').classList.remove('oculto');
@@ -1631,6 +1633,7 @@ function editarInsumo(id) {
 function cancelarEdicionInsumo() {
   insumoEditandoId = null;
   document.getElementById('form-nuevo-insumo').reset();
+  document.getElementById('campo-insumo-stock-wrap').classList.remove('oculto');
   document.getElementById('titulo-form-insumo').textContent = '📦 Nuevo insumo';
   document.getElementById('btn-guardar-insumo').textContent = '+ Agregar insumo';
   document.getElementById('btn-cancelar-insumo').classList.add('oculto');
@@ -1640,12 +1643,25 @@ async function reponerInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
   const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
-  const cantidad = prompt(`¿Cuánto se repone de "${i.nombre}" (en ${unidadTexto})?\nStock actual: ${i.stock}${unidadTexto}`, i.unidad === 'ml' ? '750' : '1');
+  const cantidad = prompt(`Reposición mensual a BODEGA de "${i.nombre}" (en ${unidadTexto}):\nBodega actual: ${i.stock_bodega}${unidadTexto}`, i.unidad === 'ml' ? '750' : '1');
   if (cantidad === null) return;
   const monto = Number(cantidad);
   if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return; }
-  const { error } = await sb.from('insumos').update({ stock: Number(i.stock) + monto }).eq('id', id);
+  const { error } = await sb.from('insumos').update({ stock_bodega: Number(i.stock_bodega) + monto }).eq('id', id);
   if (error) { alert('No se pudo reponer: ' + error.message); return; }
+  await cargarInsumosAdmin();
+}
+
+async function traspasarInsumo(id) {
+  const i = insumosCache.find(x => x.id === id);
+  if (!i) return;
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
+  const cantidad = prompt(`¿Cuánto se traspasa de BODEGA a BARRA de "${i.nombre}" (en ${unidadTexto})?\nBodega: ${i.stock_bodega}${unidadTexto} · Barra: ${i.stock_barra}${unidadTexto}`, '');
+  if (cantidad === null) return;
+  const monto = Number(cantidad);
+  if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return; }
+  const { error } = await sb.rpc('traspasar_insumo', { p_insumo_id: id, p_cantidad: monto });
+  if (error) { alert('No se pudo traspasar: ' + error.message); return; }
   await cargarInsumosAdmin();
 }
 
@@ -1667,19 +1683,99 @@ document.getElementById('form-nuevo-insumo').addEventListener('submit', async (e
   e.preventDefault();
   const nombre = document.getElementById('nuevo-insumo-nombre').value.trim();
   const unidad = document.getElementById('nuevo-insumo-unidad').value;
-  const stock = Number(document.getElementById('nuevo-insumo-stock').value) || 0;
   const stockMinimo = Number(document.getElementById('nuevo-insumo-stock-minimo').value) || 0;
   if (!nombre) return;
-  const datos = { nombre, unidad, stock, stock_minimo: stockMinimo };
   if (insumoEditandoId) {
-    await sb.from('insumos').update(datos).eq('id', insumoEditandoId);
+    await sb.from('insumos').update({ nombre, unidad, stock_minimo: stockMinimo }).eq('id', insumoEditandoId);
   } else {
-    await sb.from('insumos').insert(datos);
+    const stockInicial = Number(document.getElementById('nuevo-insumo-stock').value) || 0;
+    await sb.from('insumos').insert({ nombre, unidad, stock_minimo: stockMinimo, stock_bodega: stockInicial });
   }
   cancelarEdicionInsumo();
   await cargarInsumosAdmin();
   poblarSelectInsumos();
 });
+
+// --- Auditoria / conteo fisico de insumos ---
+let conteoUbicacionActual = null;
+
+function iniciarConteo(ubicacion) {
+  if (insumosCache.length === 0) { alert('No hay insumos registrados todavía.'); return; }
+  conteoUbicacionActual = ubicacion;
+  const etiqueta = ubicacion === 'bodega' ? '🏬 Bodega' : '🍾 Barra';
+  document.getElementById('titulo-panel-conteo').textContent = `Conteo físico — ${etiqueta}`;
+  document.getElementById('conteo-insumo-nota').value = '';
+  const campo = ubicacion === 'bodega' ? 'stock_bodega' : 'stock_barra';
+  document.getElementById('lista-conteo-insumos').innerHTML = insumosCache.map(i => `
+    <div class="fila-conteo-insumo">
+      <span class="fila-conteo-nombre">${i.nombre} <small>(teórico: ${i[campo]}${i.unidad === 'ml' ? 'ml' : 'u.'})</small></span>
+      <input type="number" class="campo-conteo-fisico" id="conteo-fisico-${i.id}" value="${i[campo]}" min="0" step="0.01">
+    </div>`).join('');
+  document.getElementById('panel-conteo-insumos').classList.remove('oculto');
+  document.getElementById('panel-conteo-insumos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelarConteo() {
+  conteoUbicacionActual = null;
+  document.getElementById('panel-conteo-insumos').classList.add('oculto');
+}
+
+async function guardarConteoInsumos() {
+  if (!conteoUbicacionActual) return;
+  const items = insumosCache.map(i => ({
+    insumo_id: i.id,
+    cantidad_fisica: Number(document.getElementById(`conteo-fisico-${i.id}`).value) || 0,
+  }));
+  const nota = document.getElementById('conteo-insumo-nota').value.trim() || null;
+  const { error } = await sb.rpc('guardar_conteo_insumo', { p_ubicacion: conteoUbicacionActual, p_items: items, p_nota: nota });
+  if (error) { alert('No se pudo guardar el conteo: ' + error.message); return; }
+  cancelarConteo();
+  await cargarInsumosAdmin();
+  await cargarHistorialConteos();
+}
+
+async function cargarHistorialConteos() {
+  const cont = document.getElementById('lista-historial-conteos');
+  if (!cont) return;
+  const { data: conteos, error } = await sb.from('conteos_insumo').select('*').order('creado_en', { ascending: false }).limit(20);
+  if (error) { console.error(error); return; }
+  if (!conteos || conteos.length === 0) {
+    document.getElementById('resumen-historial-conteos').textContent = 'Sin auditorías registradas';
+    cont.innerHTML = '<p class="texto-vacio">Todavía no se ha hecho ningún conteo.</p>';
+    return;
+  }
+  document.getElementById('resumen-historial-conteos').textContent = `${conteos.length} conteo${conteos.length === 1 ? '' : 's'} registrados`;
+
+  const { data: detalles } = await sb.from('conteos_insumo_detalle').select('*').in('conteo_id', conteos.map(c => c.id));
+  const mapaInsumosNombre = Object.fromEntries(insumosCache.map(i => [i.id, i]));
+
+  cont.innerHTML = conteos.map(c => {
+    const fecha = new Date(c.creado_en);
+    const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+    const misDetalles = (detalles || []).filter(d => d.conteo_id === c.id);
+    const conDiferencia = misDetalles.filter(d => Number(d.diferencia) !== 0);
+    const etiqueta = c.ubicacion === 'bodega' ? '🏬 Bodega' : '🍾 Barra';
+    const filasDiferencia = conDiferencia.length === 0
+      ? '<p class="texto-vacio">Sin diferencias — el conteo coincidió con el teórico.</p>'
+      : conDiferencia.map(d => {
+          const insumo = mapaInsumosNombre[d.insumo_id];
+          const nombre = insumo ? insumo.nombre : `Insumo #${d.insumo_id}`;
+          const unidadTexto = insumo && insumo.unidad === 'unidades' ? 'u.' : 'ml';
+          const signo = Number(d.diferencia) > 0 ? '+' : '';
+          const clase = Number(d.diferencia) < 0 ? 'texto-stock-agotado' : 'texto-stock-bajo';
+          return `<div class="fila-diferencia-conteo"><span>${nombre}</span><span class="${clase}">${signo}${d.diferencia}${unidadTexto} (teórico ${d.cantidad_teorica} → físico ${d.cantidad_fisica})</span></div>`;
+        }).join('');
+    return `
+      <div class="fila-admin fila-historial-conteo">
+        <div class="miniatura">${conDiferencia.length > 0 ? '⚠️' : '✅'}</div>
+        <div class="info-admin">
+          <strong>${etiqueta} · ${fechaTexto}</strong>
+          <span>${misDetalles.length} insumo${misDetalles.length === 1 ? '' : 's'} contados · ${conDiferencia.length} con diferencia${c.nota ? ` · "${c.nota}"` : ''}</span>
+          ${filasDiferencia}
+        </div>
+      </div>`;
+  }).join('');
+}
 
 function actualizarModoStockProducto() {
   const modo = document.getElementById('nuevo-producto-modo-stock').value;
