@@ -847,6 +847,7 @@ function imprimirConRawBT() {
 
   const textoCodificado = encodeURI(t);
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+  cerrarRecibo();
 }
 
 function abrirDashboard() {
