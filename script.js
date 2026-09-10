@@ -501,7 +501,8 @@ function renderPedido() {
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
-  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !!mesa.cuenta_solicitada || !!mesa.total_visible_mesero);
+  const sinCierreEnCurso = !mesa.cuenta_solicitada && !mesa.total_visible_mesero;
+  document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !sinCierreEnCurso || itemsPendientesCocina(mesa).length === 0);
   document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !!mesa.cuenta_solicitada || !!mesa.total_visible_mesero);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
@@ -569,6 +570,18 @@ async function cerrarMesa() {
 
 const comandaCocinaEnviada = {}; // { [mesaId]: { [itemId]: cantidad ya enviada a cocina } }
 
+function itemsPendientesCocina(mesa) {
+  const yaEnviado = comandaCocinaEnviada[mesa.id] || {};
+  const itemsDeCocina = mesa.pedido.filter(item => {
+    const producto = MENU.find(p => p.id === item.id);
+    return producto ? producto.prepara_cocina !== false : true;
+  });
+  // Solo lo nuevo desde el ultimo envio: si ya se mandaron 2 y ahora hay 3, se imprime solo 1.
+  return itemsDeCocina
+    .map(item => ({ ...item, cantidad: item.cantidad - (yaEnviado[item.id] || 0) }))
+    .filter(item => item.cantidad > 0);
+}
+
 function imprimirComandaCocina() {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -578,15 +591,7 @@ function imprimirComandaCocina() {
   }
   const yaEnviado = comandaCocinaEnviada[mesa.id] || {};
   const esActualizacion = Object.keys(yaEnviado).length > 0;
-
-  const itemsDeCocina = mesa.pedido.filter(item => {
-    const producto = MENU.find(p => p.id === item.id);
-    return producto ? producto.prepara_cocina !== false : true;
-  });
-  // Solo lo nuevo desde el ultimo envio: si ya se mandaron 2 y ahora hay 3, se imprime solo 1.
-  const itemsCocina = itemsDeCocina
-    .map(item => ({ ...item, cantidad: item.cantidad - (yaEnviado[item.id] || 0) }))
-    .filter(item => item.cantidad > 0);
+  const itemsCocina = itemsPendientesCocina(mesa);
 
   if (itemsCocina.length === 0) {
     alert(esActualizacion
@@ -621,7 +626,10 @@ function imprimirComandaCocina() {
   window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 
   const nuevoEstado = { ...yaEnviado };
-  itemsDeCocina.forEach(item => { nuevoEstado[item.id] = item.cantidad; });
+  mesa.pedido.forEach(item => {
+    const producto = MENU.find(p => p.id === item.id);
+    if (producto ? producto.prepara_cocina !== false : true) nuevoEstado[item.id] = item.cantidad;
+  });
   comandaCocinaEnviada[mesa.id] = nuevoEstado;
 }
 
