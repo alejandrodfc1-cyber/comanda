@@ -165,6 +165,17 @@
         </div>
         <div id="resultado-limpieza-fotos" class="mensaje-guardado oculto"></div>
       </div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">📝 Notas rápidas para pedidos</h3>
+      <p class="texto-ayuda">Son las opciones de un click que aparecen al agregar una nota a un producto (ej: "sin cebolla"). Se pueden combinar y siempre queda la opción de escribir algo distinto.</p>
+      <form id="form-nueva-nota-rapida" class="form-admin">
+        <input type="text" id="nueva-nota-rapida-texto" placeholder="Ej: sin cilantro" required>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn" id="btn-guardar-nota-rapida">+ Agregar</button>
+          <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-nota-rapida" onclick="cancelarEdicionNotaRapida()">Cancelar</button>
+        </div>
+      </form>
+      <div id="lista-admin-notas-rapidas" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-usuarios" class="oculto">

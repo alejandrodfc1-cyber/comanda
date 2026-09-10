@@ -178,7 +178,7 @@ sb.auth.onAuthStateChange((_event, session) => {
   document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
   document.getElementById('barra-superior').classList.toggle('oculto', !haySesion);
   if (haySesion) {
-    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion();
+    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas();
     cargarRolUsuario(session.user.id);
   } else {
     rolUsuario = null;
@@ -460,11 +460,14 @@ function cambiarCantidad(platoId, delta) {
   }));
 }
 
-const NOTAS_RAPIDAS = [
-  'Sin cebolla', 'Poca cebolla', 'Sin tomate', 'Sin mayo', 'Sin ají',
-  'Extra ají', 'Sin sal', 'Poca sal', 'Término medio', 'Bien cocido',
-  'Extra queso', 'Sin hielo',
-];
+let notasRapidas = [];
+
+async function cargarNotasRapidas() {
+  const { data, error } = await sb.from('notas_rapidas').select('*').order('orden');
+  if (error) { console.error(error); return; }
+  notasRapidas = data;
+  if (rolUsuario === 'admin' && seccionActivaDashboard === 'config') renderNotasRapidasAdmin();
+}
 
 let itemNotaEditandoId = null;
 
@@ -475,8 +478,8 @@ function editarNotaItem(platoId) {
   if (!item) return;
   itemNotaEditandoId = platoId;
   document.getElementById('nota-item-titulo').textContent = `📝 Nota: ${item.nombre}`;
-  document.getElementById('chips-notas-rapidas').innerHTML = NOTAS_RAPIDAS
-    .map(n => `<button type="button" class="chip-nota" onclick="agregarNotaRapida('${n.replace(/'/g, "\\'")}')">${n}</button>`)
+  document.getElementById('chips-notas-rapidas').innerHTML = notasRapidas
+    .map(n => `<button type="button" class="chip-nota" onclick="agregarNotaRapida('${n.texto.replace(/'/g, "\\'")}')">${n.texto}</button>`)
     .join('');
   document.getElementById('campo-nota-item').value = item.nota || '';
   sincronizarChipsNota();
@@ -865,6 +868,7 @@ function mostrarSeccionDashboard(seccion) {
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
+  if (seccion === 'config') renderNotasRapidasAdmin();
 }
 
 function guardarDesdeFlotante() {
@@ -1946,6 +1950,83 @@ document.getElementById('form-nueva-categoria').addEventListener('submit', async
   await cargarCategoriasYProductos();
   renderCategoriasAdmin();
   poblarSelectCategorias();
+});
+
+let notaRapidaEditandoId = null;
+
+function renderNotasRapidasAdmin() {
+  const cont = document.getElementById('lista-admin-notas-rapidas');
+  if (!cont) return;
+  cont.innerHTML = '';
+  notasRapidas.forEach((n, i) => {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">📝</div>
+      <div class="info-admin"><strong>${n.texto}</strong></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverNotaRapida(${n.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === notasRapidas.length - 1 ? 'disabled' : ''} onclick="moverNotaRapida(${n.id}, 1)">▼</button>
+        <button class="btn-editar-admin" onclick="editarNotaRapidaAdmin(${n.id})">✏️</button>
+        <button class="btn-toggle-visible" onclick="eliminarNotaRapidaAdmin(${n.id})">🗑️</button>
+      </div>`;
+    cont.appendChild(fila);
+  });
+}
+
+function editarNotaRapidaAdmin(id) {
+  const n = notasRapidas.find(x => x.id === id);
+  if (!n) return;
+  notaRapidaEditandoId = id;
+  document.getElementById('nueva-nota-rapida-texto').value = n.texto;
+  document.getElementById('btn-guardar-nota-rapida').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-nota-rapida').classList.remove('oculto');
+  document.getElementById('nueva-nota-rapida-texto').focus();
+}
+
+function cancelarEdicionNotaRapida() {
+  notaRapidaEditandoId = null;
+  document.getElementById('nueva-nota-rapida-texto').value = '';
+  document.getElementById('btn-guardar-nota-rapida').textContent = '+ Agregar';
+  document.getElementById('btn-cancelar-nota-rapida').classList.add('oculto');
+}
+
+async function moverNotaRapida(id, direccion) {
+  const i = notasRapidas.findIndex(n => n.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= notasRapidas.length) return;
+  const a = notasRapidas[i], b = notasRapidas[j];
+  const ordenA = a.orden ?? 0, ordenB = b.orden ?? 0;
+  await sb.from('notas_rapidas').update({ orden: ordenB }).eq('id', a.id);
+  await sb.from('notas_rapidas').update({ orden: ordenA }).eq('id', b.id);
+  await cargarNotasRapidas();
+  renderNotasRapidasAdmin();
+}
+
+async function eliminarNotaRapidaAdmin(id) {
+  const n = notasRapidas.find(x => x.id === id);
+  if (!n) return;
+  if (!confirm(`¿Eliminar la nota rápida "${n.texto}"?`)) return;
+  await sb.from('notas_rapidas').delete().eq('id', id);
+  if (notaRapidaEditandoId === id) cancelarEdicionNotaRapida();
+  await cargarNotasRapidas();
+  renderNotasRapidasAdmin();
+}
+
+document.getElementById('form-nueva-nota-rapida').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const textoInput = document.getElementById('nueva-nota-rapida-texto');
+  const texto = textoInput.value.trim();
+  if (!texto) return;
+  if (notaRapidaEditandoId) {
+    await sb.from('notas_rapidas').update({ texto }).eq('id', notaRapidaEditandoId);
+  } else {
+    const siguienteOrden = notasRapidas.length > 0 ? Math.max(...notasRapidas.map(n => n.orden)) + 1 : 1;
+    await sb.from('notas_rapidas').insert({ texto, orden: siguienteOrden });
+  }
+  cancelarEdicionNotaRapida();
+  await cargarNotasRapidas();
+  renderNotasRapidasAdmin();
 });
 
 let top20AdminCache = [];
