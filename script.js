@@ -647,6 +647,9 @@ async function cerrarMesa(metodoPago) {
     mostrarRecibo(mesa, venta.id);
 
     mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
+    sb.rpc('descontar_inventario_venta', { p_items: mesa.pedido }).then(({ error }) => {
+      if (error) console.error('No se pudo descontar el inventario:', error);
+    });
     mesa.pedido = [];
     mesa.abierta_en = null;
     mesa.cuenta_solicitada = false;
@@ -857,7 +860,7 @@ function abrirDashboard() {
   }
   const esAdmin = rolUsuario === 'admin';
   document.getElementById('modal-dashboard').classList.remove('oculto');
-  ['top20', 'productos', 'orden', 'mesas', 'categorias', 'config', 'usuarios'].forEach(s => {
+  ['top20', 'productos', 'insumos', 'orden', 'mesas', 'categorias', 'config', 'usuarios'].forEach(s => {
     document.getElementById(`tab-admin-${s}`).classList.toggle('oculto', !esAdmin);
   });
   mostrarSeccionDashboard('metricas');
@@ -865,8 +868,9 @@ function abrirDashboard() {
     cancelarEdicionMesa();
     cancelarEdicionProducto();
     cancelarEdicionCategoria();
+    cancelarEdicionInsumo();
     cargarMesasAdmin();
-    cargarProductosAdmin();
+    cargarInsumosAdmin().then(() => { cargarProductosAdmin(); poblarSelectInsumos(); });
     renderCategoriasAdmin();
     poblarSelectCategorias();
   }
@@ -880,7 +884,7 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios'].forEach(s => {
+  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
@@ -889,7 +893,7 @@ function mostrarSeccionDashboard(seccion) {
   const bloquePeriodo = document.getElementById('bloque-periodo');
   bloquePeriodo.classList.toggle('oculto', seccion !== 'metricas' && bloquePeriodo.classList.contains('bloque-periodo-fijo'));
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios' || seccion === 'insumos');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
@@ -1422,6 +1426,19 @@ document.getElementById('buscar-producto').addEventListener('input', () => {
   renderProductosAdmin(filtrarProductosAdmin());
 });
 
+function textoStockProducto(p) {
+  if (p.insumo_id) {
+    const insumo = insumosCache.find(i => i.id === p.insumo_id);
+    if (!insumo) return '';
+    return ` · 🍷 Consume ${p.consumo_insumo}${insumo.unidad === 'ml' ? 'ml' : 'u.'} de ${insumo.nombre}`;
+  }
+  if (p.controla_stock) {
+    const clase = p.inventario <= 0 ? 'texto-stock-agotado' : (p.inventario <= 5 ? 'texto-stock-bajo' : '');
+    return ` · <span class="${clase}">Stock ${p.inventario}</span>`;
+  }
+  return '';
+}
+
 function filaProductoAdminHtml(p) {
   const utilidad = p.precio - p.costo;
   const miniatura = p.foto_url ? `<img class="foto-producto" src="${p.foto_url}" alt="">` : (p.icono || '🍽️');
@@ -1431,7 +1448,7 @@ function filaProductoAdminHtml(p) {
     <div class="miniatura">${miniatura}</div>
     <div class="info-admin">
       <strong>${p.nombre}</strong>
-      <span>Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)} · Stock ${p.inventario}</span>
+      <span>Costo ${formatoMoneda(p.costo)} · Venta ${formatoMoneda(p.precio)} · Utilidad ${formatoMoneda(utilidad)}${textoStockProducto(p)}</span>
     </div>
     <div class="acciones-fila-admin">
       <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
@@ -1553,6 +1570,123 @@ async function cambiarRolUsuario(id, nuevoRol) {
   cargarUsuariosAdmin();
 }
 
+let insumosCache = [];
+let insumoEditandoId = null;
+
+async function cargarInsumosAdmin() {
+  const { data, error } = await sb.from('insumos').select('*').order('nombre');
+  if (error) { console.error(error); return; }
+  insumosCache = data || [];
+  renderInsumosAdmin();
+}
+
+function poblarSelectInsumos() {
+  const select = document.getElementById('nuevo-producto-insumo');
+  if (!select) return;
+  const actual = select.value;
+  select.innerHTML = insumosCache.map(i => `<option value="${i.id}">${i.nombre} (${i.unidad})</option>`).join('');
+  if (actual) select.value = actual;
+}
+
+function renderInsumosAdmin() {
+  const cont = document.getElementById('lista-admin-insumos');
+  if (!cont) return;
+  cont.innerHTML = insumosCache.length === 0
+    ? '<p class="texto-vacio">Sin insumos registrados todavía.</p>'
+    : insumosCache.map(i => {
+        const bajo = Number(i.stock) <= Number(i.stock_minimo);
+        const agotado = Number(i.stock) <= 0;
+        const claseStock = agotado ? 'texto-stock-agotado' : (bajo ? 'texto-stock-bajo' : '');
+        const unidadTexto = i.unidad === 'ml' ? 'ml' : 'u.';
+        return `
+      <div class="fila-admin">
+        <div class="miniatura">${agotado ? '🔴' : (bajo ? '🟡' : '📦')}</div>
+        <div class="info-admin">
+          <strong>${i.nombre}</strong>
+          <span class="${claseStock}">Stock: ${i.stock}${unidadTexto} ${bajo ? '· ¡reponer!' : ''}</span>
+        </div>
+        <div class="acciones-fila-admin">
+          <button class="btn-editar-admin" onclick="reponerInsumo(${i.id})" title="Reponer stock">➕</button>
+          <button class="btn-editar-admin" onclick="editarInsumo(${i.id})" title="Editar">✏️</button>
+          <button class="btn-toggle-visible" onclick="eliminarInsumoAdmin(${i.id})" title="Eliminar">🗑️</button>
+        </div>
+      </div>`;
+      }).join('');
+}
+
+function editarInsumo(id) {
+  const i = insumosCache.find(x => x.id === id);
+  if (!i) return;
+  insumoEditandoId = id;
+  document.getElementById('nuevo-insumo-nombre').value = i.nombre;
+  document.getElementById('nuevo-insumo-unidad').value = i.unidad;
+  document.getElementById('nuevo-insumo-stock').value = i.stock;
+  document.getElementById('nuevo-insumo-stock-minimo').value = i.stock_minimo;
+  document.getElementById('titulo-form-insumo').textContent = `✏️ Editando: ${i.nombre}`;
+  document.getElementById('btn-guardar-insumo').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-insumo').classList.remove('oculto');
+  document.getElementById('nuevo-insumo-nombre').focus();
+}
+
+function cancelarEdicionInsumo() {
+  insumoEditandoId = null;
+  document.getElementById('form-nuevo-insumo').reset();
+  document.getElementById('titulo-form-insumo').textContent = '📦 Nuevo insumo';
+  document.getElementById('btn-guardar-insumo').textContent = '+ Agregar insumo';
+  document.getElementById('btn-cancelar-insumo').classList.add('oculto');
+}
+
+async function reponerInsumo(id) {
+  const i = insumosCache.find(x => x.id === id);
+  if (!i) return;
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
+  const cantidad = prompt(`¿Cuánto se repone de "${i.nombre}" (en ${unidadTexto})?\nStock actual: ${i.stock}${unidadTexto}`, i.unidad === 'ml' ? '750' : '1');
+  if (cantidad === null) return;
+  const monto = Number(cantidad);
+  if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return; }
+  const { error } = await sb.from('insumos').update({ stock: Number(i.stock) + monto }).eq('id', id);
+  if (error) { alert('No se pudo reponer: ' + error.message); return; }
+  await cargarInsumosAdmin();
+}
+
+async function eliminarInsumoAdmin(id) {
+  const i = insumosCache.find(x => x.id === id);
+  if (!i) return;
+  const enUso = productosAdminCache.filter(p => p.insumo_id === id);
+  if (enUso.length > 0) {
+    alert(`No se puede eliminar "${i.nombre}": está vinculado a ${enUso.length} producto(s) (${enUso.map(p => p.nombre).join(', ')}). Cámbialos de insumo primero desde Productos.`);
+    return;
+  }
+  if (!confirm(`¿Eliminar el insumo "${i.nombre}"?`)) return;
+  await sb.from('insumos').delete().eq('id', id);
+  if (insumoEditandoId === id) cancelarEdicionInsumo();
+  await cargarInsumosAdmin();
+}
+
+document.getElementById('form-nuevo-insumo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('nuevo-insumo-nombre').value.trim();
+  const unidad = document.getElementById('nuevo-insumo-unidad').value;
+  const stock = Number(document.getElementById('nuevo-insumo-stock').value) || 0;
+  const stockMinimo = Number(document.getElementById('nuevo-insumo-stock-minimo').value) || 0;
+  if (!nombre) return;
+  const datos = { nombre, unidad, stock, stock_minimo: stockMinimo };
+  if (insumoEditandoId) {
+    await sb.from('insumos').update(datos).eq('id', insumoEditandoId);
+  } else {
+    await sb.from('insumos').insert(datos);
+  }
+  cancelarEdicionInsumo();
+  await cargarInsumosAdmin();
+  poblarSelectInsumos();
+});
+
+function actualizarModoStockProducto() {
+  const modo = document.getElementById('nuevo-producto-modo-stock').value;
+  document.getElementById('campo-producto-inventario-wrap').classList.toggle('oculto', modo !== 'propio');
+  document.getElementById('campo-producto-insumo-wrap').classList.toggle('oculto', modo !== 'insumo');
+}
+
 function editarProducto(id) {
   const p = productosAdminCache.find(x => x.id === id);
   if (!p) return;
@@ -1564,6 +1698,12 @@ function editarProducto(id) {
   document.getElementById('nuevo-producto-costo').value = p.costo ? Number(p.costo).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-precio').value = p.precio ? Number(p.precio).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
+  const modoStock = p.insumo_id ? 'insumo' : (p.controla_stock ? 'propio' : 'ninguno');
+  document.getElementById('nuevo-producto-modo-stock').value = modoStock;
+  poblarSelectInsumos();
+  if (p.insumo_id) document.getElementById('nuevo-producto-insumo').value = p.insumo_id;
+  document.getElementById('nuevo-producto-consumo').value = p.consumo_insumo ?? '';
+  actualizarModoStockProducto();
   document.getElementById('titulo-form-producto').textContent = `✏️ Editando: ${p.nombre}`;
   document.getElementById('btn-guardar-producto').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-producto').classList.remove('oculto');
@@ -1590,6 +1730,8 @@ function cancelarEdicionProducto() {
   document.getElementById('btn-cancelar-producto').classList.add('oculto');
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
   document.getElementById('margen-producto-info').classList.add('oculto');
+  document.getElementById('nuevo-producto-modo-stock').value = 'ninguno';
+  actualizarModoStockProducto();
   actualizarCalculadoraPrecio();
 }
 
@@ -1886,6 +2028,14 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   const inventario = Number(document.getElementById('nuevo-producto-inventario').value) || 0;
   const preparaCocina = document.getElementById('nuevo-producto-cocina').checked;
   const archivoFoto = document.getElementById('nuevo-producto-foto').files[0];
+  const modoStock = document.getElementById('nuevo-producto-modo-stock').value;
+  const controlaStock = modoStock === 'propio';
+  const insumoId = modoStock === 'insumo' ? Number(document.getElementById('nuevo-producto-insumo').value) || null : null;
+  const consumoInsumo = modoStock === 'insumo' ? (Number(document.getElementById('nuevo-producto-consumo').value) || null) : null;
+  if (modoStock === 'insumo' && (!insumoId || !consumoInsumo)) {
+    alert('Elige el insumo y la cantidad que consume por unidad vendida.');
+    return;
+  }
 
   if (precio > 0 && precio <= costo) {
     const continuar = confirm(`El precio de venta (${formatoMoneda(precio)}) es menor o igual al costo (${formatoMoneda(costo)}). ¿Guardar de todas formas? Por ejemplo, si es una promoción.`);
@@ -1905,7 +2055,10 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
     }
   }
 
-  const datos = { nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl, prepara_cocina: preparaCocina };
+  const datos = {
+    nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl, prepara_cocina: preparaCocina,
+    controla_stock: controlaStock, insumo_id: insumoId, consumo_insumo: consumoInsumo,
+  };
   if (productoEditandoId) {
     const original = productosAdminCache.find(p => p.id === productoEditandoId);
     const cambioDeCategoria = original && String(original.categoria_id) !== String(categoriaId);

@@ -101,6 +101,7 @@
           <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Reportes</button>
           <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
           <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
+          <button id="tab-admin-insumos" onclick="mostrarSeccionDashboard('insumos')">📦 Insumos</button>
           <button id="tab-admin-orden" onclick="mostrarSeccionDashboard('orden')">Orden Menú</button>
           <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
           <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
@@ -240,9 +241,24 @@
           </div>
         </div>
 
-        <label class="campo-form">📦 Inventario (stock disponible)
+        <label class="campo-form">📦 Control de stock
+          <select id="nuevo-producto-modo-stock" onchange="actualizarModoStockProducto()">
+            <option value="ninguno">No controlar (ej: comidas hechas al momento)</option>
+            <option value="propio">Tiene stock propio, por unidad (ej: cerveza embotellada)</option>
+            <option value="insumo">Se sirve desde un insumo compartido (ej: copa, corto, combinado)</option>
+          </select>
+        </label>
+        <label class="campo-form oculto" id="campo-producto-inventario-wrap">Cantidad en stock
           <input type="number" id="nuevo-producto-inventario" placeholder="0" min="0">
         </label>
+        <div class="fila-campos-form oculto" id="campo-producto-insumo-wrap">
+          <label class="campo-form">Insumo del que se sirve
+            <select id="nuevo-producto-insumo"></select>
+          </label>
+          <label class="campo-form">Consume por unidad vendida
+            <input type="number" id="nuevo-producto-consumo" placeholder="Ej: 150" min="0" step="0.01">
+          </label>
+        </div>
         <div class="campo-form">
           <span>📷 Foto del producto</span>
           <div class="preview-foto-form oculto" id="preview-foto-producto-wrap">
@@ -259,6 +275,35 @@
       </form>
       <input type="text" id="buscar-producto" class="campo-busqueda" placeholder="🔍 Buscar producto por nombre...">
       <div id="lista-admin-productos" class="con-espacio-fab"></div>
+    </div>
+
+    <div id="seccion-admin-insumos" class="oculto">
+      <form id="form-nuevo-insumo" class="form-admin formulario-tarjeta">
+        <h3 class="titulo-form" id="titulo-form-insumo">📦 Nuevo insumo</h3>
+        <p class="texto-ayuda">Un insumo es lo que se compra (una botella, un barril) y del que salen varias ventas: copas, cortos, combinados. Vincúlalo a los productos correspondientes desde "Productos".</p>
+        <label class="campo-form">Nombre
+          <input type="text" id="nuevo-insumo-nombre" placeholder="Ej: Vino Cabernet, Pisco" required>
+        </label>
+        <div class="fila-campos-form">
+          <label class="campo-form">Unidad
+            <select id="nuevo-insumo-unidad">
+              <option value="ml">Mililitros (ml)</option>
+              <option value="unidades">Unidades</option>
+            </select>
+          </label>
+          <label class="campo-form">Stock actual
+            <input type="number" id="nuevo-insumo-stock" placeholder="0" min="0" step="0.01">
+          </label>
+        </div>
+        <label class="campo-form">Alertar cuando el stock baje de
+          <input type="number" id="nuevo-insumo-stock-minimo" placeholder="Ej: 200" min="0" step="0.01">
+        </label>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn" id="btn-guardar-insumo">+ Agregar insumo</button>
+          <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-insumo" onclick="cancelarEdicionInsumo()">Cancelar</button>
+        </div>
+      </form>
+      <div id="lista-admin-insumos" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-categorias" class="oculto">
