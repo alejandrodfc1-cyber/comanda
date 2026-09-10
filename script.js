@@ -861,7 +861,7 @@ function inicioPeriodo(periodo) {
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('mesa_id, items, total, creado_en, duracion_minutos').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('mesa_id, items, total, creado_en, duracion_minutos, metodo_pago').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
@@ -893,12 +893,17 @@ function renderMetricas(ventas, mapaMesas) {
   const tallyMesas = {};
   const tallyDiaSemana = {};
   const tallyHora = {};
+  const tallyMetodoPago = {};
 
   ventas.forEach(v => {
     const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
     if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
     tallyMesas[v.mesa_id].veces += 1;
     tallyMesas[v.mesa_id].monto += Number(v.total);
+
+    const etiquetasMetodoReporte = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+    const metodoPago = etiquetasMetodoReporte[v.metodo_pago] || 'Sin especificar';
+    tallyMetodoPago[metodoPago] = (tallyMetodoPago[metodoPago] || 0) + Number(v.total);
 
     const fecha = new Date(v.creado_en);
     const diaSemana = fecha.getDay();
@@ -1016,6 +1021,19 @@ function renderMetricas(ventas, mapaMesas) {
         <div class="barra-categoria-fondo"><div class="barra-categoria-relleno" style="width:${maxCategoria ? (monto / maxCategoria * 100) : 0}%"></div></div>
       </div>`).join('') + `
       <div class="categoria-total-fila"><span>Total</span><span>${formatoMoneda(Math.round(totalCategorias))}</span></div>`;
+
+  const metodosOrdenados = Object.entries(tallyMetodoPago).sort((a, b) => b[1] - a[1]);
+  const maxMetodo = metodosOrdenados.length > 0 ? metodosOrdenados[0][1] : 0;
+  const totalMetodos = metodosOrdenados.reduce((s, [, monto]) => s + monto, 0);
+  const listaMetodos = document.getElementById('lista-metodos-pago-metricas');
+  listaMetodos.innerHTML = metodosOrdenados.length === 0
+    ? '<p class="texto-vacio">Sin ventas en este período</p>'
+    : metodosOrdenados.map(([nombre, monto]) => `
+      <div class="barra-categoria">
+        <div class="barra-categoria-etiqueta"><span>${nombre}</span><span>${formatoMoneda(Math.round(monto))}</span></div>
+        <div class="barra-categoria-fondo"><div class="barra-categoria-relleno" style="width:${maxMetodo ? (monto / maxMetodo * 100) : 0}%"></div></div>
+      </div>`).join('') + `
+      <div class="categoria-total-fila"><span>Total</span><span>${formatoMoneda(Math.round(totalMetodos))}</span></div>`;
 
   const tallyDias = {};
   ventas.forEach(v => {
