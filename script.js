@@ -460,6 +460,22 @@ function cambiarCantidad(platoId, delta) {
   }));
 }
 
+function editarNotaItem(platoId) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const item = mesa.pedido.find(i => i.id === platoId);
+  if (!item) return;
+  const nota = prompt(`Nota para "${item.nombre}" (ej: sin cebolla, término medio):`, item.nota || '');
+  if (nota === null) return;
+  const notaLimpia = nota.trim();
+  if (notaLimpia) item.nota = notaLimpia;
+  else delete item.nota;
+  renderPedido();
+  sincronizarItemPedido(() => sb.rpc('actualizar_nota_item_pedido', {
+    p_mesa_id: mesa.id, p_item_id: platoId, p_nota: notaLimpia || null,
+  }));
+}
+
 function eliminarDelPedido(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -495,12 +511,14 @@ function renderPedido() {
       <div class="item-info">
         <span class="item-nombre">${item.nombre}</span>
         <span class="item-detalle">${detalleTexto}</span>
+        ${item.nota ? `<span class="item-nota">📝 ${item.nota}</span>` : ''}
       </div>
       ${expandido ? `
       <div class="item-acciones" onclick="event.stopPropagation()">
         <button class="btn-icono" onclick="cambiarCantidad(${item.id}, -1)">−</button>
         <span class="item-cantidad-num">${item.cantidad}</span>
         <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1)">+</button>
+        <button class="btn-icono" onclick="editarNotaItem(${item.id})" title="Nota">📝</button>
         <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id})" title="Quitar">🗑️</button>
       </div>` : ''}`;
     cont.appendChild(el);
@@ -651,6 +669,7 @@ function imprimirComandaCocina() {
   t += separador;
   itemsCocina.forEach(item => {
     t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
+    if (item.nota) t += `   » ${item.nota}\n`;
   });
   t += separador;
 
@@ -679,7 +698,7 @@ function mostrarRecibo(mesa, numeroRecibo) {
 
   const filasItems = mesa.pedido.map(item => `
     <div class="recibo-fila">
-      <span>${item.nombre}</span>
+      <span>${item.nombre}${item.nota ? `<br><small>📝 ${item.nota}</small>` : ''}</span>
       <span>${item.cantidad} x ${formatoMoneda(item.precio)}</span>
     </div>`).join('');
 
