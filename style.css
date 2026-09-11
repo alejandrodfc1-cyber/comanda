@@ -829,6 +829,7 @@ main { padding: 20px; }
 #lista-mesas-metricas .fila-admin:nth-child(3) .miniatura { background: linear-gradient(135deg, #d8975a, #a5642e); box-shadow: 0 2px 6px rgba(165,100,46,.5); }
 .fila-admin .info-admin span { color: #666; font-size: .8rem; }
 .fila-admin.oculta-item { opacity: .45; }
+.fila-usuario-pendiente { background: #fff8e6; border: 1px solid #f0d999; border-radius: 8px; padding-left: 8px; }
 .texto-stock-bajo { color: #b8860b; font-weight: 700; }
 .texto-stock-agotado { color: #c0392b; font-weight: 700; }
 .fila-conteo-insumo {

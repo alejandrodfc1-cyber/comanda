@@ -32,6 +32,14 @@
   </form>
 </main>
 
+<main id="vista-pendiente" class="oculto">
+  <div class="login-caja">
+    <h2>⏳ Cuenta pendiente</h2>
+    <p class="texto-ayuda">Ya creaste tu cuenta. Un administrador tiene que activarla antes de que puedas usar la app — avísale para que lo haga desde Administración → Usuarios.</p>
+    <button type="button" class="btn btn-secundario" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+  </div>
+</main>
+
 <main id="vista-mesas" class="oculto">
   <div id="grid-mesas"></div>
 </main>
@@ -182,7 +190,7 @@
     <div id="seccion-admin-usuarios" class="oculto">
       <div class="form-admin">
         <h3 class="titulo-form">➕ Agregar una persona nueva</h3>
-        <p class="texto-ayuda">Pide que la persona cree su propia cuenta desde la pantalla de inicio de sesión ("Crear cuenta (primera vez)"), con su correo y una contraseña. Apenas aparezca en la lista de abajo, asígnale el rol correcto.</p>
+        <p class="texto-ayuda">Pide que la persona cree su propia cuenta desde la pantalla de inicio de sesión ("Crear cuenta (primera vez)"), con su correo y una contraseña. Va a quedar <strong>pendiente</strong> (sin poder usar nada) hasta que la actives con el botón ✅ en la lista de abajo y le asignes el rol correcto.</p>
       </div>
       <input type="text" id="buscar-usuario" class="campo-busqueda" placeholder="🔍 Buscar por correo...">
       <div id="lista-admin-usuarios" class="con-espacio-fab"></div>

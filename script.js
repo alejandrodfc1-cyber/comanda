@@ -167,22 +167,29 @@ let usuarioActualId = null;
 
 async function cargarRolUsuario(userId) {
   usuarioActualId = userId;
-  const { data } = await sb.from('perfiles').select('rol').eq('id', userId).single();
+  const { data } = await sb.from('perfiles').select('rol, activo').eq('id', userId).single();
   rolUsuario = data?.rol || 'mesero';
   document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario === 'mesero');
+  return data?.activo !== false;
 }
 
-sb.auth.onAuthStateChange((_event, session) => {
+sb.auth.onAuthStateChange(async (_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
-  document.getElementById('vista-mesas').classList.toggle('oculto', !haySesion);
-  document.getElementById('barra-superior').classList.toggle('oculto', !haySesion);
-  if (haySesion) {
-    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas();
-    cargarRolUsuario(session.user.id);
-  } else {
+  if (!haySesion) {
+    document.getElementById('vista-mesas').classList.add('oculto');
+    document.getElementById('vista-pendiente').classList.add('oculto');
+    document.getElementById('barra-superior').classList.add('oculto');
     rolUsuario = null;
     usuarioActualId = null;
+    return;
+  }
+  const cuentaActiva = await cargarRolUsuario(session.user.id);
+  document.getElementById('vista-mesas').classList.toggle('oculto', !cuentaActiva);
+  document.getElementById('vista-pendiente').classList.toggle('oculto', cuentaActiva);
+  document.getElementById('barra-superior').classList.toggle('oculto', !cuentaActiva);
+  if (cuentaActiva) {
+    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas();
   }
 });
 
@@ -1526,7 +1533,10 @@ async function cargarUsuariosAdmin() {
 }
 
 function listaUsuariosFiltrada() {
-  const ordenados = [...usuariosAdminCache].sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+  const ordenados = [...usuariosAdminCache].sort((a, b) => {
+    if (a.activo !== b.activo) return a.activo ? 1 : -1;
+    return (a.email || '').localeCompare(b.email || '');
+  });
   const q = normalizarTexto(document.getElementById('buscar-usuario').value.trim());
   if (!q) return ordenados;
   return ordenados.filter(u => normalizarTexto(u.email || '').includes(q));
@@ -1541,22 +1551,42 @@ function renderUsuariosAdmin() {
     ? '<p class="texto-vacio">No hay usuarios que coincidan.</p>'
     : lista.map(u => {
       const esUnoMismo = u.id === usuarioActualId;
+      const pendiente = !u.activo;
       return `
-      <div class="fila-admin">
-        <div class="miniatura">${ICONO_ROL[u.rol] || '👤'}</div>
+      <div class="fila-admin${pendiente ? ' fila-usuario-pendiente' : ''}">
+        <div class="miniatura">${pendiente ? '⏳' : (ICONO_ROL[u.rol] || '👤')}</div>
         <div class="info-admin">
           <strong>${u.email || '(sin correo)'}</strong>
-          <span>${ETIQUETAS_ROL[u.rol] || u.rol}${esUnoMismo ? ' · Tu cuenta' : ''}</span>
+          <span>${pendiente ? '<span class="texto-stock-agotado">Pendiente de activar</span>' : (ETIQUETAS_ROL[u.rol] || u.rol)}${esUnoMismo ? ' · Tu cuenta' : ''}</span>
         </div>
         <div class="acciones-fila-admin">
+          ${pendiente ? `<button class="btn-editar-admin" onclick="activarUsuario('${u.id}')" title="Activar cuenta">✅</button>` : ''}
           <select class="selector-rol-usuario" onchange="cambiarRolUsuario('${u.id}', this.value)" ${esUnoMismo ? 'disabled title="No puedes cambiar tu propio rol"' : ''}>
             <option value="mesero" ${u.rol === 'mesero' ? 'selected' : ''}>Mesero</option>
             <option value="cajero" ${u.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
             <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>
           </select>
+          ${!pendiente && !esUnoMismo ? `<button class="btn-toggle-visible" onclick="desactivarUsuario('${u.id}')" title="Desactivar cuenta">🚫</button>` : ''}
         </div>
       </div>`;
     }).join('');
+}
+
+async function activarUsuario(id) {
+  const usuario = usuariosAdminCache.find(u => u.id === id);
+  if (!usuario) return;
+  const { error } = await sb.from('perfiles').update({ activo: true }).eq('id', id);
+  if (error) { alert('No se pudo activar: ' + error.message); return; }
+  await cargarUsuariosAdmin();
+}
+
+async function desactivarUsuario(id) {
+  const usuario = usuariosAdminCache.find(u => u.id === id);
+  if (!usuario) return;
+  if (!confirm(`¿Desactivar la cuenta de "${usuario.email}"? No va a poder usar la app hasta que la vuelvas a activar.`)) return;
+  const { error } = await sb.from('perfiles').update({ activo: false }).eq('id', id);
+  if (error) { alert('No se pudo desactivar: ' + error.message); return; }
+  await cargarUsuariosAdmin();
 }
 
 async function cambiarRolUsuario(id, nuevoRol) {
