@@ -1853,22 +1853,31 @@ async function cargarHistorialConteos() {
 
   const { data: detalles } = await sb.from('conteos_insumo_detalle').select('*').in('conteo_id', conteos.map(c => c.id));
   const mapaInsumosNombre = Object.fromEntries(insumosCache.map(i => [i.id, i]));
+  const numero = (n) => Math.round(Number(n) * 100) / 100;
 
   cont.innerHTML = conteos.map(c => {
     const fecha = new Date(c.creado_en);
     const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
     const misDetalles = (detalles || []).filter(d => d.conteo_id === c.id);
-    const conDiferencia = misDetalles.filter(d => Number(d.diferencia) !== 0);
+    const conDiferencia = misDetalles
+      .filter(d => Number(d.diferencia) !== 0)
+      .map(d => ({ ...d, nombre: mapaInsumosNombre[d.insumo_id]?.nombre || `Insumo #${d.insumo_id}` }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
     const etiqueta = c.ubicacion === 'bodega' ? '🏬 Bodega' : '🍾 Barra';
     const filasDiferencia = conDiferencia.length === 0
       ? '<p class="texto-vacio">Sin diferencias — el conteo coincidió con el teórico.</p>'
       : conDiferencia.map(d => {
           const insumo = mapaInsumosNombre[d.insumo_id];
-          const nombre = insumo ? insumo.nombre : `Insumo #${d.insumo_id}`;
           const unidadTexto = insumo && insumo.unidad === 'unidades' ? 'u.' : 'ml';
           const signo = Number(d.diferencia) > 0 ? '+' : '';
           const clase = Number(d.diferencia) < 0 ? 'texto-stock-agotado' : 'texto-stock-bajo';
-          return `<div class="fila-diferencia-conteo"><span>${nombre}</span><span class="${clase}">${signo}${d.diferencia}${unidadTexto} (teórico ${d.cantidad_teorica} → físico ${d.cantidad_fisica})</span></div>`;
+          return `<div class="fila-diferencia-conteo">
+            <div class="diferencia-cabecera">
+              <span class="diferencia-nombre">${d.nombre}</span>
+              <span class="${clase}">${signo}${numero(d.diferencia)}${unidadTexto}</span>
+            </div>
+            <div class="diferencia-detalle">teórico ${numero(d.cantidad_teorica)} → físico ${numero(d.cantidad_fisica)}</div>
+          </div>`;
         }).join('');
     return `
       <div class="fila-admin fila-historial-conteo">

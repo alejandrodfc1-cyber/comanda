@@ -859,10 +859,17 @@ main { padding: 20px; }
 .conteo-total-calculado { font-size: .8rem; font-weight: 700; color: #16a085; min-width: 60px; }
 .fila-historial-conteo { align-items: flex-start; }
 .fila-diferencia-conteo {
-  display: flex; justify-content: space-between; gap: 8px;
-  font-size: .78rem;
-  padding: 3px 0;
+  padding: 5px 0;
+  border-top: 1px dashed #e5e5e5;
 }
+.fila-diferencia-conteo:first-child { border-top: none; }
+.diferencia-cabecera {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font-size: .82rem; font-weight: 600;
+}
+.diferencia-nombre { flex: 1; min-width: 0; color: #333; }
+.diferencia-cabecera > span:last-child { flex-shrink: 0; white-space: nowrap; }
+.diferencia-detalle { font-size: .72rem; color: #999; margin-top: 1px; }
 .btn-toggle-visible, .btn-editar-admin {
   border: 1px solid #d8dcdf;
   background: #eceff1;
