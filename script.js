@@ -629,8 +629,10 @@ async function cerrarMesa(metodoPago) {
   if (cobroEnProceso) return;
 
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
-  const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
-  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`)) return;
+  const mensajeConfirmacion = metodoPago
+    ? `¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${ETIQUETAS_METODO_PAGO[metodoPago]}? Esta acción cierra la mesa.`
+    : `¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))}? Esta acción cierra la mesa e imprime el ticket.`;
+  if (!confirm(mensajeConfirmacion)) return;
 
   ocultarPanelMetodoPago();
   cobroEnProceso = true;
