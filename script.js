@@ -630,9 +630,9 @@ function reproducirSonidoCobro(metodoPago) {
 
     // Cada metodo tiene su propio patron para reconocerlo sin mirar la pantalla.
     const patrones = {
-      efectivo: [{ freq: 880, dur: 0.11 }, { freq: 1318, dur: 0.22 }],
-      tarjeta: [{ freq: 700, dur: 0.08 }, { freq: 700, dur: 0.08, espera: 0.05 }],
-      transferencia: [{ freq: 523, dur: 0.09 }, { freq: 659, dur: 0.09 }, { freq: 784, dur: 0.2 }],
+      efectivo: [{ freq: 523, dur: 0.09 }, { freq: 659, dur: 0.09 }, { freq: 784, dur: 0.2 }],
+      tarjeta: [{ freq: 880, dur: 0.11 }, { freq: 1318, dur: 0.22 }],
+      transferencia: [{ freq: 700, dur: 0.08 }, { freq: 700, dur: 0.08, espera: 0.05 }],
     };
     const notas = patrones[metodoPago] || patrones.efectivo;
     let inicio = ctx.currentTime;
