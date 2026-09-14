@@ -216,7 +216,7 @@ async function cargarMesas() {
   actualizarBadgeCuentasPendientes();
 }
 
-const UMBRAL_TICKET_OLVIDADO_MIN = 10;
+const UMBRAL_TICKET_OLVIDADO_MIN = 7;
 
 function minutosDesde(fechaIso) {
   return Math.floor((Date.now() - new Date(fechaIso).getTime()) / 60000);
