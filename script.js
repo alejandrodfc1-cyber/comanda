@@ -642,7 +642,7 @@ function reproducirSonidoCobro(metodoPago) {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.value = nota.freq;
-      gain.gain.setValueAtTime(0.22, inicio);
+      gain.gain.setValueAtTime(0.85, inicio);
       gain.gain.exponentialRampToValueAtTime(0.001, inicio + nota.dur);
       osc.connect(gain);
       gain.connect(ctx.destination);
