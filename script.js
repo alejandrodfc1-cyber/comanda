@@ -216,13 +216,29 @@ async function cargarMesas() {
   actualizarBadgeCuentasPendientes();
 }
 
+const UMBRAL_TICKET_OLVIDADO_MIN = 10;
+
+function minutosDesde(fechaIso) {
+  return Math.floor((Date.now() - new Date(fechaIso).getTime()) / 60000);
+}
+
 function actualizarBadgeCuentasPendientes() {
   const badge = document.getElementById('badge-cuentas-pendientes');
-  if (!badge) return;
-  const pendientes = mesas.filter(m => m.cuenta_solicitada).length;
-  badge.classList.toggle('oculto', pendientes === 0);
-  badge.textContent = `🔔 ${pendientes}`;
-  badge.title = pendientes === 1 ? '1 mesa pide la cuenta' : `${pendientes} mesas piden la cuenta`;
+  if (badge) {
+    const pendientes = mesas.filter(m => m.cuenta_solicitada).length;
+    badge.classList.toggle('oculto', pendientes === 0);
+    badge.textContent = `🔔 ${pendientes}`;
+    badge.title = pendientes === 1 ? '1 mesa pide la cuenta' : `${pendientes} mesas piden la cuenta`;
+  }
+  const badgeTickets = document.getElementById('badge-tickets-olvidados');
+  if (badgeTickets) {
+    const olvidados = mesas.filter(m => m.ticket_impreso_en && minutosDesde(m.ticket_impreso_en) >= UMBRAL_TICKET_OLVIDADO_MIN).length;
+    badgeTickets.classList.toggle('oculto', olvidados === 0);
+    badgeTickets.textContent = `⏰ ${olvidados}`;
+    badgeTickets.title = olvidados === 1
+      ? '1 mesa tiene un ticket impreso hace rato y sigue sin cerrarse'
+      : `${olvidados} mesas tienen un ticket impreso hace rato y siguen sin cerrarse`;
+  }
 }
 
 sb
@@ -262,15 +278,22 @@ function formatoDuracion(minutos) {
 function renderMesas() {
   const grid = document.getElementById('grid-mesas');
   grid.innerHTML = '';
+  const esMeseroVista = rolUsuario === 'mesero';
   mesas.forEach(mesa => {
     const ocupada = mesa.pedido.length > 0;
     const btn = document.createElement('button');
-    btn.className = 'mesa' + (ocupada ? ' ocupada' : '') + (mesa.cuenta_solicitada ? ' pide-cuenta' : '');
+    const minutosTicket = mesa.ticket_impreso_en ? minutosDesde(mesa.ticket_impreso_en) : null;
+    const ticketOlvidado = minutosTicket !== null && minutosTicket >= UMBRAL_TICKET_OLVIDADO_MIN;
+    btn.className = 'mesa' + (ocupada ? ' ocupada' : '') + (mesa.cuenta_solicitada ? ' pide-cuenta' : '') + (ticketOlvidado && !esMeseroVista ? ' ticket-olvidado' : '');
     const etiqueta = mesa.nombre || mesa.id;
     const esSoloNumero = /^\d+$/.test(String(etiqueta));
     const claseEtiqueta = mesa.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
     const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
+    const badgeTicket = (!esMeseroVista && minutosTicket !== null)
+      ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
+      : '';
     btn.innerHTML = (mesa.cuenta_solicitada ? '<span class="badge-pide-cuenta">🔔</span>' : '') +
+      badgeTicket +
       `<span class="${claseEtiqueta}">${etiqueta}</span>` +
       (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>');
     btn.onclick = () => abrirModalMenu(mesa.id);
@@ -698,7 +721,8 @@ async function cerrarMesa(metodoPago) {
     mesa.cuenta_solicitada = false;
     mesa.total_visible_mesero = false;
     mesa.comanda_cocina_enviada = {};
-    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {} }).eq('id', mesa.id);
+    mesa.ticket_impreso_en = null;
+    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null }).eq('id', mesa.id);
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
@@ -847,6 +871,10 @@ function mostrarCuentaPrevia() {
     total: totalMesa(mesa),
     esPrevia: true,
   });
+
+  mesa.ticket_impreso_en = ahora.toISOString();
+  renderMesas();
+  sb.from('mesas').update({ ticket_impreso_en: mesa.ticket_impreso_en }).eq('id', mesa.id);
 }
 
 function reimprimirVenta(ventaId) {
