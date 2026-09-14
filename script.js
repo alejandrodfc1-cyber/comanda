@@ -586,6 +586,7 @@ function renderPedido() {
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
+  document.getElementById('btn-imprimir-ticket').classList.toggle('oculto', esMesero);
   const sinCierreEnCurso = !mesa.cuenta_solicitada && !mesa.total_visible_mesero;
   const hayPendienteCocina = itemsPendientesCocina(mesa).length > 0;
   // "Enviar a cocina" solo depende de si hay algo pendiente -- si piden la
@@ -629,10 +630,8 @@ async function cerrarMesa(metodoPago) {
   if (cobroEnProceso) return;
 
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
-  const mensajeConfirmacion = metodoPago
-    ? `¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${ETIQUETAS_METODO_PAGO[metodoPago]}? Esta acción cierra la mesa.`
-    : `¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))}? Esta acción cierra la mesa e imprime el ticket.`;
-  if (!confirm(mensajeConfirmacion)) return;
+  const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
+  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`)) return;
 
   ocultarPanelMetodoPago();
   cobroEnProceso = true;
@@ -747,9 +746,9 @@ function imprimirComandaCocina() {
 
 let reciboActual = null;
 
-function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion }) {
+function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion, esPrevia }) {
   const propina = Math.round(total * 0.10);
-  reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion };
+  reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion, esPrevia };
 
   const filasItems = pedido.map(item => `
     <div class="recibo-fila">
@@ -757,13 +756,17 @@ function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, 
       <span>${item.cantidad} x ${formatoMoneda(item.precio)}</span>
     </div>`).join('');
 
+  const lineaEncabezado = esPrevia
+    ? 'CUENTA — aún no cobrada'
+    : `Recibo N.° ${numeroRecibo ?? ''}${esReimpresion ? ' (REIMPRESIÓN)' : ''}`;
+
   document.getElementById('recibo').innerHTML = `
     <div class="recibo-nombre-negocio">${NEGOCIO_NOMBRE}</div>
     <div class="recibo-centrado">${NEGOCIO_DIRECCION}</div>
     <div class="recibo-centrado">${negocioTelefono}</div>
     <div class="recibo-mesa-grande">MESA : ${etiquetaMesa}</div>
     <hr>
-    <div>Recibo N.° ${numeroRecibo ?? ''}${esReimpresion ? ' (REIMPRESIÓN)' : ''}</div>
+    <div>${lineaEncabezado}</div>
     <div>${fecha} · ${hora}</div>
     <hr>
     ${filasItems}
@@ -786,6 +789,25 @@ function mostrarRecibo(mesa, numeroRecibo) {
     fecha: ahora.toLocaleDateString('es-CL'),
     hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: totalMesa(mesa),
+  });
+}
+
+function mostrarCuentaPrevia() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  if (mesa.pedido.length === 0) {
+    alert('La mesa no tiene pedidos.');
+    return;
+  }
+  const ahora = new Date();
+  renderRecibo({
+    pedido: mesa.pedido,
+    numeroRecibo: null,
+    etiquetaMesa: mesa.nombre || mesa.id,
+    fecha: ahora.toLocaleDateString('es-CL'),
+    hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    total: totalMesa(mesa),
+    esPrevia: true,
   });
 }
 
@@ -836,7 +858,7 @@ function imprimirConRawBT() {
   t += `${centrarChico(negocioTelefono)}${FUENTE_A}\n`;
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
-  t += `${FUENTE_B}Recibo N.° ${r.numeroRecibo ?? ''}${r.esReimpresion ? ' (REIMPRESION)' : ''}\n`;
+  t += `${FUENTE_B}${r.esPrevia ? 'CUENTA - aun no cobrada' : ('Recibo N.° ' + (r.numeroRecibo ?? '') + (r.esReimpresion ? ' (REIMPRESION)' : ''))}\n`;
   t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
   t += separador;
   const MAX_NOMBRE_PRODUCTO = 18;
