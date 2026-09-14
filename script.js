@@ -782,9 +782,9 @@ async function imprimirComandaCocina() {
 
 let reciboActual = null;
 
-function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion, esPrevia }) {
+function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion, esPrevia, metodoPago }) {
   const propina = Math.round(total * 0.10);
-  reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion, esPrevia };
+  reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion, esPrevia, metodoPago };
 
   const filasItems = pedido.map(item => `
     <div class="recibo-fila">
@@ -804,10 +804,12 @@ function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, 
     <hr>
     <div>${lineaEncabezado}</div>
     <div>${fecha} · ${hora}</div>
+    ${metodoPago ? `<div>Método de pago: ${ETIQUETAS_METODO_PAGO[metodoPago] || metodoPago}</div>` : ''}
     <hr>
     ${filasItems}
     <hr>
-    <div class="recibo-fila recibo-total-grande"><span>Total</span><span>${formatoMoneda(total)}</span></div>
+    <div class="recibo-fila recibo-total-grande"><span>Total Consumo</span><span>${formatoMoneda(total)}</span></div>
+    <hr>
     <div class="recibo-fila"><span>Propina sugerida (10%)</span><span>${formatoMoneda(propina)}</span></div>
     <div class="recibo-fila"><span>Total con propina</span><span>${formatoMoneda(total + propina)}</span></div>
     <hr>
@@ -862,6 +864,7 @@ function reimprimirVenta(ventaId) {
     hora: fechaVenta.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: Number(venta.total),
     esReimpresion: true,
+    metodoPago: venta.metodo_pago,
   });
 }
 
@@ -895,7 +898,9 @@ function imprimirConRawBT() {
   t += `${centrar(`MESA : ${r.etiquetaMesa}`)}\n`;
   t += separador;
   t += `${FUENTE_B}${r.esPrevia ? 'CUENTA - aun no cobrada' : ('Recibo N.° ' + (r.numeroRecibo ?? '') + (r.esReimpresion ? ' (REIMPRESION)' : ''))}\n`;
-  t += `${r.fecha} · ${r.hora}${FUENTE_A}\n`;
+  t += `${r.fecha} · ${r.hora}\n`;
+  if (r.metodoPago) t += `Metodo de pago: ${ETIQUETAS_METODO_PAGO[r.metodoPago] || r.metodoPago}\n`;
+  t += `${FUENTE_A}`;
   t += separador;
   const MAX_NOMBRE_PRODUCTO = 18;
   r.pedido.forEach(item => {
@@ -904,11 +909,13 @@ function imprimirConRawBT() {
       : item.nombre;
     const cantidadPrecio = `${item.cantidad} x ${item.precio.toLocaleString('es-CO')}`;
     t += fila(nombreCorto, cantidadPrecio);
+    if (item.nota) t += `${FUENTE_B}  » ${item.nota}${FUENTE_A}\n`;
   });
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
   const soloNumero = (n) => n.toLocaleString('es-CO');
-  t += `${BOLD_ON}${fila('Total $', soloNumero(r.total))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Total Consumo $', soloNumero(r.total))}${BOLD_OFF}`;
+  t += separador;
   t += MEDIO_ESPACIO;
   t += fila('Propina sugerida (10%) $', soloNumero(r.propina));
   t += fila('Total con propina $', soloNumero(r.total + r.propina));
