@@ -620,6 +620,41 @@ function ocultarPanelMetodoPago() {
 
 const ETIQUETAS_METODO_PAGO = { efectivo: 'efectivo', tarjeta: 'tarjeta', transferencia: 'transferencia' };
 
+let contextoAudioCobro = null;
+
+function reproducirSonidoCobro(metodoPago) {
+  try {
+    if (!contextoAudioCobro) contextoAudioCobro = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = contextoAudioCobro;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    // Cada metodo tiene su propio patron para reconocerlo sin mirar la pantalla.
+    const patrones = {
+      efectivo: [{ freq: 880, dur: 0.11 }, { freq: 1318, dur: 0.22 }],
+      tarjeta: [{ freq: 700, dur: 0.08 }, { freq: 700, dur: 0.08, espera: 0.05 }],
+      transferencia: [{ freq: 523, dur: 0.09 }, { freq: 659, dur: 0.09 }, { freq: 784, dur: 0.2 }],
+    };
+    const notas = patrones[metodoPago] || patrones.efectivo;
+    let inicio = ctx.currentTime;
+    notas.forEach(nota => {
+      inicio += nota.espera || 0;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = nota.freq;
+      gain.gain.setValueAtTime(0.22, inicio);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + nota.dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(inicio);
+      osc.stop(inicio + nota.dur + 0.02);
+      inicio += nota.dur;
+    });
+  } catch (e) {
+    // Sonido no disponible en este navegador/dispositivo -- no debe interrumpir el cobro.
+  }
+}
+
 async function cerrarMesa(metodoPago) {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -651,6 +686,8 @@ async function cerrarMesa(metodoPago) {
       alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
       return;
     }
+
+    reproducirSonidoCobro(metodoPago);
 
     mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
     sb.rpc('descontar_inventario_venta', { p_items: mesa.pedido }).then(({ error }) => {
