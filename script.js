@@ -688,7 +688,7 @@ function itemsPendientesCocina(mesa) {
     .filter(item => item.cantidad > 0);
 }
 
-function imprimirComandaCocina() {
+async function imprimirComandaCocina() {
   const mesa = mesaActiva();
   if (!mesa) return;
   if (mesa.pedido.length === 0) {
@@ -729,9 +729,6 @@ function imprimirComandaCocina() {
   });
   t += separador;
 
-  const textoCodificado = encodeURI(t);
-  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
-
   const nuevoEstado = { ...yaEnviado };
   mesa.pedido.forEach(item => {
     const producto = MENU.find(p => p.id === item.id);
@@ -739,7 +736,11 @@ function imprimirComandaCocina() {
   });
   mesa.comanda_cocina_enviada = nuevoEstado;
   renderPedido();
-  sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
+  const { error } = await sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
+  if (error) console.error('No se pudo guardar el estado de comanda enviada a cocina:', error);
+
+  const textoCodificado = encodeURI(t);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
 
 let reciboActual = null;
