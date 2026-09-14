@@ -596,7 +596,7 @@ function renderPedido() {
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
   const btnMostrarTotal = document.getElementById('btn-mostrar-total-mesero');
-  btnMostrarTotal.classList.toggle('oculto', esMesero);
+  btnMostrarTotal.classList.toggle('oculto', esMesero || (!mesa.cuenta_solicitada && !mesa.total_visible_mesero));
   btnMostrarTotal.textContent = mesa.total_visible_mesero ? '🙈 Ocultar total al mesero' : '👁️ Mostrar total al mesero';
   actualizarVistaModal();
   renderGaleriaMenu();
@@ -651,8 +651,6 @@ async function cerrarMesa(metodoPago) {
       alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
       return;
     }
-
-    mostrarRecibo(mesa, venta.id);
 
     mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
     sb.rpc('descontar_inventario_venta', { p_items: mesa.pedido }).then(({ error }) => {

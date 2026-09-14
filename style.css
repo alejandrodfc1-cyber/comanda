@@ -588,6 +588,7 @@ main { padding: 20px; }
 .btn-turquesa { background: #16a085; }
 .btn-turno { background: #16a085; font-weight: 600; }
 .btn-cocina { background: #e67e22; margin-top: 14px; }
+#btn-imprimir-ticket { margin-top: 14px; }
 
 .form-admin {
   display: flex;
