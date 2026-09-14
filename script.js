@@ -660,8 +660,8 @@ async function cerrarMesa(metodoPago) {
     mesa.abierta_en = null;
     mesa.cuenta_solicitada = false;
     mesa.total_visible_mesero = false;
-    delete comandaCocinaEnviada[mesa.id];
-    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false }).eq('id', mesa.id);
+    mesa.comanda_cocina_enviada = {};
+    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {} }).eq('id', mesa.id);
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
@@ -676,10 +676,8 @@ async function cerrarMesa(metodoPago) {
   }
 }
 
-const comandaCocinaEnviada = {}; // { [mesaId]: { [itemId]: cantidad ya enviada a cocina } }
-
 function itemsPendientesCocina(mesa) {
-  const yaEnviado = comandaCocinaEnviada[mesa.id] || {};
+  const yaEnviado = mesa.comanda_cocina_enviada || {};
   const itemsDeCocina = mesa.pedido.filter(item => {
     const producto = MENU.find(p => p.id === item.id);
     return producto ? producto.prepara_cocina !== false : true;
@@ -697,7 +695,7 @@ function imprimirComandaCocina() {
     alert('La mesa no tiene productos para enviar a cocina.');
     return;
   }
-  const yaEnviado = comandaCocinaEnviada[mesa.id] || {};
+  const yaEnviado = mesa.comanda_cocina_enviada || {};
   const esActualizacion = Object.keys(yaEnviado).length > 0;
   const itemsCocina = itemsPendientesCocina(mesa);
 
@@ -739,7 +737,9 @@ function imprimirComandaCocina() {
     const producto = MENU.find(p => p.id === item.id);
     if (producto ? producto.prepara_cocina !== false : true) nuevoEstado[item.id] = item.cantidad;
   });
-  comandaCocinaEnviada[mesa.id] = nuevoEstado;
+  mesa.comanda_cocina_enviada = nuevoEstado;
+  renderPedido();
+  sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
 }
 
 let reciboActual = null;
