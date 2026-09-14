@@ -854,7 +854,7 @@ function mostrarRecibo(mesa, numeroRecibo) {
   });
 }
 
-function mostrarCuentaPrevia() {
+async function mostrarCuentaPrevia() {
   const mesa = mesaActiva();
   if (!mesa) return;
   if (mesa.pedido.length === 0) {
@@ -874,7 +874,8 @@ function mostrarCuentaPrevia() {
 
   mesa.ticket_impreso_en = ahora.toISOString();
   renderMesas();
-  sb.from('mesas').update({ ticket_impreso_en: mesa.ticket_impreso_en }).eq('id', mesa.id);
+  const { error } = await sb.from('mesas').update({ ticket_impreso_en: mesa.ticket_impreso_en }).eq('id', mesa.id);
+  if (error) console.error('No se pudo guardar la hora del ticket impreso:', error);
 }
 
 function reimprimirVenta(ventaId) {
