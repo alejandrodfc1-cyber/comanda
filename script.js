@@ -173,6 +173,12 @@ async function cargarRolUsuario(userId) {
   return data?.activo !== false;
 }
 
+function aplicarEstadoCuenta(cuentaActiva) {
+  document.getElementById('vista-mesas').classList.toggle('oculto', !cuentaActiva);
+  document.getElementById('vista-pendiente').classList.toggle('oculto', cuentaActiva);
+  document.getElementById('barra-superior').classList.toggle('oculto', !cuentaActiva);
+}
+
 sb.auth.onAuthStateChange(async (_event, session) => {
   const haySesion = !!session;
   document.getElementById('vista-login').classList.toggle('oculto', haySesion);
@@ -185,13 +191,25 @@ sb.auth.onAuthStateChange(async (_event, session) => {
     return;
   }
   const cuentaActiva = await cargarRolUsuario(session.user.id);
-  document.getElementById('vista-mesas').classList.toggle('oculto', !cuentaActiva);
-  document.getElementById('vista-pendiente').classList.toggle('oculto', cuentaActiva);
-  document.getElementById('barra-superior').classList.toggle('oculto', !cuentaActiva);
+  aplicarEstadoCuenta(cuentaActiva);
   if (cuentaActiva) {
     cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas();
   }
 });
+
+// Revalida rol/activo contra la base de datos aunque la sesion quede abierta
+// muchas horas sin recargar (ej. la compu de caja siempre prendida) -- sin
+// esto, un bloqueo o cambio de rol hecho por el dueño no se reflejaba hasta
+// el proximo login.
+const INTERVALO_REVISION_CUENTA_MS = 3 * 60 * 1000;
+
+async function revisarCuentaActiva() {
+  if (!usuarioActualId) return;
+  const cuentaActiva = await cargarRolUsuario(usuarioActualId);
+  aplicarEstadoCuenta(cuentaActiva);
+}
+
+setInterval(revisarCuentaActiva, INTERVALO_REVISION_CUENTA_MS);
 
 async function cargarMesas() {
   const mesaAntes = mesaActivaId ? mesaActiva() : null;
