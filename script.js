@@ -1614,10 +1614,29 @@ function formatoMonedaTxtReporte(n) {
   return '$' + Math.round(n).toLocaleString('es-CO');
 }
 
-function imprimirReporteCajaRawBT() {
-  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
-  const turno = document.getElementById('reporte-caja-turno').value;
+function crearFormateadorTicket() {
+  const ANCHO = 32;
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
+  const fila = (izq, der) => {
+    const disponible = ANCHO - der.length;
+    if (izq.length <= disponible - 1) return `${izq.padEnd(disponible)}${der}\n`;
+    return `${izq}\n${der.padStart(ANCHO)}\n`;
+  };
+  const separador = '-'.repeat(ANCHO) + '\n';
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  return { ANCHO, centrar, fila, separador, BOLD_ON, BOLD_OFF };
+}
 
+function enviarARawBT(texto) {
+  const textoCodificado = encodeURI(texto);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+}
+
+function imprimirCajaChicaRawBT() {
+  const turno = document.getElementById('reporte-caja-turno').value;
   let cajaChica = 0;
   const lineasCajaChica = [];
   DENOMINACIONES_CAJA_CHICA.forEach(d => {
@@ -1628,6 +1647,23 @@ function imprimirReporteCajaRawBT() {
       lineasCajaChica.push({ d, cantidad, subtotal });
     }
   });
+
+  const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
+  let t = `${BOLD_ON}${centrar('CAJA CHICA INICIAL')}${BOLD_OFF}\n`;
+  t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
+  t += separador;
+  if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
+  lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
+  t += separador;
+  t += `${BOLD_ON}${fila('Total caja chica', formatoMonedaTxtReporte(cajaChica))}${BOLD_OFF}`;
+  t += separador;
+
+  enviarARawBT(t);
+}
+
+function imprimirReporteCajaRawBT() {
+  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
+  const turno = document.getElementById('reporte-caja-turno').value;
 
   let totalEfectivoContado = 0;
   const lineasDenom = [];
@@ -1644,27 +1680,10 @@ function imprimirReporteCajaRawBT() {
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
   const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
 
-  const ANCHO = 32;
-  const centrar = (linea) => {
-    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
-    return ' '.repeat(relleno) + linea;
-  };
-  const fila = (izq, der) => {
-    const disponible = ANCHO - der.length;
-    if (izq.length <= disponible - 1) return `${izq.padEnd(disponible)}${der}\n`;
-    return `${izq}\n${der.padStart(ANCHO)}\n`;
-  };
-  const separador = '-'.repeat(ANCHO) + '\n';
-  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
   t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
-  t += separador;
-  t += `${BOLD_ON}Caja chica inicial:${BOLD_OFF}\n`;
-  if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
-  lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
-  t += separador;
-  t += `${BOLD_ON}${fila('Total caja chica', formatoMonedaTxtReporte(cajaChica))}${BOLD_OFF}`;
   t += separador;
   t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
@@ -1683,8 +1702,7 @@ function imprimirReporteCajaRawBT() {
   t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
   t += separador;
 
-  const textoCodificado = encodeURI(t);
-  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+  enviarARawBT(t);
 }
 
 async function compartirReporteCajaImagen() {
