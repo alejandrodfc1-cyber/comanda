@@ -1368,7 +1368,7 @@ let reporteCajaInicializado = false;
 function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
     renderDenominacionesReporte();
-    renderChipsGastosRapidos();
+    renderMenuGastosRapidos();
     reporteCajaInicializado = true;
     cargarDatosReporteCaja();
   } else {
@@ -1393,14 +1393,17 @@ function renderDenominacionesReporte() {
 
 const GASTOS_RAPIDOS = ['Carnicería', 'Verdulería', 'Panadería', 'Gas', 'Hielo', 'Ferretería', 'Aseo', 'Imprevistos'];
 
-function renderChipsGastosRapidos() {
-  const cont = document.getElementById('chips-gastos-rapidos');
-  if (!cont) return;
-  cont.innerHTML = GASTOS_RAPIDOS.map(g => `<button type="button" class="chip-nota" onclick="seleccionarGastoRapido('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+function renderMenuGastosRapidos() {
+  const sel = document.getElementById('select-gastos-rapidos');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">+ Elegir ítem de gasto...</option>' +
+    GASTOS_RAPIDOS.map(g => `<option value="${escaparHtmlReporte(g)}">${escaparHtmlReporte(g)}</option>`).join('');
 }
 
 function seleccionarGastoRapido(nombre) {
+  if (!nombre) return;
   document.getElementById('gasto-desc-nuevo').value = nombre;
+  document.getElementById('select-gastos-rapidos').value = '';
   document.getElementById('gasto-monto-nuevo').focus();
 }
 
