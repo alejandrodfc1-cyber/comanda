@@ -1368,6 +1368,7 @@ let reporteCajaInicializado = false;
 function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
     renderDenominacionesReporte();
+    renderChipsGastosRapidos();
     reporteCajaInicializado = true;
     cargarDatosReporteCaja();
   } else {
@@ -1381,13 +1382,26 @@ function renderDenominacionesReporte() {
     <div class="fila-denominacion-reporte">
       <span class="denominacion-etiqueta">${formatoMoneda(d)}</span>
       <span>x</span>
-      <input type="number" class="denominacion-cantidad" id="denom-cant-${d}" min="0" value="0" oninput="actualizarReporteCaja()">
+      <input type="number" class="denominacion-cantidad" id="denom-cant-${d}" min="0" placeholder="0" oninput="actualizarReporteCaja()">
       <span class="denominacion-subtotal" id="denom-subtotal-${d}">$0</span>
     </div>`).join('') + `
     <div class="fila-denominacion-reporte">
-      <span class="denominacion-etiqueta">Otros (monedas, etc.)</span>
+      <span class="denominacion-etiqueta">Monedas</span>
       <input type="text" inputmode="numeric" id="denom-otros" placeholder="$0" style="flex:1;padding:8px 10px;border:1px solid #ccc;border-radius:6px;" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
     </div>`;
+}
+
+const GASTOS_RAPIDOS = ['Carnicería', 'Verdulería', 'Panadería', 'Gas', 'Hielo', 'Ferretería', 'Aseo', 'Imprevistos'];
+
+function renderChipsGastosRapidos() {
+  const cont = document.getElementById('chips-gastos-rapidos');
+  if (!cont) return;
+  cont.innerHTML = GASTOS_RAPIDOS.map(g => `<button type="button" class="chip-nota" onclick="seleccionarGastoRapido('${g.replace(/'/g, "\\'")}')">${g}</button>`).join('');
+}
+
+function seleccionarGastoRapido(nombre) {
+  document.getElementById('gasto-desc-nuevo').value = nombre;
+  document.getElementById('gasto-monto-nuevo').focus();
 }
 
 async function cargarDatosReporteCaja() {
@@ -1406,7 +1420,6 @@ async function cargarDatosReporteCaja() {
   const totalTransferencia = ventas.filter(v => v.metodo_pago === 'transferencia').reduce((s, v) => s + Number(v.total), 0);
   reporteCajaVentasEfectivo = totalVentas - totalTarjeta - totalTransferencia;
   document.getElementById('reporte-caja-tarjeta').value = totalTarjeta.toLocaleString('es-CO');
-  document.getElementById('reporte-caja-venta-total').value = totalVentas.toLocaleString('es-CO');
   actualizarReporteCaja();
 }
 
@@ -1462,11 +1475,16 @@ function actualizarReporteCaja() {
 
   const cajaChica = valorNumericoInput('reporte-caja-chica');
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
-  const ventaTotal = valorNumericoInput('reporte-caja-venta-total');
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
   const turno = document.getElementById('reporte-caja-turno').value;
 
   renderGastosReporte(totalGastos);
+
+  // Venta en efectivo real, deducida de lo contado (no de lo que diga la app):
+  // lo que quedo en caja, menos la caja chica con la que se partio, mas lo que salio en gastos.
+  const ventaEfectivoReal = totalEfectivoContado - cajaChica + totalGastos;
+  const ventaTotal = ventaEfectivoReal + tarjeta;
+  document.getElementById('reporte-caja-venta-total').textContent = formatoMoneda(ventaTotal);
 
   const efectivoEsperado = cajaChica + reporteCajaVentasEfectivo - totalGastos;
   const diferencia = totalEfectivoContado - efectivoEsperado;
@@ -1487,30 +1505,42 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
     if (cantidad === 0) return '';
     return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
   }).join('');
-  const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Otros</span><span>${formatoMoneda(otros)}</span></div>` : '';
+  const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(otros)}</span></div>` : '';
   const filasGastos = gastosReporteCaja.length === 0
-    ? '<div class="vp-fila"><span>(sin gastos)</span><span></span></div>'
+    ? '<div class="vp-fila vp-vacio"><span>(sin gastos)</span><span></span></div>'
     : gastosReporteCaja.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
 
   cont.innerHTML = `
-    <div class="vp-titulo">${NEGOCIO_NOMBRE}</div>
-    <div class="vp-centrado">REPORTE DE CAJA · ${turno}° Turno</div>
-    <div class="vp-centrado">${fechaReporteCajaTexto()}</div>
-    <div class="vp-sep"></div>
-    <div class="vp-fila vp-total"><span>Caja chica inicial</span><span>${formatoMoneda(cajaChica)}</span></div>
-    <div class="vp-sep"></div>
-    <div class="vp-fila vp-total"><span>Efectivo contado:</span><span></span></div>
-    ${filasDenom}
-    ${filaOtros}
-    <div class="vp-fila vp-total"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
-    <div class="vp-sep"></div>
-    <div class="vp-fila vp-total"><span>Venta tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
-    <div class="vp-sep"></div>
-    <div class="vp-fila vp-total"><span>Gastos:</span><span></span></div>
-    ${filasGastos}
-    <div class="vp-fila vp-total"><span>Total gastos</span><span>${formatoMoneda(totalGastos)}</span></div>
-    <div class="vp-sep"></div>
-    <div class="vp-fila vp-total"><span>VENTA ${turno}° TURNO</span><span>${formatoMoneda(ventaTotal)}</span></div>
+    <div class="vp-header">
+      <div class="vp-negocio">${NEGOCIO_NOMBRE}</div>
+      <div class="vp-reporte-titulo">🧾 REPORTE DE CAJA</div>
+      <div class="vp-reporte-sub">${turno}° Turno · ${fechaReporteCajaTexto()}</div>
+    </div>
+    <div class="vp-cuerpo">
+      <div class="vp-seccion">
+        <div class="vp-seccion-titulo">Caja chica inicial</div>
+        <div class="vp-monto-simple">${formatoMoneda(cajaChica)}</div>
+      </div>
+      <div class="vp-seccion">
+        <div class="vp-seccion-titulo">💵 Efectivo contado</div>
+        ${filasDenom}
+        ${filaOtros}
+        <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
+      </div>
+      <div class="vp-seccion">
+        <div class="vp-seccion-titulo">💳 Venta con tarjeta</div>
+        <div class="vp-monto-simple">${formatoMoneda(tarjeta)}</div>
+      </div>
+      <div class="vp-seccion">
+        <div class="vp-seccion-titulo">🧾 Gastos</div>
+        ${filasGastos}
+        <div class="vp-fila vp-subtotal"><span>Total gastos</span><span>${formatoMoneda(totalGastos)}</span></div>
+      </div>
+      <div class="vp-final">
+        <span>VENTA ${turno}° TURNO</span>
+        <span>${formatoMoneda(ventaTotal)}</span>
+      </div>
+    </div>
   `;
 }
 
@@ -1521,7 +1551,6 @@ function formatoMonedaTxtReporte(n) {
 function imprimirReporteCajaRawBT() {
   const cajaChica = valorNumericoInput('reporte-caja-chica');
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
-  const ventaTotal = valorNumericoInput('reporte-caja-venta-total');
   const turno = document.getElementById('reporte-caja-turno').value;
 
   let totalEfectivoContado = 0;
@@ -1537,6 +1566,7 @@ function imprimirReporteCajaRawBT() {
   const otros = valorNumericoInput('denom-otros');
   totalEfectivoContado += otros;
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
+  const ventaTotal = (totalEfectivoContado - cajaChica + totalGastos) + tarjeta;
 
   const ANCHO = 32;
   const centrar = (linea) => {

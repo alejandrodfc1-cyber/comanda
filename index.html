@@ -532,27 +532,29 @@
 
       <h3 class="titulo-form titulo-seccion-nueva">💵 Efectivo contado (desglose por billete)</h3>
       <div id="lista-denominaciones-reporte"></div>
-      <div class="categoria-total-fila"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
+      <div class="categoria-total-fila total-enmarcado"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
 
       <h3 class="titulo-form titulo-seccion-nueva">💳 Venta con tarjeta (este turno)</h3>
+      <p class="texto-ayuda">Se precarga con el monto real de la app para este turno — puedes sobreescribirlo si es necesario.</p>
       <label class="campo-form">
         <input type="text" inputmode="numeric" id="reporte-caja-tarjeta" value="0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
       </label>
 
       <h3 class="titulo-form titulo-seccion-nueva">🧾 Gastos</h3>
+      <div class="chips-notas-rapidas" id="chips-gastos-rapidos"></div>
       <div id="lista-gastos-reporte"></div>
       <div class="fila-campos-form">
         <input type="text" id="gasto-desc-nuevo" placeholder="Ej: Carnicería">
         <input type="text" inputmode="numeric" id="gasto-monto-nuevo" placeholder="Monto $" oninput="formatearMilesEnInput(event)">
         <button type="button" class="btn-agregar" onclick="agregarGastoReporte()">+ Agregar</button>
       </div>
-      <div class="categoria-total-fila"><span>Total gastos</span><span id="total-gastos-reporte">$0</span></div>
+      <div class="categoria-total-fila total-enmarcado"><span>Total gastos</span><span id="total-gastos-reporte">$0</span></div>
 
       <h3 class="titulo-form titulo-seccion-nueva">💰 Venta total del turno</h3>
-      <label class="campo-form">
-        <input type="text" inputmode="numeric" id="reporte-caja-venta-total" value="0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
-      </label>
+      <p class="texto-ayuda">Se calcula sola a partir de lo que hay en este formulario: efectivo contado − caja chica + gastos + tarjeta.</p>
+      <div class="categoria-total-fila total-enmarcado"><span>Venta total del turno</span><span id="reporte-caja-venta-total">$0</span></div>
       <button type="button" class="btn btn-turquesa" id="btn-recargar-reporte-caja" onclick="cargarDatosReporteCaja()">🔄 Volver a cargar de la app</button>
+      <p class="texto-ayuda">Vuelve a traer el monto de venta con tarjeta directo desde las ventas ya registradas en la app para el turno elegido — úsalo si cambiaste de turno o si se cobró una mesa nueva mientras preparabas el reporte.</p>
 
       <div class="panel-cuadratura-reporte" id="panel-cuadratura-reporte">
         <span class="panel-metodo-pago-titulo">🔍 Cuadratura (solo mientras preparas — no sale en el reporte)</span>

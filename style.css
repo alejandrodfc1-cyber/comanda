@@ -1207,6 +1207,13 @@ main { padding: 20px; }
   font-size: .95rem;
   color: #22303d;
 }
+.categoria-total-fila.total-enmarcado {
+  border: 2px dashed #9c1c2e;
+  border-top: 2px dashed #9c1c2e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+}
 
 .btn-agregar {
   background: #27ae60;
@@ -1268,18 +1275,47 @@ main { padding: 20px; }
 .vista-previa-reporte-caja {
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 18px;
-  font-family: 'Courier New', monospace;
-  font-size: .82rem;
-  line-height: 1.55;
-  color: #111;
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: system-ui, Arial, sans-serif;
 }
-.vista-previa-reporte-caja .vp-titulo { text-align: center; font-weight: 800; font-size: 1rem; margin-bottom: 2px; }
-.vista-previa-reporte-caja .vp-centrado { text-align: center; }
-.vista-previa-reporte-caja .vp-sep { border-top: 1px dashed #999; margin: 8px 0; }
-.vista-previa-reporte-caja .vp-fila { display: flex; justify-content: space-between; gap: 8px; }
-.vista-previa-reporte-caja .vp-total { font-weight: 800; }
+.vp-header {
+  background: linear-gradient(120deg, #9c1c2e, #6f1420);
+  color: #fff;
+  padding: 18px 16px 14px;
+  text-align: center;
+}
+.vp-negocio { font-size: 1.1rem; font-weight: 800; letter-spacing: .3px; }
+.vp-reporte-titulo { font-size: .95rem; font-weight: 700; margin-top: 6px; letter-spacing: .5px; }
+.vp-reporte-sub { font-size: .78rem; opacity: .9; margin-top: 2px; }
+.vp-cuerpo { padding: 16px; }
+.vp-seccion { margin-bottom: 16px; }
+.vp-seccion-titulo {
+  font-size: .76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #9c1c2e;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #f1d3d8;
+}
+.vp-fila { display: flex; justify-content: space-between; gap: 8px; font-size: .86rem; padding: 3px 0; color: #333; }
+.vp-fila.vp-vacio { color: #999; font-style: italic; }
+.vp-monto-simple { font-size: 1.1rem; font-weight: 800; color: #22303d; }
+.vp-subtotal { font-weight: 800; color: #22303d; border-top: 1px dashed #ccc; margin-top: 4px; padding-top: 7px; }
+.vp-final {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(120deg, #16a085, #0e7a63);
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
 
 .fila-botones-form { display: flex; gap: 8px; align-items: center; }
 .fila-botones-form .btn { flex: 1; }
