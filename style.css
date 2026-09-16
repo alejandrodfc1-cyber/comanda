@@ -1208,6 +1208,79 @@ main { padding: 20px; }
   color: #22303d;
 }
 
+.btn-agregar {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 14px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.fila-denominacion-reporte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+.fila-denominacion-reporte:last-child { border-bottom: none; }
+.denominacion-etiqueta { flex: 1; font-weight: 600; color: #2c3e50; }
+.denominacion-cantidad {
+  width: 60px;
+  padding: 8px 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-align: center;
+  font-size: .9rem;
+}
+.denominacion-subtotal { min-width: 90px; text-align: right; font-weight: 700; color: #27ae60; font-variant-numeric: tabular-nums; }
+
+.fila-gasto-reporte {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: #f6f7f8;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 6px;
+}
+.fila-gasto-desc { flex: 1; font-size: .88rem; }
+.fila-gasto-monto { font-weight: 700; color: #c0392b; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.fila-gasto-quitar { background: none; border: none; color: #999; font-size: 1rem; cursor: pointer; padding: 2px 6px; flex-shrink: 0; }
+
+.panel-cuadratura-reporte {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #fff8e6;
+  border: 1px solid #f0d999;
+}
+.fila-cuadratura { display: flex; justify-content: space-between; padding: 4px 0; font-size: .88rem; }
+.fila-cuadratura-diferencia { font-weight: 800; border-top: 1px dashed #e0c987; margin-top: 6px; padding-top: 8px; }
+.fila-cuadratura-diferencia.cuadra span:last-child { color: #27ae60; }
+.fila-cuadratura-diferencia.no-cuadra span:last-child { color: #c0392b; }
+
+.vista-previa-reporte-caja {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 18px;
+  font-family: 'Courier New', monospace;
+  font-size: .82rem;
+  line-height: 1.55;
+  color: #111;
+}
+.vista-previa-reporte-caja .vp-titulo { text-align: center; font-weight: 800; font-size: 1rem; margin-bottom: 2px; }
+.vista-previa-reporte-caja .vp-centrado { text-align: center; }
+.vista-previa-reporte-caja .vp-sep { border-top: 1px dashed #999; margin: 8px 0; }
+.vista-previa-reporte-caja .vp-fila { display: flex; justify-content: space-between; gap: 8px; }
+.vista-previa-reporte-caja .vp-total { font-weight: 800; }
+
 .fila-botones-form { display: flex; gap: 8px; align-items: center; }
 .fila-botones-form .btn { flex: 1; }
 .mensaje-guardado { color: #27ae60; font-weight: 600; font-size: .85rem; }

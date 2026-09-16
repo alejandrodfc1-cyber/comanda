@@ -1006,7 +1006,7 @@ let seccionActivaDashboard = 'mesas';
 
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
-  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios'].forEach(s => {
+  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
     document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
@@ -1015,12 +1015,13 @@ function mostrarSeccionDashboard(seccion) {
   const bloquePeriodo = document.getElementById('bloque-periodo');
   bloquePeriodo.classList.toggle('oculto', seccion !== 'metricas' && bloquePeriodo.classList.contains('bloque-periodo-fijo'));
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios' || seccion === 'insumos');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios' || seccion === 'insumos' || seccion === 'reporte-caja');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
   if (seccion === 'config') renderNotasRapidasAdmin();
+  if (seccion === 'reporte-caja') iniciarReporteCaja();
 }
 
 function guardarDesdeFlotante() {
@@ -1356,6 +1357,251 @@ async function cargarComparativas() {
   destacado.innerHTML = rankingHoy.length > 0
     ? `<span class="destacado-icono">🔥</span> Más vendido hoy: <strong>${rankingHoy[0][0]}</strong> (${rankingHoy[0][1]} vendidos)`
     : `<span class="destacado-icono">📋</span> Aún no hay ventas registradas hoy`;
+}
+
+// ---------- Reporte de Caja diario ----------
+const DENOMINACIONES_REPORTE = [20000, 10000, 5000, 2000, 1000];
+let gastosReporteCaja = [];
+let reporteCajaVentasEfectivo = 0;
+let reporteCajaInicializado = false;
+
+function iniciarReporteCaja() {
+  if (!reporteCajaInicializado) {
+    renderDenominacionesReporte();
+    reporteCajaInicializado = true;
+    cargarDatosReporteCaja();
+  } else {
+    actualizarReporteCaja();
+  }
+}
+
+function renderDenominacionesReporte() {
+  const cont = document.getElementById('lista-denominaciones-reporte');
+  cont.innerHTML = DENOMINACIONES_REPORTE.map(d => `
+    <div class="fila-denominacion-reporte">
+      <span class="denominacion-etiqueta">${formatoMoneda(d)}</span>
+      <span>x</span>
+      <input type="number" class="denominacion-cantidad" id="denom-cant-${d}" min="0" value="0" oninput="actualizarReporteCaja()">
+      <span class="denominacion-subtotal" id="denom-subtotal-${d}">$0</span>
+    </div>`).join('') + `
+    <div class="fila-denominacion-reporte">
+      <span class="denominacion-etiqueta">Otros (monedas, etc.)</span>
+      <input type="text" inputmode="numeric" id="denom-otros" placeholder="$0" style="flex:1;padding:8px 10px;border:1px solid #ccc;border-radius:6px;" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+    </div>`;
+}
+
+async function cargarDatosReporteCaja() {
+  const turno = Number(document.getElementById('reporte-caja-turno').value);
+  const hoy = new Date();
+  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
+  const { data, error } = await sb.from('ventas').select('total, metodo_pago').gte('creado_en', inicioHoy).eq('turno', turno);
+  if (error) {
+    console.error(error);
+    alert('No se pudieron cargar las ventas del turno (problema de conexión). Puedes escribirlas a mano.');
+    return;
+  }
+  const ventas = data || [];
+  const totalVentas = ventas.reduce((s, v) => s + Number(v.total), 0);
+  const totalTarjeta = ventas.filter(v => v.metodo_pago === 'tarjeta').reduce((s, v) => s + Number(v.total), 0);
+  const totalTransferencia = ventas.filter(v => v.metodo_pago === 'transferencia').reduce((s, v) => s + Number(v.total), 0);
+  reporteCajaVentasEfectivo = totalVentas - totalTarjeta - totalTransferencia;
+  document.getElementById('reporte-caja-tarjeta').value = totalTarjeta.toLocaleString('es-CO');
+  document.getElementById('reporte-caja-venta-total').value = totalVentas.toLocaleString('es-CO');
+  actualizarReporteCaja();
+}
+
+function escaparHtmlReporte(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderGastosReporte(totalGastos) {
+  const cont = document.getElementById('lista-gastos-reporte');
+  cont.innerHTML = gastosReporteCaja.length === 0
+    ? '<p class="texto-vacio">Sin gastos registrados.</p>'
+    : gastosReporteCaja.map((g, i) => `
+      <div class="fila-gasto-reporte">
+        <span class="fila-gasto-desc">${escaparHtmlReporte(g.desc)}</span>
+        <span class="fila-gasto-monto">${formatoMoneda(g.monto)}</span>
+        <button type="button" class="fila-gasto-quitar" onclick="quitarGastoReporte(${i})" title="Quitar">🗑️</button>
+      </div>`).join('');
+  document.getElementById('total-gastos-reporte').textContent = formatoMoneda(totalGastos);
+}
+
+function agregarGastoReporte() {
+  const desc = document.getElementById('gasto-desc-nuevo').value.trim();
+  const monto = valorNumericoInput('gasto-monto-nuevo');
+  if (!desc || !monto) { alert('Escribe una descripción y un monto válido para el gasto.'); return; }
+  gastosReporteCaja.push({ desc, monto });
+  document.getElementById('gasto-desc-nuevo').value = '';
+  document.getElementById('gasto-monto-nuevo').value = '';
+  actualizarReporteCaja();
+}
+
+function quitarGastoReporte(i) {
+  gastosReporteCaja.splice(i, 1);
+  actualizarReporteCaja();
+}
+
+function fechaReporteCajaTexto() {
+  return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function actualizarReporteCaja() {
+  let totalEfectivoContado = 0;
+  DENOMINACIONES_REPORTE.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
+    const subtotal = cantidad * d;
+    document.getElementById(`denom-subtotal-${d}`).textContent = formatoMoneda(subtotal);
+    totalEfectivoContado += subtotal;
+  });
+  const otros = valorNumericoInput('denom-otros');
+  totalEfectivoContado += otros;
+  document.getElementById('total-efectivo-contado').textContent = formatoMoneda(totalEfectivoContado);
+
+  const cajaChica = valorNumericoInput('reporte-caja-chica');
+  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
+  const ventaTotal = valorNumericoInput('reporte-caja-venta-total');
+  const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
+  const turno = document.getElementById('reporte-caja-turno').value;
+
+  renderGastosReporte(totalGastos);
+
+  const efectivoEsperado = cajaChica + reporteCajaVentasEfectivo - totalGastos;
+  const diferencia = totalEfectivoContado - efectivoEsperado;
+  document.getElementById('cuadratura-esperado').textContent = formatoMoneda(efectivoEsperado);
+  document.getElementById('cuadratura-contado').textContent = formatoMoneda(totalEfectivoContado);
+  document.getElementById('cuadratura-diferencia').textContent = (diferencia > 0 ? '+' : '') + formatoMoneda(diferencia);
+  const filaDif = document.getElementById('cuadratura-diferencia').parentElement;
+  filaDif.classList.toggle('cuadra', diferencia === 0);
+  filaDif.classList.toggle('no-cuadra', diferencia !== 0);
+
+  renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
+}
+
+function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
+  const cont = document.getElementById('vista-previa-reporte-caja');
+  const filasDenom = DENOMINACIONES_REPORTE.map(d => {
+    const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
+    if (cantidad === 0) return '';
+    return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
+  }).join('');
+  const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Otros</span><span>${formatoMoneda(otros)}</span></div>` : '';
+  const filasGastos = gastosReporteCaja.length === 0
+    ? '<div class="vp-fila"><span>(sin gastos)</span><span></span></div>'
+    : gastosReporteCaja.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
+
+  cont.innerHTML = `
+    <div class="vp-titulo">${NEGOCIO_NOMBRE}</div>
+    <div class="vp-centrado">REPORTE DE CAJA · ${turno}° Turno</div>
+    <div class="vp-centrado">${fechaReporteCajaTexto()}</div>
+    <div class="vp-sep"></div>
+    <div class="vp-fila vp-total"><span>Caja chica inicial</span><span>${formatoMoneda(cajaChica)}</span></div>
+    <div class="vp-sep"></div>
+    <div class="vp-fila vp-total"><span>Efectivo contado:</span><span></span></div>
+    ${filasDenom}
+    ${filaOtros}
+    <div class="vp-fila vp-total"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
+    <div class="vp-sep"></div>
+    <div class="vp-fila vp-total"><span>Venta tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
+    <div class="vp-sep"></div>
+    <div class="vp-fila vp-total"><span>Gastos:</span><span></span></div>
+    ${filasGastos}
+    <div class="vp-fila vp-total"><span>Total gastos</span><span>${formatoMoneda(totalGastos)}</span></div>
+    <div class="vp-sep"></div>
+    <div class="vp-fila vp-total"><span>VENTA ${turno}° TURNO</span><span>${formatoMoneda(ventaTotal)}</span></div>
+  `;
+}
+
+function formatoMonedaTxtReporte(n) {
+  return '$' + Math.round(n).toLocaleString('es-CO');
+}
+
+function imprimirReporteCajaRawBT() {
+  const cajaChica = valorNumericoInput('reporte-caja-chica');
+  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
+  const ventaTotal = valorNumericoInput('reporte-caja-venta-total');
+  const turno = document.getElementById('reporte-caja-turno').value;
+
+  let totalEfectivoContado = 0;
+  const lineasDenom = [];
+  DENOMINACIONES_REPORTE.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
+    if (cantidad > 0) {
+      const subtotal = cantidad * d;
+      totalEfectivoContado += subtotal;
+      lineasDenom.push({ d, cantidad, subtotal });
+    }
+  });
+  const otros = valorNumericoInput('denom-otros');
+  totalEfectivoContado += otros;
+  const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
+
+  const ANCHO = 32;
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
+  const fila = (izq, der) => {
+    const disponible = ANCHO - der.length;
+    if (izq.length <= disponible - 1) return `${izq.padEnd(disponible)}${der}\n`;
+    return `${izq}\n${der.padStart(ANCHO)}\n`;
+  };
+  const separador = '-'.repeat(ANCHO) + '\n';
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+
+  let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
+  t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
+  t += separador;
+  t += fila('Caja chica inicial', formatoMonedaTxtReporte(cajaChica));
+  t += separador;
+  t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
+  lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
+  if (otros > 0) t += fila('  Otros', formatoMonedaTxtReporte(otros));
+  t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  t += separador;
+  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
+  t += separador;
+  t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
+  if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
+  gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
+  t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
+  t += separador;
+  t += `${BOLD_ON}${fila(`VENTA ${turno} TURNO`, formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
+  t += separador;
+
+  const textoCodificado = encodeURI(t);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+}
+
+async function compartirReporteCajaImagen() {
+  const elemento = document.getElementById('vista-previa-reporte-caja');
+  if (typeof html2canvas === 'undefined') {
+    alert('No se pudo cargar la herramienta para generar la imagen. Revisa tu conexión e intenta de nuevo.');
+    return;
+  }
+  try {
+    const canvas = await html2canvas(elemento, { backgroundColor: '#ffffff', scale: 2 });
+    canvas.toBlob(async (blob) => {
+      if (!blob) { alert('No se pudo generar la imagen.'); return; }
+      const nombreArchivo = `reporte-caja-${fechaReporteCajaTexto().replace(/\//g, '-')}.png`;
+      const archivo = new File([blob], nombreArchivo, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [archivo] })) {
+        try {
+          await navigator.share({ files: [archivo], title: 'Reporte de Caja' });
+        } catch (e) {
+          // El usuario cancelo el cuadro de compartir -- no hacer nada.
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      }
+    }, 'image/png');
+  } catch (e) {
+    console.error(e);
+    alert('No se pudo generar la imagen del reporte.');
+  }
 }
 
 const COMPARATIVA_ICONOS = ['📅', '📆', '🗓️'];

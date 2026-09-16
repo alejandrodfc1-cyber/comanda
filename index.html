@@ -109,6 +109,7 @@
       <div class="tabs-fijas">
         <div class="categoria-tabs" id="tabs-admin-secciones">
           <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Reportes</button>
+          <button id="tab-admin-reporte-caja" onclick="mostrarSeccionDashboard('reporte-caja')">🧾 Reporte de Caja</button>
           <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
           <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
           <button id="tab-admin-insumos" onclick="mostrarSeccionDashboard('insumos')">📦 Insumos</button>
@@ -516,6 +517,59 @@
       </div>
     </div>
 
+    <div id="seccion-admin-reporte-caja" class="oculto">
+      <div class="fila-campos-form">
+        <label class="campo-form">Turno
+          <select id="reporte-caja-turno" onchange="cargarDatosReporteCaja()">
+            <option value="1">1° Turno</option>
+            <option value="2">2° Turno</option>
+          </select>
+        </label>
+        <label class="campo-form">Caja chica inicial
+          <input type="text" inputmode="numeric" id="reporte-caja-chica" value="200.000" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+        </label>
+      </div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">💵 Efectivo contado (desglose por billete)</h3>
+      <div id="lista-denominaciones-reporte"></div>
+      <div class="categoria-total-fila"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">💳 Venta con tarjeta (este turno)</h3>
+      <label class="campo-form">
+        <input type="text" inputmode="numeric" id="reporte-caja-tarjeta" value="0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+      </label>
+
+      <h3 class="titulo-form titulo-seccion-nueva">🧾 Gastos</h3>
+      <div id="lista-gastos-reporte"></div>
+      <div class="fila-campos-form">
+        <input type="text" id="gasto-desc-nuevo" placeholder="Ej: Carnicería">
+        <input type="text" inputmode="numeric" id="gasto-monto-nuevo" placeholder="Monto $" oninput="formatearMilesEnInput(event)">
+        <button type="button" class="btn-agregar" onclick="agregarGastoReporte()">+ Agregar</button>
+      </div>
+      <div class="categoria-total-fila"><span>Total gastos</span><span id="total-gastos-reporte">$0</span></div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">💰 Venta total del turno</h3>
+      <label class="campo-form">
+        <input type="text" inputmode="numeric" id="reporte-caja-venta-total" value="0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+      </label>
+      <button type="button" class="btn btn-turquesa" id="btn-recargar-reporte-caja" onclick="cargarDatosReporteCaja()">🔄 Volver a cargar de la app</button>
+
+      <div class="panel-cuadratura-reporte" id="panel-cuadratura-reporte">
+        <span class="panel-metodo-pago-titulo">🔍 Cuadratura (solo mientras preparas — no sale en el reporte)</span>
+        <div class="fila-cuadratura"><span>Efectivo esperado</span><span id="cuadratura-esperado">$0</span></div>
+        <div class="fila-cuadratura"><span>Efectivo contado</span><span id="cuadratura-contado">$0</span></div>
+        <div class="fila-cuadratura fila-cuadratura-diferencia"><span>Diferencia</span><span id="cuadratura-diferencia">$0</span></div>
+      </div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">Vista previa del reporte</h3>
+      <div id="vista-previa-reporte-caja" class="vista-previa-reporte-caja"></div>
+
+      <div class="fila-botones-form">
+        <button type="button" class="btn" onclick="imprimirReporteCajaRawBT()">🖨️ Imprimir (RawBT)</button>
+        <button type="button" class="btn btn-turquesa" onclick="compartirReporteCajaImagen()">📱 Compartir imagen</button>
+      </div>
+    </div>
+
     <button class="fab-detalle oculto" id="btn-guardar-flotante" onclick="guardarDesdeFlotante()">💾 Guardar</button>
   </div>
 </div>
@@ -549,6 +603,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="config.js"></script>
 <script src="script.js"></script>
 </body>
