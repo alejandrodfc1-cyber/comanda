@@ -1705,6 +1705,16 @@ function imprimirReporteCajaRawBT() {
   enviarARawBT(t);
 }
 
+function limpiarConteoReporteCaja() {
+  if (!confirm('¿Limpiar caja chica, efectivo contado y gastos para empezar un conteo nuevo?')) return;
+  DENOMINACIONES_CAJA_CHICA.forEach(d => { document.getElementById(`denom-caja-cant-${d}`).value = ''; });
+  DENOMINACIONES_REPORTE.forEach(d => { document.getElementById(`denom-cant-${d}`).value = ''; });
+  document.getElementById('denom-otros').value = '';
+  document.getElementById('reporte-caja-tarjeta').value = '0';
+  gastosReporteCaja = [];
+  actualizarReporteCaja();
+}
+
 async function compartirReporteCajaImagen() {
   const elemento = document.getElementById('vista-previa-reporte-caja');
   if (typeof html2canvas === 'undefined') {

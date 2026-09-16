@@ -689,6 +689,7 @@ main { padding: 20px; }
 }
 .fila-nuevo-gasto { margin-top: 10px; }
 #btn-recargar-reporte-caja { margin-top: 16px; }
+.btn-limpiar-conteo { margin-top: 14px; width: 100%; }
 .margen-producto {
   font-size: .8rem;
   color: #444;
