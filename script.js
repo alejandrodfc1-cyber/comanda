@@ -1518,8 +1518,7 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
-        <div class="vp-seccion-titulo">Caja chica inicial</div>
-        <div class="vp-monto-simple">${formatoMoneda(cajaChica)}</div>
+        <div class="vp-fila vp-fila-destacada"><span>Caja chica inicial</span><span>${formatoMoneda(cajaChica)}</span></div>
       </div>
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">💵 Efectivo contado</div>
@@ -1528,8 +1527,7 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
         <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
       </div>
       <div class="vp-seccion">
-        <div class="vp-seccion-titulo">💳 Venta con tarjeta</div>
-        <div class="vp-monto-simple">${formatoMoneda(tarjeta)}</div>
+        <div class="vp-fila vp-fila-destacada"><span>💳 Venta con tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
       </div>
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">🧾 Gastos</div>
@@ -1579,6 +1577,7 @@ function imprimirReporteCajaRawBT() {
     return `${izq}\n${der.padStart(ANCHO)}\n`;
   };
   const separador = '-'.repeat(ANCHO) + '\n';
+  const marco = '.'.repeat(ANCHO) + '\n';
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
@@ -1588,15 +1587,19 @@ function imprimirReporteCajaRawBT() {
   t += separador;
   t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
-  if (otros > 0) t += fila('  Otros', formatoMonedaTxtReporte(otros));
+  if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
+  t += marco;
   t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  t += marco;
   t += separador;
   t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
   t += separador;
   t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
   if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
   gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
+  t += marco;
   t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
+  t += marco;
   t += separador;
   t += `${BOLD_ON}${fila(`VENTA ${turno} TURNO`, formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
   t += separador;
