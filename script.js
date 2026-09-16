@@ -1588,7 +1588,7 @@ function imprimirReporteCajaRawBT() {
   t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
   if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
-  t += marco;
+  t += separador;
   t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
   t += marco;
   t += separador;
@@ -1597,7 +1597,7 @@ function imprimirReporteCajaRawBT() {
   t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
   if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
   gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
-  t += marco;
+  t += separador;
   t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
   t += marco;
   t += separador;
