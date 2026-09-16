@@ -106,22 +106,55 @@
         <button class="btn-cerrar" onclick="cerrarDashboard()">✕ Cerrar</button>
       </div>
 
-      <div class="tabs-fijas">
-        <div class="categoria-tabs" id="tabs-admin-secciones">
-          <button id="tab-admin-metricas" class="activa" onclick="mostrarSeccionDashboard('metricas')">Reportes</button>
-          <button id="tab-admin-reporte-caja" onclick="mostrarSeccionDashboard('reporte-caja')">🧾 Reporte de Caja</button>
-          <button id="tab-admin-top20" onclick="mostrarSeccionDashboard('top20')">Top20</button>
-          <button id="tab-admin-productos" onclick="mostrarSeccionDashboard('productos')">Productos</button>
-          <button id="tab-admin-insumos" onclick="mostrarSeccionDashboard('insumos')">📦 Insumos</button>
-          <button id="tab-admin-orden" onclick="mostrarSeccionDashboard('orden')">Orden Menú</button>
-          <button id="tab-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">Mesas</button>
-          <button id="tab-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">Categorías</button>
-          <button id="tab-admin-config" onclick="mostrarSeccionDashboard('config')">Ajustes</button>
-          <button id="tab-admin-usuarios" onclick="mostrarSeccionDashboard('usuarios')">Usuarios</button>
-        </div>
+      <div class="barra-volver-menu oculto" id="barra-volver-menu">
+        <button class="btn-volver-menu" onclick="mostrarMenuAdmin()">← Menú</button>
+        <span class="titulo-seccion-activa" id="titulo-seccion-activa"></span>
       </div>
 
-      <div class="filtros-reportes-fila" id="filtros-reportes-fila">
+      <div class="panel-admin-menu" id="panel-admin-menu">
+        <button class="icono-admin-menu" id="icono-admin-metricas" onclick="mostrarSeccionDashboard('metricas')">
+          <span class="icono-admin-menu-emoji">📊</span>
+          <span class="icono-admin-menu-label">Reportes</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-reporte-caja" onclick="mostrarSeccionDashboard('reporte-caja')">
+          <span class="icono-admin-menu-emoji">🧾</span>
+          <span class="icono-admin-menu-label">Reporte de Caja</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-top20" onclick="mostrarSeccionDashboard('top20')">
+          <span class="icono-admin-menu-emoji">🏆</span>
+          <span class="icono-admin-menu-label">Top 20</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-productos" onclick="mostrarSeccionDashboard('productos')">
+          <span class="icono-admin-menu-emoji">🍔</span>
+          <span class="icono-admin-menu-label">Productos</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-insumos" onclick="mostrarSeccionDashboard('insumos')">
+          <span class="icono-admin-menu-emoji">📦</span>
+          <span class="icono-admin-menu-label">Insumos</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-orden" onclick="mostrarSeccionDashboard('orden')">
+          <span class="icono-admin-menu-emoji">🔀</span>
+          <span class="icono-admin-menu-label">Orden Menú</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-mesas" onclick="mostrarSeccionDashboard('mesas')">
+          <span class="icono-admin-menu-emoji">🪑</span>
+          <span class="icono-admin-menu-label">Mesas</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-categorias" onclick="mostrarSeccionDashboard('categorias')">
+          <span class="icono-admin-menu-emoji">🗂️</span>
+          <span class="icono-admin-menu-label">Categorías</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-config" onclick="mostrarSeccionDashboard('config')">
+          <span class="icono-admin-menu-emoji">⚙️</span>
+          <span class="icono-admin-menu-label">Ajustes</span>
+        </button>
+        <button class="icono-admin-menu" id="icono-admin-usuarios" onclick="mostrarSeccionDashboard('usuarios')">
+          <span class="icono-admin-menu-emoji">👥</span>
+          <span class="icono-admin-menu-label">Usuarios</span>
+        </button>
+      </div>
+
+      <div class="filtros-reportes-fila oculto" id="filtros-reportes-fila">
         <div class="filtro-grupo">
           <span class="filtro-grupo-etiqueta">Vista</span>
           <div class="categoria-tabs" id="tabs-vista-reportes">

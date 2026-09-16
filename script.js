@@ -982,9 +982,9 @@ function abrirDashboard() {
   const esAdmin = rolUsuario === 'admin';
   document.getElementById('modal-dashboard').classList.remove('oculto');
   ['top20', 'productos', 'insumos', 'orden', 'mesas', 'categorias', 'config', 'usuarios'].forEach(s => {
-    document.getElementById(`tab-admin-${s}`).classList.toggle('oculto', !esAdmin);
+    document.getElementById(`icono-admin-${s}`).classList.toggle('oculto', !esAdmin);
   });
-  mostrarSeccionDashboard('metricas');
+  mostrarMenuAdmin();
   if (esAdmin) {
     cancelarEdicionMesa();
     cancelarEdicionProducto();
@@ -1004,11 +1004,40 @@ function cerrarDashboard() {
 
 let seccionActivaDashboard = 'mesas';
 
+const TITULOS_SECCION_ADMIN = {
+  metricas: '📊 Reportes',
+  'reporte-caja': '🧾 Reporte de Caja',
+  top20: '🏆 Top 20',
+  productos: '🍔 Productos',
+  insumos: '📦 Insumos',
+  orden: '🔀 Orden Menú',
+  mesas: '🪑 Mesas',
+  categorias: '🗂️ Categorías',
+  config: '⚙️ Ajustes',
+  usuarios: '👥 Usuarios',
+};
+
+function mostrarMenuAdmin() {
+  seccionActivaDashboard = null;
+  document.getElementById('panel-admin-menu').classList.remove('oculto');
+  document.getElementById('barra-volver-menu').classList.add('oculto');
+  document.getElementById('filtros-reportes-fila').classList.add('oculto');
+  const bloquePeriodo = document.getElementById('bloque-periodo');
+  bloquePeriodo.classList.add('oculto');
+  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja'].forEach(s => {
+    document.getElementById(`seccion-admin-${s}`).classList.add('oculto');
+  });
+  document.getElementById('btn-guardar-flotante').classList.add('oculto');
+  document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
+}
+
 function mostrarSeccionDashboard(seccion) {
   seccionActivaDashboard = seccion;
+  document.getElementById('panel-admin-menu').classList.add('oculto');
+  document.getElementById('barra-volver-menu').classList.remove('oculto');
+  document.getElementById('titulo-seccion-activa').textContent = TITULOS_SECCION_ADMIN[seccion] || '';
   ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
-    document.getElementById(`tab-admin-${s}`).classList.toggle('activa', s === seccion);
   });
   document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
   document.getElementById('filtros-reportes-fila').classList.toggle('oculto', seccion !== 'metricas');
