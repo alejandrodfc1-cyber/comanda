@@ -193,7 +193,7 @@ sb.auth.onAuthStateChange(async (_event, session) => {
   const cuentaActiva = await cargarRolUsuario(session.user.id);
   aplicarEstadoCuenta(cuentaActiva);
   if (cuentaActiva) {
-    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas();
+    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas(); cargarGastosRapidos();
   }
 });
 
@@ -515,6 +515,16 @@ async function cargarNotasRapidas() {
   if (error) { console.error(error); return; }
   notasRapidas = data;
   if (rolUsuario === 'admin' && seccionActivaDashboard === 'config') renderNotasRapidasAdmin();
+}
+
+let gastosRapidos = [];
+
+async function cargarGastosRapidos() {
+  const { data, error } = await sb.from('gastos_rapidos').select('*').order('orden');
+  if (error) { console.error(error); return; }
+  gastosRapidos = data;
+  if (rolUsuario === 'admin' && seccionActivaDashboard === 'config') renderGastosRapidosAdmin();
+  renderMenuGastosRapidos();
 }
 
 let itemNotaEditandoId = null;
@@ -1049,7 +1059,7 @@ function mostrarSeccionDashboard(seccion) {
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
-  if (seccion === 'config') renderNotasRapidasAdmin();
+  if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); }
   if (seccion === 'reporte-caja') iniciarReporteCaja();
 }
 
@@ -1390,17 +1400,30 @@ async function cargarComparativas() {
 
 // ---------- Reporte de Caja diario ----------
 const DENOMINACIONES_REPORTE = [20000, 10000, 5000, 2000, 1000];
+const DENOMINACIONES_CAJA_CHICA = [20000, 10000, 5000, 2000, 1000, 500, 100, 50, 10];
 let gastosReporteCaja = [];
 let reporteCajaVentasEfectivo = 0;
 let reporteCajaInicializado = false;
 
 function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
+    renderDenominacionesCajaChica();
     renderDenominacionesReporte();
-    renderMenuGastosRapidos();
     reporteCajaInicializado = true;
   }
+  renderMenuGastosRapidos();
   cargarDatosReporteCaja();
+}
+
+function renderDenominacionesCajaChica() {
+  const cont = document.getElementById('lista-denominaciones-caja-chica');
+  cont.innerHTML = DENOMINACIONES_CAJA_CHICA.map(d => `
+    <div class="fila-denominacion-reporte">
+      <span class="denominacion-etiqueta">${formatoMoneda(d)}</span>
+      <span>x</span>
+      <input type="number" class="denominacion-cantidad" id="denom-caja-cant-${d}" min="0" placeholder="0" oninput="actualizarReporteCaja()">
+      <span class="denominacion-subtotal" id="denom-caja-subtotal-${d}">$0</span>
+    </div>`).join('');
 }
 
 function renderDenominacionesReporte() {
@@ -1418,13 +1441,11 @@ function renderDenominacionesReporte() {
     </div>`;
 }
 
-const GASTOS_RAPIDOS = ['Carnicería', 'Verdulería', 'Panadería', 'Gas', 'Hielo', 'Ferretería', 'Aseo', 'Imprevistos'];
-
 function renderMenuGastosRapidos() {
   const sel = document.getElementById('select-gastos-rapidos');
   if (!sel) return;
   sel.innerHTML = '<option value="">+ Elegir ítem de gasto...</option>' +
-    GASTOS_RAPIDOS.map(g => `<option value="${escaparHtmlReporte(g)}">${escaparHtmlReporte(g)}</option>`).join('');
+    gastosRapidos.map(g => `<option value="${escaparHtmlReporte(g.texto)}">${escaparHtmlReporte(g.texto)}</option>`).join('');
 }
 
 function seleccionarGastoRapido(nombre) {
@@ -1497,6 +1518,15 @@ function fechaReporteCajaTexto() {
 }
 
 function actualizarReporteCaja() {
+  let cajaChica = 0;
+  DENOMINACIONES_CAJA_CHICA.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
+    const subtotal = cantidad * d;
+    document.getElementById(`denom-caja-subtotal-${d}`).textContent = formatoMoneda(subtotal);
+    cajaChica += subtotal;
+  });
+  document.getElementById('total-caja-chica').textContent = formatoMoneda(cajaChica);
+
   let totalEfectivoContado = 0;
   DENOMINACIONES_REPORTE.forEach(d => {
     const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
@@ -1508,7 +1538,6 @@ function actualizarReporteCaja() {
   totalEfectivoContado += otros;
   document.getElementById('total-efectivo-contado').textContent = formatoMoneda(totalEfectivoContado);
 
-  const cajaChica = valorNumericoInput('reporte-caja-chica');
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
   const turno = document.getElementById('reporte-caja-turno').value;
@@ -1532,6 +1561,11 @@ function actualizarReporteCaja() {
 
 function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
   const cont = document.getElementById('vista-previa-reporte-caja');
+  const filasCajaChica = DENOMINACIONES_CAJA_CHICA.map(d => {
+    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
+    if (cantidad === 0) return '';
+    return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
+  }).join('');
   const filasDenom = DENOMINACIONES_REPORTE.map(d => {
     const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
     if (cantidad === 0) return '';
@@ -1550,7 +1584,9 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
-        <div class="vp-fila vp-fila-destacada"><span>Caja chica inicial</span><span>${formatoMoneda(cajaChica)}</span></div>
+        <div class="vp-seccion-titulo">🪙 Caja chica inicial</div>
+        ${filasCajaChica}
+        <div class="vp-fila vp-subtotal"><span>Total caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
       </div>
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">💵 Efectivo contado</div>
@@ -1579,9 +1615,19 @@ function formatoMonedaTxtReporte(n) {
 }
 
 function imprimirReporteCajaRawBT() {
-  const cajaChica = valorNumericoInput('reporte-caja-chica');
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
   const turno = document.getElementById('reporte-caja-turno').value;
+
+  let cajaChica = 0;
+  const lineasCajaChica = [];
+  DENOMINACIONES_CAJA_CHICA.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
+    if (cantidad > 0) {
+      const subtotal = cantidad * d;
+      cajaChica += subtotal;
+      lineasCajaChica.push({ d, cantidad, subtotal });
+    }
+  });
 
   let totalEfectivoContado = 0;
   const lineasDenom = [];
@@ -1614,7 +1660,11 @@ function imprimirReporteCajaRawBT() {
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
   t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
   t += separador;
-  t += fila('Caja chica inicial', formatoMonedaTxtReporte(cajaChica));
+  t += `${BOLD_ON}Caja chica inicial:${BOLD_OFF}\n`;
+  if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
+  lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
+  t += separador;
+  t += `${BOLD_ON}${fila('Total caja chica', formatoMonedaTxtReporte(cajaChica))}${BOLD_OFF}`;
   t += separador;
   t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
@@ -2904,6 +2954,83 @@ document.getElementById('form-nueva-nota-rapida').addEventListener('submit', asy
   cancelarEdicionNotaRapida();
   await cargarNotasRapidas();
   renderNotasRapidasAdmin();
+});
+
+let gastoRapidoEditandoId = null;
+
+function renderGastosRapidosAdmin() {
+  const cont = document.getElementById('lista-admin-gastos-rapidos');
+  if (!cont) return;
+  cont.innerHTML = '';
+  gastosRapidos.forEach((g, i) => {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">🧾</div>
+      <div class="info-admin"><strong>${g.texto}</strong></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" ${i === 0 ? 'disabled' : ''} onclick="moverGastoRapido(${g.id}, -1)">▲</button>
+        <button class="btn-editar-admin" ${i === gastosRapidos.length - 1 ? 'disabled' : ''} onclick="moverGastoRapido(${g.id}, 1)">▼</button>
+        <button class="btn-editar-admin" onclick="editarGastoRapidoAdmin(${g.id})">✏️</button>
+        <button class="btn-toggle-visible" onclick="eliminarGastoRapidoAdmin(${g.id})">🗑️</button>
+      </div>`;
+    cont.appendChild(fila);
+  });
+}
+
+function editarGastoRapidoAdmin(id) {
+  const g = gastosRapidos.find(x => x.id === id);
+  if (!g) return;
+  gastoRapidoEditandoId = id;
+  document.getElementById('nuevo-gasto-rapido-texto').value = g.texto;
+  document.getElementById('btn-guardar-gasto-rapido').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-gasto-rapido').classList.remove('oculto');
+  document.getElementById('nuevo-gasto-rapido-texto').focus();
+}
+
+function cancelarEdicionGastoRapido() {
+  gastoRapidoEditandoId = null;
+  document.getElementById('nuevo-gasto-rapido-texto').value = '';
+  document.getElementById('btn-guardar-gasto-rapido').textContent = '+ Agregar';
+  document.getElementById('btn-cancelar-gasto-rapido').classList.add('oculto');
+}
+
+async function moverGastoRapido(id, direccion) {
+  const i = gastosRapidos.findIndex(g => g.id === id);
+  const j = i + direccion;
+  if (j < 0 || j >= gastosRapidos.length) return;
+  const a = gastosRapidos[i], b = gastosRapidos[j];
+  const ordenA = a.orden ?? 0, ordenB = b.orden ?? 0;
+  await sb.from('gastos_rapidos').update({ orden: ordenB }).eq('id', a.id);
+  await sb.from('gastos_rapidos').update({ orden: ordenA }).eq('id', b.id);
+  await cargarGastosRapidos();
+  renderGastosRapidosAdmin();
+}
+
+async function eliminarGastoRapidoAdmin(id) {
+  const g = gastosRapidos.find(x => x.id === id);
+  if (!g) return;
+  if (!confirm(`¿Eliminar el gasto rápido "${g.texto}"?`)) return;
+  await sb.from('gastos_rapidos').delete().eq('id', id);
+  if (gastoRapidoEditandoId === id) cancelarEdicionGastoRapido();
+  await cargarGastosRapidos();
+  renderGastosRapidosAdmin();
+}
+
+document.getElementById('form-nuevo-gasto-rapido').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const textoInput = document.getElementById('nuevo-gasto-rapido-texto');
+  const texto = textoInput.value.trim();
+  if (!texto) return;
+  if (gastoRapidoEditandoId) {
+    await sb.from('gastos_rapidos').update({ texto }).eq('id', gastoRapidoEditandoId);
+  } else {
+    const siguienteOrden = gastosRapidos.length > 0 ? Math.max(...gastosRapidos.map(g => g.orden)) + 1 : 1;
+    await sb.from('gastos_rapidos').insert({ texto, orden: siguienteOrden });
+  }
+  cancelarEdicionGastoRapido();
+  await cargarGastosRapidos();
+  renderGastosRapidosAdmin();
 });
 
 let top20AdminCache = [];
