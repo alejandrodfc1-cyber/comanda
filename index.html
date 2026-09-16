@@ -563,7 +563,7 @@
         </label>
       </div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">💵 Efectivo contado (desglose por billete)</h3>
+      <h3 class="titulo-form titulo-seccion-nueva titulo-reporte-caja-inicio">💵 Efectivo contado (desglose por billete)</h3>
       <div id="lista-denominaciones-reporte"></div>
       <div class="categoria-total-fila total-enmarcado"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
 
@@ -573,6 +573,8 @@
       </div>
 
       <div class="categoria-total-fila total-enmarcado"><span>🧾 Total gastos</span><span id="total-gastos-reporte">$0</span></div>
+
+      <div class="categoria-total-fila total-enmarcado total-venta-destacado"><span>💰 Venta total del turno</span><span id="reporte-caja-venta-total">$0</span></div>
 
       <div id="lista-gastos-reporte"></div>
       <select id="select-gastos-rapidos" class="select-gastos-rapidos" onchange="seleccionarGastoRapido(this.value)">
@@ -584,9 +586,6 @@
         <button type="button" class="btn-agregar" onclick="agregarGastoReporte()">+ Agregar</button>
       </div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">💰 Venta total del turno</h3>
-      <p class="texto-ayuda">Se calcula sola a partir de lo que hay en este formulario: efectivo contado − caja chica + gastos + tarjeta.</p>
-      <div class="categoria-total-fila total-enmarcado"><span>Venta total del turno</span><span id="reporte-caja-venta-total">$0</span></div>
       <button type="button" class="btn btn-turquesa" id="btn-recargar-reporte-caja" onclick="cargarDatosReporteCaja()">🔄 Volver a cargar de la app</button>
       <p class="texto-ayuda">Vuelve a traer el monto de venta con tarjeta directo desde las ventas ya registradas en la app para el turno elegido — úsalo si cambiaste de turno o si se cobró una mesa nueva mientras preparabas el reporte.</p>
 
@@ -597,8 +596,13 @@
         <div class="fila-cuadratura fila-cuadratura-diferencia"><span>Diferencia</span><span id="cuadratura-diferencia">$0</span></div>
       </div>
 
-      <h3 class="titulo-form titulo-seccion-nueva">Vista previa del reporte</h3>
-      <div id="vista-previa-reporte-caja" class="vista-previa-reporte-caja"></div>
+      <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('vista-previa-reporte-caja', this)">
+        <div class="titulo-fila">
+          <span class="titulo-texto">👁️ Vista previa del reporte (imagen a compartir)</span>
+          <span class="icono-colapso">▾</span>
+        </div>
+      </h3>
+      <div id="vista-previa-reporte-caja" class="vista-previa-reporte-caja oculto"></div>
 
       <div class="fila-botones-form">
         <button type="button" class="btn" onclick="imprimirReporteCajaRawBT()">🖨️ Imprimir (RawBT)</button>

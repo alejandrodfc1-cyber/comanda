@@ -1463,12 +1463,17 @@ function renderGastosReporte(totalGastos) {
   const cont = document.getElementById('lista-gastos-reporte');
   cont.innerHTML = gastosReporteCaja.length === 0
     ? '<p class="texto-vacio">Sin gastos registrados.</p>'
-    : gastosReporteCaja.map((g, i) => `
-      <div class="fila-gasto-reporte">
-        <span class="fila-gasto-desc">${escaparHtmlReporte(g.desc)}</span>
-        <span class="fila-gasto-monto">${formatoMoneda(g.monto)}</span>
-        <button type="button" class="fila-gasto-quitar" onclick="quitarGastoReporte(${i})" title="Quitar">🗑️</button>
-      </div>`).join('');
+    : `<table class="tabla-gastos-reporte">
+        <thead><tr><th>Descripción</th><th>Monto</th><th></th></tr></thead>
+        <tbody>
+          ${gastosReporteCaja.map((g, i) => `
+          <tr>
+            <td>${escaparHtmlReporte(g.desc)}</td>
+            <td class="tabla-gastos-monto">${formatoMoneda(g.monto)}</td>
+            <td><button type="button" class="fila-gasto-quitar" onclick="quitarGastoReporte(${i})" title="Quitar">🗑️</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
   document.getElementById('total-gastos-reporte').textContent = formatoMoneda(totalGastos);
 }
 
@@ -1638,8 +1643,11 @@ async function compartirReporteCajaImagen() {
     alert('No se pudo cargar la herramienta para generar la imagen. Revisa tu conexión e intenta de nuevo.');
     return;
   }
+  const estabaColapsada = elemento.classList.contains('oculto');
+  if (estabaColapsada) elemento.classList.remove('oculto');
   try {
     const canvas = await html2canvas(elemento, { backgroundColor: '#ffffff', scale: 2 });
+    if (estabaColapsada) elemento.classList.add('oculto');
     canvas.toBlob(async (blob) => {
       if (!blob) { alert('No se pudo generar la imagen.'); return; }
       const nombreArchivo = `reporte-caja-${fechaReporteCajaTexto().replace(/\//g, '-')}.png`;
@@ -1656,6 +1664,7 @@ async function compartirReporteCajaImagen() {
       }
     }, 'image/png');
   } catch (e) {
+    if (estabaColapsada) elemento.classList.add('oculto');
     console.error(e);
     alert('No se pudo generar la imagen del reporte.');
   }
