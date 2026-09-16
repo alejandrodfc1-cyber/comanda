@@ -1484,7 +1484,7 @@ function actualizarReporteCaja() {
   const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
   document.getElementById('reporte-caja-venta-total').textContent = formatoMoneda(ventaTotal);
 
-  const efectivoEsperado = cajaChica + reporteCajaVentasEfectivo - totalGastos;
+  const efectivoEsperado = reporteCajaVentasEfectivo - totalGastos;
   const diferencia = totalEfectivoContado - efectivoEsperado;
   document.getElementById('cuadratura-esperado').textContent = formatoMoneda(efectivoEsperado);
   document.getElementById('cuadratura-contado').textContent = formatoMoneda(totalEfectivoContado);
@@ -1562,7 +1562,7 @@ function imprimirReporteCajaRawBT() {
   const otros = valorNumericoInput('denom-otros');
   totalEfectivoContado += otros;
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
-  const ventaTotal = (totalEfectivoContado - cajaChica + totalGastos) + tarjeta;
+  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
 
   const ANCHO = 32;
   const centrar = (linea) => {
