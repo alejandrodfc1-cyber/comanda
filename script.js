@@ -1370,10 +1370,8 @@ function iniciarReporteCaja() {
     renderDenominacionesReporte();
     renderMenuGastosRapidos();
     reporteCajaInicializado = true;
-    cargarDatosReporteCaja();
-  } else {
-    actualizarReporteCaja();
   }
+  cargarDatosReporteCaja();
 }
 
 function renderDenominacionesReporte() {
@@ -1483,10 +1481,7 @@ function actualizarReporteCaja() {
 
   renderGastosReporte(totalGastos);
 
-  // Venta en efectivo real, deducida de lo contado (no de lo que diga la app):
-  // lo que quedo en caja, menos la caja chica con la que se partio, mas lo que salio en gastos.
-  const ventaEfectivoReal = totalEfectivoContado - cajaChica + totalGastos;
-  const ventaTotal = ventaEfectivoReal + tarjeta;
+  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
   document.getElementById('reporte-caja-venta-total').textContent = formatoMoneda(ventaTotal);
 
   const efectivoEsperado = cajaChica + reporteCajaVentasEfectivo - totalGastos;
