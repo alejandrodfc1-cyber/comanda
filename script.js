@@ -1577,7 +1577,6 @@ function imprimirReporteCajaRawBT() {
     return `${izq}\n${der.padStart(ANCHO)}\n`;
   };
   const separador = '-'.repeat(ANCHO) + '\n';
-  const marco = '.'.repeat(ANCHO) + '\n';
   const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
@@ -1590,7 +1589,6 @@ function imprimirReporteCajaRawBT() {
   if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
   t += separador;
   t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
-  t += marco;
   t += separador;
   t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
   t += separador;
@@ -1599,9 +1597,8 @@ function imprimirReporteCajaRawBT() {
   gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
   t += separador;
   t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
-  t += marco;
   t += separador;
-  t += `${BOLD_ON}${fila(`VENTA ${turno} TURNO`, formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
   t += separador;
 
   const textoCodificado = encodeURI(t);
