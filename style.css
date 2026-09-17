@@ -253,11 +253,11 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   z-index: 5;
   background: #fff;
   margin: 0 -20px;
-  padding: 10px 20px 8px;
+  padding: 22px 20px 8px;
 }
 #modal-menu .modal-header {
   position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 18px;
   justify-content: center;
 }
 #modal-menu .modal-header h2 {
