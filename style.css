@@ -371,30 +371,76 @@ main { padding: 20px; }
 
 .panel-admin-menu {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 10px 0 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px 10px;
+  padding: 14px 4px 18px;
 }
 @media (min-width: 480px) {
-  .panel-admin-menu { grid-template-columns: repeat(4, 1fr); }
+  .panel-admin-menu { grid-template-columns: repeat(5, 1fr); }
 }
 .icono-admin-menu {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 14px;
-  padding: 18px 6px;
+  gap: 7px;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,.07);
-  transition: transform .1s ease, box-shadow .15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.icono-admin-menu:active { transform: scale(.95); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-.icono-admin-menu-emoji { font-size: 1.9rem; line-height: 1; }
-.icono-admin-menu-label { font-size: .76rem; font-weight: 700; color: #2c3e50; text-align: center; line-height: 1.2; }
+.icono-admin-glifo {
+  width: 100%;
+  max-width: 64px;
+  aspect-ratio: 1 / 1;
+  border-radius: 24%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 5px 10px -3px var(--sombra-glifo, rgba(0,0,0,.35)),
+    inset 0 1px 1px rgba(255,255,255,.5),
+    inset 0 -6px 10px -6px rgba(0,0,0,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.icono-admin-glifo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(155deg, rgba(255,255,255,.4), rgba(255,255,255,0) 55%);
+  pointer-events: none;
+}
+.icono-admin-glifo-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.15));
+}
+.icono-admin-menu:active .icono-admin-glifo {
+  transform: scale(.88);
+  box-shadow: 0 2px 5px -2px var(--sombra-glifo, rgba(0,0,0,.35)), inset 0 1px 1px rgba(255,255,255,.5);
+}
+.icono-admin-menu-label {
+  font-size: .7rem;
+  font-weight: 600;
+  color: #3a4750;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.color-reportes .icono-admin-glifo { background: linear-gradient(150deg, #56ccf2, #2f80ed); --sombra-glifo: rgba(47,128,237,.45); }
+.color-caja .icono-admin-glifo { background: linear-gradient(150deg, #38ef7d, #11998e); --sombra-glifo: rgba(17,153,142,.45); }
+.color-top20 .icono-admin-glifo { background: linear-gradient(150deg, #f6d365, #c9971e); --sombra-glifo: rgba(201,151,30,.5); }
+.color-productos .icono-admin-glifo { background: linear-gradient(150deg, #ff9966, #e8482a); --sombra-glifo: rgba(232,72,42,.45); }
+.color-insumos .icono-admin-glifo { background: linear-gradient(150deg, #d9a066, #9c5f2e); --sombra-glifo: rgba(156,95,46,.45); }
+.color-orden .icono-admin-glifo { background: linear-gradient(150deg, #a06bf2, #6a2ed6); --sombra-glifo: rgba(106,46,214,.45); }
+.color-mesas .icono-admin-glifo { background: linear-gradient(150deg, #43cea2, #196c8f); --sombra-glifo: rgba(25,108,143,.45); }
+.color-categorias .icono-admin-glifo { background: linear-gradient(150deg, #7f8ef0, #4b3fa8); --sombra-glifo: rgba(75,63,168,.45); }
+.color-ajustes .icono-admin-glifo { background: linear-gradient(150deg, #9aa5b1, #5c6773); --sombra-glifo: rgba(92,103,115,.45); }
+.color-usuarios .icono-admin-glifo { background: linear-gradient(150deg, #ff8fc7, #e63982); --sombra-glifo: rgba(230,57,130,.45); }
 
 .barra-volver-menu {
   display: flex;
