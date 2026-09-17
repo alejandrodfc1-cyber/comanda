@@ -372,17 +372,17 @@ main { padding: 20px; }
 .panel-admin-menu {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px 10px;
-  padding: 14px 4px 18px;
+  gap: 14px 8px;
+  padding: 10px 4px 16px;
 }
 @media (min-width: 480px) {
-  .panel-admin-menu { grid-template-columns: repeat(5, 1fr); }
+  .panel-admin-menu { grid-template-columns: repeat(6, 1fr); }
 }
 .icono-admin-menu {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   background: none;
   border: none;
   padding: 0;
@@ -391,54 +391,52 @@ main { padding: 20px; }
 }
 .icono-admin-glifo {
   width: 100%;
-  max-width: 64px;
+  max-width: 46px;
   aspect-ratio: 1 / 1;
-  border-radius: 24%;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  box-shadow:
-    0 3px 6px -2px var(--sombra-glifo, rgba(0,0,0,.2)),
-    inset 0 1px 1px rgba(255,255,255,.4);
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-.icono-admin-glifo::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(155deg, rgba(255,255,255,.28), rgba(255,255,255,0) 50%);
-  pointer-events: none;
+  background: #f4f2f2;
+  border: 1px solid rgba(156,28,46,.16);
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  transition: transform .1s ease, background .12s ease;
 }
 .icono-admin-glifo-emoji {
-  font-size: 1.55rem;
+  font-size: 1.15rem;
   line-height: 1;
   position: relative;
   z-index: 1;
 }
 .icono-admin-menu:active .icono-admin-glifo {
   transform: scale(.9);
-  box-shadow: 0 1px 3px -1px var(--sombra-glifo, rgba(0,0,0,.2)), inset 0 1px 1px rgba(255,255,255,.4);
+  background: #ece7e7;
 }
 .icono-admin-menu-label {
-  font-size: .7rem;
+  font-size: .64rem;
   font-weight: 600;
   color: #3a4750;
   text-align: center;
   line-height: 1.15;
 }
 
-.color-reportes .icono-admin-glifo { background: linear-gradient(150deg, #9fdcfa, #5b9df9); --sombra-glifo: rgba(91,157,249,.3); }
-.color-caja .icono-admin-glifo { background: linear-gradient(150deg, #8ef0b3, #35c290); --sombra-glifo: rgba(53,194,144,.3); }
-.color-top20 .icono-admin-glifo { background: linear-gradient(150deg, #fbe4a8, #e6b84f); --sombra-glifo: rgba(230,184,79,.32); }
-.color-productos .icono-admin-glifo { background: linear-gradient(150deg, #ffc19e, #f3785a); --sombra-glifo: rgba(243,120,90,.3); }
-.color-insumos .icono-admin-glifo { background: linear-gradient(150deg, #ecc99e, #c68d5e); --sombra-glifo: rgba(198,141,94,.3); }
-.color-orden .icono-admin-glifo { background: linear-gradient(150deg, #cbadf9, #9a6df0); --sombra-glifo: rgba(154,109,240,.3); }
-.color-mesas .icono-admin-glifo { background: linear-gradient(150deg, #8ee8cd, #3fb39e); --sombra-glifo: rgba(63,179,158,.3); }
-.color-categorias .icono-admin-glifo { background: linear-gradient(150deg, #b3bdf7, #7b83d6); --sombra-glifo: rgba(123,131,214,.3); }
-.color-ajustes .icono-admin-glifo { background: linear-gradient(150deg, #d3d9e0, #a4adb8); --sombra-glifo: rgba(164,173,184,.3); }
-.color-usuarios .icono-admin-glifo { background: linear-gradient(150deg, #ffb8dc, #f06fa5); --sombra-glifo: rgba(240,111,165,.3); }
+/* Variante de color por seccion (opcion 2, en prueba) */
+.panel-admin-menu.estilo-color .icono-admin-glifo {
+  border: none;
+  box-shadow: 0 2px 5px -2px var(--sombra-glifo, rgba(0,0,0,.18)), inset 0 1px 1px rgba(255,255,255,.4);
+}
+.panel-admin-menu.estilo-color .color-reportes .icono-admin-glifo { background: linear-gradient(150deg, #9fdcfa, #5b9df9); --sombra-glifo: rgba(91,157,249,.28); }
+.panel-admin-menu.estilo-color .color-caja .icono-admin-glifo { background: linear-gradient(150deg, #8ef0b3, #35c290); --sombra-glifo: rgba(53,194,144,.28); }
+.panel-admin-menu.estilo-color .color-top20 .icono-admin-glifo { background: linear-gradient(150deg, #fbe4a8, #e6b84f); --sombra-glifo: rgba(230,184,79,.3); }
+.panel-admin-menu.estilo-color .color-productos .icono-admin-glifo { background: linear-gradient(150deg, #ffc19e, #f3785a); --sombra-glifo: rgba(243,120,90,.28); }
+.panel-admin-menu.estilo-color .color-insumos .icono-admin-glifo { background: linear-gradient(150deg, #ecc99e, #c68d5e); --sombra-glifo: rgba(198,141,94,.28); }
+.panel-admin-menu.estilo-color .color-orden .icono-admin-glifo { background: linear-gradient(150deg, #cbadf9, #9a6df0); --sombra-glifo: rgba(154,109,240,.28); }
+.panel-admin-menu.estilo-color .color-mesas .icono-admin-glifo { background: linear-gradient(150deg, #8ee8cd, #3fb39e); --sombra-glifo: rgba(63,179,158,.28); }
+.panel-admin-menu.estilo-color .color-categorias .icono-admin-glifo { background: linear-gradient(150deg, #b3bdf7, #7b83d6); --sombra-glifo: rgba(123,131,214,.28); }
+.panel-admin-menu.estilo-color .color-ajustes .icono-admin-glifo { background: linear-gradient(150deg, #d3d9e0, #a4adb8); --sombra-glifo: rgba(164,173,184,.28); }
+.panel-admin-menu.estilo-color .color-usuarios .icono-admin-glifo { background: linear-gradient(150deg, #ffb8dc, #f06fa5); --sombra-glifo: rgba(240,111,165,.28); }
 
 .barra-volver-menu {
   display: flex;
