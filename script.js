@@ -1003,7 +1003,7 @@ function abrirDashboard() {
     cancelarEdicionInsumo();
     cancelarConteo();
     cargarMesasAdmin();
-    cargarInsumosAdmin().then(() => { cargarProductosAdmin(); poblarSelectInsumos(); cargarHistorialConteos(); });
+    cargarInsumosAdmin().then(() => { cargarProductosAdmin(); poblarSelectInsumos(); cargarHistorialConteos(); cargarHistorialCompras(); });
     renderCategoriasAdmin();
     poblarSelectCategorias();
   }
@@ -2297,9 +2297,10 @@ async function reponerInsumo(id) {
   if (!i) return;
   const monto = pedirCantidadInsumo(i, 'Reposición a BODEGA');
   if (monto === null) return;
-  const { error } = await sb.from('insumos').update({ stock_bodega: Number(i.stock_bodega) + monto }).eq('id', id);
+  const { error } = await sb.rpc('reponer_insumo', { p_insumo_id: id, p_cantidad: monto });
   if (error) { alert('No se pudo reponer: ' + error.message); return; }
   await cargarInsumosAdmin();
+  await cargarHistorialCompras();
 }
 
 async function traspasarInsumo(id) {
@@ -2447,7 +2448,7 @@ async function cargarHistorialConteos() {
       ? '<p class="texto-vacio">Sin diferencias — el conteo coincidió con el teórico.</p>'
       : conDiferencia.map(d => {
           const insumo = mapaInsumosNombre[d.insumo_id];
-          const unidadTexto = insumo && insumo.unidad === 'unidades' ? 'u.' : 'ml';
+          const unidadTexto = insumo ? (insumo.unidad === 'unidades' ? 'u.' : insumo.unidad) : 'ml';
           const signo = Number(d.diferencia) > 0 ? '+' : '';
           const clase = Number(d.diferencia) < 0 ? 'texto-stock-agotado' : 'texto-stock-bajo';
           return `<div class="fila-diferencia-conteo">
@@ -2465,6 +2466,35 @@ async function cargarHistorialConteos() {
           <strong>${etiqueta} · ${fechaTexto}</strong>
           <span>${misDetalles.length} insumo${misDetalles.length === 1 ? '' : 's'} contados · ${conDiferencia.length} con diferencia${c.nota ? ` · "${c.nota}"` : ''}</span>
           ${filasDiferencia}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function cargarHistorialCompras() {
+  const cont = document.getElementById('lista-historial-compras');
+  if (!cont) return;
+  const { data: compras, error } = await sb.from('compras_insumo').select('*').order('creado_en', { ascending: false }).limit(30);
+  if (error) { console.error(error); return; }
+  if (!compras || compras.length === 0) {
+    document.getElementById('resumen-historial-compras').textContent = 'Sin compras registradas';
+    cont.innerHTML = '<p class="texto-vacio">Todavía no se ha registrado ninguna reposición de bodega.</p>';
+    return;
+  }
+  document.getElementById('resumen-historial-compras').textContent = `${compras.length} reposición${compras.length === 1 ? '' : 'es'} registrada${compras.length === 1 ? '' : 's'}`;
+  const mapaInsumosNombre = Object.fromEntries(insumosCache.map(i => [i.id, i]));
+  const numero = (n) => Math.round(Number(n) * 100) / 100;
+  cont.innerHTML = compras.map(c => {
+    const insumo = mapaInsumosNombre[c.insumo_id];
+    const unidadTexto = insumo ? (insumo.unidad === 'unidades' ? 'u.' : insumo.unidad) : '';
+    const fecha = new Date(c.creado_en);
+    const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
+    return `
+      <div class="fila-admin">
+        <div class="miniatura">📥</div>
+        <div class="info-admin">
+          <strong>${insumo ? insumo.nombre : `Insumo #${c.insumo_id}`}</strong>
+          <span>+${numero(c.cantidad)}${unidadTexto} · ${fechaTexto}</span>
         </div>
       </div>`;
   }).join('');
