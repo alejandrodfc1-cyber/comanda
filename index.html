@@ -339,13 +339,14 @@
     <div id="seccion-admin-insumos" class="oculto">
       <form id="form-nuevo-insumo" class="form-admin formulario-tarjeta">
         <h3 class="titulo-form" id="titulo-form-insumo">📦 Nuevo insumo</h3>
-        <p class="texto-ayuda">Un insumo es lo que se compra (una botella, un barril): licores, vinos, piscos, rones. Vive en dos lugares — Bodega (depósito) y Barra (lo que se vende) — y se traspasa de uno a otro. Vincúlalo a los productos correspondientes desde "Productos".</p>
+        <p class="texto-ayuda">Un insumo es lo que se compra: una botella, un barril, o materia prima de cocina como carne o cecinas. Vive en dos lugares — Bodega (depósito) y Barra (lo que se vende) — y se traspasa de uno a otro. Vincúlalo a los productos correspondientes desde "Productos".</p>
         <label class="campo-form">Nombre
-          <input type="text" id="nuevo-insumo-nombre" placeholder="Ej: Vino Cabernet, Pisco" required>
+          <input type="text" id="nuevo-insumo-nombre" placeholder="Ej: Vino Cabernet, Carne Churrasco" required>
         </label>
         <label class="campo-form">Unidad
           <select id="nuevo-insumo-unidad" onchange="actualizarCampoContenidoInsumo()">
             <option value="ml">Mililitros (ml)</option>
+            <option value="kg">Kilos (kg)</option>
             <option value="unidades">Unidades</option>
           </select>
         </label>

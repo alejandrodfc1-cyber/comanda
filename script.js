@@ -2180,9 +2180,10 @@ function cantidadDesdeCajas(i, cajas, sueltas) {
 }
 
 function pedirCantidadInsumo(i, tituloAccion) {
-  const unidadTexto = i.unidad === 'ml' ? 'ml' : 'unidades';
+  const unidadTexto = i.unidad === 'ml' ? 'ml' : (i.unidad === 'kg' ? 'kg' : 'unidades');
   if (!i.unidades_por_caja) {
-    const cantidad = prompt(`${tituloAccion} de "${i.nombre}" (en ${unidadTexto}):`, i.unidad === 'ml' ? '750' : '1');
+    const defecto = i.unidad === 'ml' ? '750' : (i.unidad === 'kg' ? '5' : '1');
+    const cantidad = prompt(`${tituloAccion} de "${i.nombre}" (en ${unidadTexto}):`, defecto);
     if (cantidad === null) return null;
     const monto = Number(cantidad);
     if (!monto || monto <= 0) { alert('Ingresa una cantidad válida.'); return null; }
@@ -2209,7 +2210,7 @@ function renderInsumosAdmin() {
         const bajo = Number(i.stock_barra) <= Number(i.stock_minimo);
         const agotado = Number(i.stock_barra) <= 0;
         const claseStock = agotado ? 'texto-stock-agotado' : (bajo ? 'texto-stock-bajo' : '');
-        const unidadTexto = i.unidad === 'ml' ? 'ml' : 'u.';
+        const unidadTexto = i.unidad === 'ml' ? 'ml' : (i.unidad === 'kg' ? 'kg' : 'u.');
         return `
       <div class="fila-admin">
         <div class="miniatura">${agotado ? '🔴' : (bajo ? '🟡' : '📦')}</div>
