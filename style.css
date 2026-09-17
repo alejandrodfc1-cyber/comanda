@@ -410,7 +410,7 @@ main { padding: 20px; }
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: rgba(39,174,96,.32);
+  background: rgba(39,174,96,.42);
   border: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 1px 2px rgba(0,0,0,.05);
   transition: transform .1s ease, background .12s ease;
@@ -423,7 +423,7 @@ main { padding: 20px; }
 }
 .icono-admin-menu:active .icono-admin-glifo {
   transform: scale(.9);
-  background: rgba(39,174,96,.44);
+  background: rgba(39,174,96,.54);
 }
 .icono-admin-menu-label {
   font-size: .64rem;
