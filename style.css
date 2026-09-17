@@ -246,7 +246,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   border-radius: 999px;
 }
 
-#modal-menu .modal-caja { padding-top: 0; }
+#modal-menu .modal-caja { padding-top: 0; padding-bottom: 20px; }
 .mesa-fija {
   position: sticky;
   top: 0;
@@ -483,11 +483,11 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .galeria-platos {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 @media (max-width: 480px) {
-  .galeria-platos { gap: 6px; }
+  .galeria-platos { gap: 10px; }
   .plato .icono { font-size: 1.6rem; }
   .plato .nombre { font-size: .7rem; }
   .plato .precio { font-size: .65rem; }
@@ -559,7 +559,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   display: flex;
   flex-direction: column;
 }
-.pedido-actual .acciones-modal { margin-top: auto; }
+.pedido-actual .acciones-modal { margin-top: auto; padding-top: 16px; align-items: flex-end; }
 .item-pedido {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 0;

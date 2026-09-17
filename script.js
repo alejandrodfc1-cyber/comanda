@@ -115,7 +115,8 @@ async function cargarCategoriasYProductos() {
   TOP20_IDS = (productos || [])
     .filter(p => p.top20)
     .sort((a, b) => (a.orden_top20 ?? 0) - (b.orden_top20 ?? 0))
-    .map(p => p.id);
+    .map(p => p.id)
+    .slice(0, 20);
 
   if (mesaActivaId) { renderListaMenu(); renderGaleriaMenu(); }
 }
