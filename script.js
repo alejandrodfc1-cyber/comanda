@@ -1401,6 +1401,7 @@ async function cargarComparativas() {
 // ---------- Reporte de Caja diario ----------
 const DENOMINACIONES_REPORTE = [20000, 10000, 5000, 2000, 1000];
 const DENOMINACIONES_CAJA_CHICA = [20000, 10000, 5000, 2000, 1000, 500, 100, 50, 10];
+const CLAVE_BORRADOR_REPORTE_CAJA = 'comanda_reporte_caja_borrador';
 let gastosReporteCaja = [];
 let reporteCajaVentasEfectivo = 0;
 let reporteCajaInicializado = false;
@@ -1409,10 +1410,50 @@ function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
     renderDenominacionesCajaChica();
     renderDenominacionesReporte();
+    restaurarBorradorReporteCaja();
     reporteCajaInicializado = true;
   }
   renderMenuGastosRapidos();
   cargarDatosReporteCaja();
+}
+
+function guardarBorradorReporteCaja() {
+  try {
+    const borrador = {
+      turno: document.getElementById('reporte-caja-turno').value,
+      cajaChica: DENOMINACIONES_CAJA_CHICA.map(d => document.getElementById(`denom-caja-cant-${d}`).value),
+      efectivo: DENOMINACIONES_REPORTE.map(d => document.getElementById(`denom-cant-${d}`).value),
+      otros: document.getElementById('denom-otros').value,
+      tarjeta: document.getElementById('reporte-caja-tarjeta').value,
+      gastos: gastosReporteCaja,
+    };
+    localStorage.setItem(CLAVE_BORRADOR_REPORTE_CAJA, JSON.stringify(borrador));
+  } catch (e) { /* localStorage no disponible: el conteo sigue funcionando, solo no sobrevive a una recarga */ }
+}
+
+function restaurarBorradorReporteCaja() {
+  let borrador;
+  try {
+    const raw = localStorage.getItem(CLAVE_BORRADOR_REPORTE_CAJA);
+    if (!raw) return;
+    borrador = JSON.parse(raw);
+  } catch (e) { return; }
+  if (borrador.turno) document.getElementById('reporte-caja-turno').value = borrador.turno;
+  DENOMINACIONES_CAJA_CHICA.forEach((d, i) => {
+    const valor = borrador.cajaChica?.[i];
+    if (valor) document.getElementById(`denom-caja-cant-${d}`).value = valor;
+  });
+  DENOMINACIONES_REPORTE.forEach((d, i) => {
+    const valor = borrador.efectivo?.[i];
+    if (valor) document.getElementById(`denom-cant-${d}`).value = valor;
+  });
+  if (borrador.otros) document.getElementById('denom-otros').value = borrador.otros;
+  if (borrador.tarjeta) document.getElementById('reporte-caja-tarjeta').value = borrador.tarjeta;
+  if (Array.isArray(borrador.gastos)) gastosReporteCaja = borrador.gastos;
+}
+
+function limpiarBorradorReporteCaja() {
+  try { localStorage.removeItem(CLAVE_BORRADOR_REPORTE_CAJA); } catch (e) { /* nada que limpiar */ }
 }
 
 function renderDenominacionesCajaChica() {
@@ -1557,6 +1598,7 @@ function actualizarReporteCaja() {
   filaDif.classList.toggle('no-cuadra', diferencia !== 0);
 
   renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
+  guardarBorradorReporteCaja();
 }
 
 function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
@@ -1712,6 +1754,7 @@ function limpiarConteoReporteCaja() {
   document.getElementById('denom-otros').value = '';
   document.getElementById('reporte-caja-tarjeta').value = '0';
   gastosReporteCaja = [];
+  limpiarBorradorReporteCaja();
   actualizarReporteCaja();
 }
 
