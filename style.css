@@ -372,11 +372,11 @@ main { padding: 20px; }
 .panel-admin-menu {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px 8px;
+  gap: 16px 10px;
   padding: 10px 4px 16px;
 }
 @media (min-width: 480px) {
-  .panel-admin-menu { grid-template-columns: repeat(6, 1fr); }
+  .panel-admin-menu { grid-template-columns: repeat(5, 1fr); }
 }
 .icono-admin-menu {
   display: flex;
@@ -391,9 +391,9 @@ main { padding: 20px; }
 }
 .icono-admin-glifo {
   width: 100%;
-  max-width: 46px;
+  max-width: 56px;
   aspect-ratio: 1 / 1;
-  border-radius: 13px;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -405,14 +405,14 @@ main { padding: 20px; }
   transition: transform .1s ease, background .12s ease;
 }
 .icono-admin-glifo-emoji {
-  font-size: 1.15rem;
+  font-size: 1.4rem;
   line-height: 1;
   position: relative;
   z-index: 1;
 }
 .icono-admin-menu:active .icono-admin-glifo {
   transform: scale(.9);
-  background: #ece7e7;
+  background: rgba(39,174,96,.25);
 }
 .icono-admin-menu-label {
   font-size: .64rem;
