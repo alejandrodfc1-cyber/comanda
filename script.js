@@ -51,6 +51,28 @@ function aplicarNombreApp() {
   if (tituloApp) tituloApp.textContent = NOMBRE_APP;
   const subtituloAdmin = document.getElementById('subtitulo-admin-nombre');
   if (subtituloAdmin) subtituloAdmin.textContent = NOMBRE_APP;
+  document.title = NOMBRE_APP;
+  actualizarManifestDinamico();
+}
+
+function actualizarManifestDinamico() {
+  const enlaceManifest = document.querySelector('link[rel="manifest"]');
+  if (!enlaceManifest) return;
+  const manifest = {
+    name: NOMBRE_APP,
+    short_name: NOMBRE_APP,
+    start_url: '.',
+    scope: '.',
+    display: 'standalone',
+    background_color: '#9c1c2e',
+    theme_color: '#9c1c2e',
+    icons: [
+      { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  enlaceManifest.setAttribute('href', URL.createObjectURL(blob));
 }
 
 document.getElementById('form-nombre-app').addEventListener('submit', async (e) => {
