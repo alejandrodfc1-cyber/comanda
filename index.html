@@ -670,6 +670,17 @@
   </div>
 </div>
 
+<!-- Modal: confirmacion propia de la app (reemplaza confirm() nativo) -->
+<div id="modal-confirmar" class="modal oculto">
+  <div class="modal-caja">
+    <div id="confirmar-mensaje" class="confirmar-mensaje"></div>
+    <div class="acciones-modal">
+      <button class="btn btn-secundario" id="btn-confirmar-cancelar">Cancelar</button>
+      <button class="btn" id="btn-confirmar-aceptar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="config.js"></script>

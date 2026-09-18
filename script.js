@@ -1,5 +1,25 @@
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+function confirmarApp(mensaje, opciones = {}) {
+  return new Promise((resolve) => {
+    document.getElementById('confirmar-mensaje').textContent = mensaje;
+    const modal = document.getElementById('modal-confirmar');
+    const btnAceptar = document.getElementById('btn-confirmar-aceptar');
+    const btnCancelar = document.getElementById('btn-confirmar-cancelar');
+    btnAceptar.textContent = opciones.textoAceptar || 'Confirmar';
+    btnAceptar.className = opciones.peligro ? 'btn btn-peligro' : 'btn';
+    const cerrar = (resultado) => {
+      modal.classList.add('oculto');
+      btnAceptar.onclick = null;
+      btnCancelar.onclick = null;
+      resolve(resultado);
+    };
+    btnAceptar.onclick = () => cerrar(true);
+    btnCancelar.onclick = () => cerrar(false);
+    modal.classList.remove('oculto');
+  });
+}
+
 let NEGOCIO_NOMBRE = 'La Españita';
 let NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
 let NOMBRE_APP = 'La Españita';
@@ -58,7 +78,7 @@ function actualizarBotonTurno() {
 
 async function toggleTurno() {
   const siguienteTurno = turnoActivo === '1' ? '2' : '1';
-  if (!confirm(`¿Cambiar a Turno ${siguienteTurno}?`)) return;
+  if (!(await confirmarApp(`¿Cambiar a Turno ${siguienteTurno}?`))) return;
   turnoActivo = siguienteTurno;
   actualizarBotonTurno();
   await sb.from('configuracion').update({ valor: turnoActivo }).eq('clave', 'turno_activo');
@@ -148,7 +168,7 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
 });
 
 async function cerrarSesion() {
-  if (!confirm('¿Cerrar sesión?')) return;
+  if (!(await confirmarApp('¿Cerrar sesión?'))) return;
   await sb.auth.signOut();
 }
 
@@ -584,12 +604,12 @@ function guardarNotaItem() {
   }));
 }
 
-function eliminarDelPedido(platoId) {
+async function eliminarDelPedido(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
   const item = mesa.pedido.find(i => i.id === platoId);
   if (!item) return;
-  if (!confirm(`¿Quitar "${item.nombre}" del pedido?`)) return;
+  if (!(await confirmarApp(`¿Quitar "${item.nombre}" del pedido?`))) return;
   mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('quitar_item_pedido', {
@@ -718,7 +738,7 @@ async function cerrarMesa(metodoPago) {
 
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
   const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
-  if (!confirm(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`)) return;
+  if (!(await confirmarApp(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`))) return;
 
   ocultarPanelMetodoPago();
   cobroEnProceso = true;
@@ -1752,8 +1772,8 @@ function imprimirReporteCajaRawBT() {
   enviarARawBT(t);
 }
 
-function limpiarConteoReporteCaja() {
-  if (!confirm('¿Limpiar caja chica, efectivo contado y gastos para empezar un conteo nuevo?')) return;
+async function limpiarConteoReporteCaja() {
+  if (!(await confirmarApp('¿Limpiar caja chica, efectivo contado y gastos para empezar un conteo nuevo?'))) return;
   DENOMINACIONES_CAJA_CHICA.forEach(d => { document.getElementById(`denom-caja-cant-${d}`).value = ''; });
   DENOMINACIONES_REPORTE.forEach(d => { document.getElementById(`denom-cant-${d}`).value = ''; });
   document.getElementById('denom-otros').value = '';
@@ -1901,7 +1921,7 @@ async function eliminarMesa(id) {
   const aviso = ocupada
     ? `¡Atención! "${etiquetaMesa(mesa)}" tiene un pedido activo sin cobrar. ¿Eliminarla de todas formas? Se perderá ese pedido.`
     : `¿Eliminar definitivamente "${etiquetaMesa(mesa)}"? Esta acción no se puede deshacer.`;
-  if (!confirm(aviso)) return;
+  if (!(await confirmarApp(aviso))) return;
   try {
     const { data, error } = await sb.from('mesas').delete().eq('id', id).select();
     if (error) {
@@ -2029,7 +2049,7 @@ function rutaStorageProducto(url) {
 async function eliminarProducto(id) {
   const p = productosAdminCache.find(x => x.id === id);
   if (!p) return;
-  if (!confirm(`¿Eliminar definitivamente "${p.nombre}"?\n\nEsta acción no se puede deshacer. Las ventas ya registradas conservan su historial igual, pero el producto dejará de existir en el catálogo (Top20, Orden Menú, etc).`)) return;
+  if (!(await confirmarApp(`¿Eliminar definitivamente "${p.nombre}"?\n\nEsta acción no se puede deshacer. Las ventas ya registradas conservan su historial igual, pero el producto dejará de existir en el catálogo (Top20, Orden Menú, etc).`))) return;
   const { error } = await sb.from('productos').delete().eq('id', id);
   if (error) {
     alert('No se pudo eliminar: ' + error.message);
@@ -2136,7 +2156,7 @@ async function activarUsuario(id) {
 async function desactivarUsuario(id) {
   const usuario = usuariosAdminCache.find(u => u.id === id);
   if (!usuario) return;
-  if (!confirm(`¿Desactivar la cuenta de "${usuario.email}"? No va a poder usar la app hasta que la vuelvas a activar.`)) return;
+  if (!(await confirmarApp(`¿Desactivar la cuenta de "${usuario.email}"? No va a poder usar la app hasta que la vuelvas a activar.`))) return;
   const { error } = await sb.from('perfiles').update({ activo: false }).eq('id', id);
   if (error) { alert('No se pudo desactivar: ' + error.message); return; }
   await cargarUsuariosAdmin();
@@ -2145,7 +2165,7 @@ async function desactivarUsuario(id) {
 async function cambiarRolUsuario(id, nuevoRol) {
   const usuario = usuariosAdminCache.find(u => u.id === id);
   if (!usuario) return;
-  if (!confirm(`¿Cambiar el rol de "${usuario.email}" a "${ETIQUETAS_ROL[nuevoRol]}"?`)) {
+  if (!(await confirmarApp(`¿Cambiar el rol de "${usuario.email}" a "${ETIQUETAS_ROL[nuevoRol]}"?`))) {
     renderUsuariosAdmin();
     return;
   }
@@ -2184,7 +2204,7 @@ function cantidadDesdeCajas(i, cajas, sueltas) {
   return i.unidad === 'ml' ? totalUnidades * (Number(i.contenido_por_unidad) || 0) : totalUnidades;
 }
 
-function pedirCantidadInsumo(i, tituloAccion) {
+async function pedirCantidadInsumo(i, tituloAccion) {
   const unidadTexto = i.unidad === 'ml' ? 'ml' : (i.unidad === 'kg' ? 'kg' : 'unidades');
   if (!i.unidades_por_caja) {
     const defecto = i.unidad === 'ml' ? '750' : (i.unidad === 'kg' ? '5' : '1');
@@ -2202,7 +2222,7 @@ function pedirCantidadInsumo(i, tituloAccion) {
   const sueltas = Number(sueltasStr) || 0;
   const total = cantidadDesdeCajas(i, cajas, sueltas);
   if (total <= 0) { alert('La cantidad debe ser mayor a cero.'); return null; }
-  if (!confirm(`${cajas} caja(s) x ${i.unidades_por_caja} + ${sueltas} suelta(s) = ${total}${unidadTexto}. ¿Confirmar?`)) return null;
+  if (!(await confirmarApp(`${cajas} caja(s) x ${i.unidades_por_caja} + ${sueltas} suelta(s) = ${total}${unidadTexto}. ¿Confirmar?`))) return null;
   return total;
 }
 
@@ -2300,7 +2320,7 @@ function cancelarEdicionInsumo() {
 async function reponerInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
-  const monto = pedirCantidadInsumo(i, 'Reposición a BODEGA');
+  const monto = await pedirCantidadInsumo(i, 'Reposición a BODEGA');
   if (monto === null) return;
   const { error } = await sb.rpc('reponer_insumo', { p_insumo_id: id, p_cantidad: monto });
   if (error) { alert('No se pudo reponer: ' + error.message); return; }
@@ -2311,7 +2331,7 @@ async function reponerInsumo(id) {
 async function traspasarInsumo(id) {
   const i = insumosCache.find(x => x.id === id);
   if (!i) return;
-  const monto = pedirCantidadInsumo(i, 'Traspaso de BODEGA a BARRA');
+  const monto = await pedirCantidadInsumo(i, 'Traspaso de BODEGA a BARRA');
   if (monto === null) return;
   const { error } = await sb.rpc('traspasar_insumo', { p_insumo_id: id, p_cantidad: monto });
   if (error) { alert('No se pudo traspasar: ' + error.message); return; }
@@ -2326,7 +2346,7 @@ async function eliminarInsumoAdmin(id) {
     alert(`No se puede eliminar "${i.nombre}": está vinculado a ${enUso.length} producto(s) (${enUso.map(p => p.nombre).join(', ')}). Cámbialos de insumo primero desde Productos.`);
     return;
   }
-  if (!confirm(`¿Eliminar el insumo "${i.nombre}"?`)) return;
+  if (!(await confirmarApp(`¿Eliminar el insumo "${i.nombre}"?`))) return;
   await sb.from('insumos').delete().eq('id', id);
   if (insumoEditandoId === id) cancelarEdicionInsumo();
   await cargarInsumosAdmin();
@@ -2764,7 +2784,7 @@ async function limitarResolucionImagen(archivo, maxLado) {
 document.getElementById('btn-limpiar-fotos').addEventListener('click', async () => {
   const btn = document.getElementById('btn-limpiar-fotos');
   const resultado = document.getElementById('resultado-limpieza-fotos');
-  if (!confirm('Esto va a borrar fotos de productos que ya no se usan y a reducir el tamaño de las que sí. Puede tardar unos minutos si hay muchas fotos. ¿Continuar?')) return;
+  if (!(await confirmarApp('Esto va a borrar fotos de productos que ya no se usan y a reducir el tamaño de las que sí. Puede tardar unos minutos si hay muchas fotos. ¿Continuar?'))) return;
 
   btn.disabled = true;
   btn.textContent = 'Procesando...';
@@ -2862,7 +2882,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   }
 
   if (precio > 0 && precio <= costo) {
-    const continuar = confirm(`El precio de venta (${formatoMoneda(precio)}) es menor o igual al costo (${formatoMoneda(costo)}). ¿Guardar de todas formas? Por ejemplo, si es una promoción.`);
+    const continuar = await confirmarApp(`El precio de venta (${formatoMoneda(precio)}) es menor o igual al costo (${formatoMoneda(costo)}). ¿Guardar de todas formas? Por ejemplo, si es una promoción.`);
     if (!continuar) return;
   }
 
@@ -2962,7 +2982,7 @@ async function eliminarCategoria(id) {
     alert(`No se puede eliminar "${c.nombre}": todavía tiene ${count} producto(s) asignado(s). Cámbialos de categoría primero desde Productos.`);
     return;
   }
-  if (!confirm(`¿Eliminar la categoría "${c.nombre}"?`)) return;
+  if (!(await confirmarApp(`¿Eliminar la categoría "${c.nombre}"?`))) return;
   await sb.from('categorias').delete().eq('id', id);
   if (categoriaEditandoId === id) cancelarEdicionCategoria();
   await cargarCategoriasYProductos();
@@ -3041,7 +3061,7 @@ async function moverNotaRapida(id, direccion) {
 async function eliminarNotaRapidaAdmin(id) {
   const n = notasRapidas.find(x => x.id === id);
   if (!n) return;
-  if (!confirm(`¿Eliminar la nota rápida "${n.texto}"?`)) return;
+  if (!(await confirmarApp(`¿Eliminar la nota rápida "${n.texto}"?`))) return;
   await sb.from('notas_rapidas').delete().eq('id', id);
   if (notaRapidaEditandoId === id) cancelarEdicionNotaRapida();
   await cargarNotasRapidas();
@@ -3118,7 +3138,7 @@ async function moverGastoRapido(id, direccion) {
 async function eliminarGastoRapidoAdmin(id) {
   const g = gastosRapidos.find(x => x.id === id);
   if (!g) return;
-  if (!confirm(`¿Eliminar el gasto rápido "${g.texto}"?`)) return;
+  if (!(await confirmarApp(`¿Eliminar el gasto rápido "${g.texto}"?`))) return;
   await sb.from('gastos_rapidos').delete().eq('id', id);
   if (gastoRapidoEditandoId === id) cancelarEdicionGastoRapido();
   await cargarGastosRapidos();
