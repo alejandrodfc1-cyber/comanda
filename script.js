@@ -23,17 +23,19 @@ function confirmarApp(mensaje, opciones = {}) {
 let NEGOCIO_NOMBRE = 'La Españita';
 let NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
 let NOMBRE_APP = 'La Españita';
+let NOMBRE_ICONO = 'Españita';
 let negocioTelefono = '';
 let turnoActivo = '1';
 
 async function cargarConfiguracion() {
   const { data } = await sb.from('configuracion').select('clave, valor')
-    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app']);
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono']);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
   NEGOCIO_DIRECCION = data?.find(d => d.clave === 'direccion_negocio')?.valor || NEGOCIO_DIRECCION;
   NOMBRE_APP = data?.find(d => d.clave === 'nombre_app')?.valor || NOMBRE_APP;
+  NOMBRE_ICONO = data?.find(d => d.clave === 'nombre_icono')?.valor || NOMBRE_ICONO;
   const input = document.getElementById('config-telefono');
   if (input) input.value = negocioTelefono;
   const inputNombre = document.getElementById('config-nombre-negocio');
@@ -42,6 +44,8 @@ async function cargarConfiguracion() {
   if (inputDireccion) inputDireccion.value = NEGOCIO_DIRECCION;
   const inputNombreApp = document.getElementById('config-nombre-app');
   if (inputNombreApp) inputNombreApp.value = NOMBRE_APP;
+  const inputNombreIcono = document.getElementById('config-nombre-icono');
+  if (inputNombreIcono) inputNombreIcono.value = NOMBRE_ICONO;
   aplicarNombreApp();
   actualizarBotonTurno();
 }
@@ -59,8 +63,8 @@ function actualizarManifestDinamico() {
   const enlaceManifest = document.querySelector('link[rel="manifest"]');
   if (!enlaceManifest) return;
   const manifest = {
-    name: NOMBRE_APP,
-    short_name: NOMBRE_APP,
+    name: NOMBRE_ICONO,
+    short_name: NOMBRE_ICONO,
     start_url: '.',
     scope: '.',
     display: 'standalone',
@@ -88,6 +92,24 @@ document.getElementById('form-nombre-app').addEventListener('submit', async (e) 
   }
   NOMBRE_APP = nombre;
   aplicarNombreApp();
+  mensaje.textContent = '✓ Guardado';
+  mensaje.classList.remove('mensaje-error', 'oculto');
+  setTimeout(() => mensaje.classList.add('oculto'), 2500);
+});
+
+document.getElementById('form-nombre-icono').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('config-nombre-icono').value.trim() || NOMBRE_ICONO;
+  const { error } = await sb.from('configuracion').upsert({ clave: 'nombre_icono', valor: nombre }, { onConflict: 'clave' });
+  const mensaje = document.getElementById('config-nombre-icono-msg');
+  if (error) {
+    mensaje.textContent = '✕ No se pudo guardar: ' + error.message;
+    mensaje.classList.add('mensaje-error');
+    mensaje.classList.remove('oculto');
+    return;
+  }
+  NOMBRE_ICONO = nombre;
+  actualizarManifestDinamico();
   mensaje.textContent = '✓ Guardado';
   mensaje.classList.remove('mensaje-error', 'oculto');
   setTimeout(() => mensaje.classList.add('oculto'), 2500);
