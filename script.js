@@ -1426,6 +1426,7 @@ async function cargarComparativas() {
 // ---------- Reporte de Caja diario ----------
 const DENOMINACIONES_REPORTE = [20000, 10000, 5000, 2000, 1000];
 const DENOMINACIONES_CAJA_CHICA = [20000, 10000, 5000, 2000, 1000, 500, 100, 50, 10];
+const CAJA_CHICA_ESPERADA = 200000;
 const CLAVE_BORRADOR_REPORTE_CAJA = 'comanda_reporte_caja_borrador';
 let gastosReporteCaja = [];
 let reporteCajaVentasEfectivo = 0;
@@ -1592,6 +1593,11 @@ function actualizarReporteCaja() {
     cajaChica += subtotal;
   });
   document.getElementById('total-caja-chica').textContent = formatoMoneda(cajaChica);
+  const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
+  const filaDifCajaChica = document.getElementById('diferencia-caja-chica');
+  filaDifCajaChica.textContent = (diferenciaCajaChica > 0 ? '+' : '') + formatoMoneda(diferenciaCajaChica);
+  filaDifCajaChica.classList.toggle('texto-stock-agotado', diferenciaCajaChica < 0);
+  filaDifCajaChica.classList.toggle('texto-stock-bajo', diferenciaCajaChica > 0);
 
   let totalEfectivoContado = 0;
   DENOMINACIONES_REPORTE.forEach(d => {
@@ -1610,7 +1616,7 @@ function actualizarReporteCaja() {
 
   renderGastosReporte(totalGastos);
 
-  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
+  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos + diferenciaCajaChica;
   document.getElementById('reporte-caja-venta-total').textContent = formatoMoneda(ventaTotal);
 
   const efectivoEsperado = reporteCajaVentasEfectivo - totalGastos;
@@ -1622,11 +1628,11 @@ function actualizarReporteCaja() {
   filaDif.classList.toggle('cuadra', diferencia === 0);
   filaDif.classList.toggle('no-cuadra', diferencia !== 0);
 
-  renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
+  renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
   guardarBorradorReporteCaja();
 }
 
-function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
+function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
   const cont = document.getElementById('vista-previa-reporte-caja');
   const filasCajaChica = DENOMINACIONES_CAJA_CHICA.map(d => {
     const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
@@ -1639,6 +1645,9 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
     return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
   }).join('');
   const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(otros)}</span></div>` : '';
+  const filaDifCajaChica = diferenciaCajaChica !== 0
+    ? `<div class="vp-fila"><span>${diferenciaCajaChica < 0 ? 'Faltante' : 'Sobrante'} caja chica</span><span>${diferenciaCajaChica > 0 ? '+' : ''}${formatoMoneda(diferenciaCajaChica)}</span></div>`
+    : '';
   const filasGastos = gastosReporteCaja.length === 0
     ? '<div class="vp-fila vp-vacio"><span>(sin gastos)</span><span></span></div>'
     : gastosReporteCaja.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
@@ -1660,6 +1669,7 @@ function renderVistaPreviaReporte({ cajaChica, totalEfectivoContado, otros, tarj
         ${filasDenom}
         ${filaOtros}
         <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
+        ${filaDifCajaChica}
       </div>
       <div class="vp-seccion">
         <div class="vp-fila vp-fila-destacada"><span>💳 Venta con tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
@@ -1732,6 +1742,13 @@ function imprimirReporteCajaRawBT() {
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
   const turno = document.getElementById('reporte-caja-turno').value;
 
+  let cajaChica = 0;
+  DENOMINACIONES_CAJA_CHICA.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
+    cajaChica += cantidad * d;
+  });
+  const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
+
   let totalEfectivoContado = 0;
   const lineasDenom = [];
   DENOMINACIONES_REPORTE.forEach(d => {
@@ -1745,7 +1762,7 @@ function imprimirReporteCajaRawBT() {
   const otros = valorNumericoInput('denom-otros');
   totalEfectivoContado += otros;
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
-  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos;
+  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos + diferenciaCajaChica;
 
   const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
 
@@ -1757,6 +1774,9 @@ function imprimirReporteCajaRawBT() {
   if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
   t += separador;
   t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  if (diferenciaCajaChica !== 0) {
+    t += fila(`  ${diferenciaCajaChica < 0 ? 'Faltante' : 'Sobrante'} caja chica`, formatoMonedaTxtReporte(diferenciaCajaChica));
+  }
   t += separador;
   t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
   t += separador;

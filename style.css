@@ -1418,6 +1418,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   border: 1px solid #f0d999;
 }
 .fila-cuadratura { display: flex; justify-content: space-between; padding: 4px 0; font-size: .88rem; }
+.fila-dif-caja-chica { margin-top: 8px; font-weight: 700; }
 .fila-cuadratura-diferencia { font-weight: 800; border-top: 1px dashed #e0c987; margin-top: 6px; padding-top: 8px; }
 .fila-cuadratura-diferencia.cuadra span:last-child { color: #27ae60; }
 .fila-cuadratura-diferencia.no-cuadra span:last-child { color: #c0392b; }
