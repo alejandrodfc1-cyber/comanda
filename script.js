@@ -515,7 +515,7 @@ async function cargarNotasRapidas() {
   const { data, error } = await sb.from('notas_rapidas').select('*').order('orden');
   if (error) { console.error(error); return; }
   notasRapidas = data;
-  if (rolUsuario === 'admin' && seccionActivaDashboard === 'config') renderNotasRapidasAdmin();
+  if (rolUsuario === 'dueno' && seccionActivaDashboard === 'config') renderNotasRapidasAdmin();
 }
 
 let gastosRapidos = [];
@@ -524,7 +524,7 @@ async function cargarGastosRapidos() {
   const { data, error } = await sb.from('gastos_rapidos').select('*').order('orden');
   if (error) { console.error(error); return; }
   gastosRapidos = data;
-  if (rolUsuario === 'admin' && seccionActivaDashboard === 'config') renderGastosRapidosAdmin();
+  if (rolUsuario === 'dueno' && seccionActivaDashboard === 'config') renderGastosRapidosAdmin();
   renderMenuGastosRapidos();
 }
 
@@ -986,14 +986,18 @@ function imprimirConRawBT() {
 }
 
 function abrirDashboard() {
-  if (rolUsuario !== 'admin' && rolUsuario !== 'cajero') {
+  if (rolUsuario !== 'admin' && rolUsuario !== 'cajero' && rolUsuario !== 'dueno') {
     alert('Esta sección es solo para administradores y cajeros.');
     return;
   }
-  const esAdmin = rolUsuario === 'admin';
+  const esAdmin = rolUsuario === 'admin' || rolUsuario === 'dueno';
+  const esDueno = rolUsuario === 'dueno';
   document.getElementById('modal-dashboard').classList.remove('oculto');
-  ['top20', 'productos', 'insumos', 'orden', 'mesas', 'categorias', 'config', 'usuarios'].forEach(s => {
+  ['top20', 'productos', 'insumos', 'orden', 'mesas', 'categorias'].forEach(s => {
     document.getElementById(`icono-admin-${s}`).classList.toggle('oculto', !esAdmin);
+  });
+  ['config', 'usuarios'].forEach(s => {
+    document.getElementById(`icono-admin-${s}`).classList.toggle('oculto', !esDueno);
   });
   mostrarMenuAdmin();
   if (esAdmin) {
@@ -2070,8 +2074,8 @@ async function toggleCocinaProducto(id, actual) {
 }
 
 let usuariosAdminCache = [];
-const ETIQUETAS_ROL = { admin: 'Admin', cajero: 'Cajero', mesero: 'Mesero' };
-const ICONO_ROL = { admin: '👑', cajero: '💵', mesero: '🧑‍🍳' };
+const ETIQUETAS_ROL = { admin: 'Admin', cajero: 'Cajero', mesero: 'Mesero', dueno: 'Admin Dueño' };
+const ICONO_ROL = { admin: '👑', cajero: '💵', mesero: '🧑‍🍳', dueno: '🏆' };
 
 async function cargarUsuariosAdmin() {
   const { data, error } = await sb.from('perfiles').select('*');
@@ -2113,6 +2117,7 @@ function renderUsuariosAdmin() {
             <option value="mesero" ${u.rol === 'mesero' ? 'selected' : ''}>Mesero</option>
             <option value="cajero" ${u.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
             <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="dueno" ${u.rol === 'dueno' ? 'selected' : ''}>Admin Dueño</option>
           </select>
           ${!pendiente && !esUnoMismo ? `<button class="btn-toggle-visible" onclick="desactivarUsuario('${u.id}')" title="Desactivar cuenta">🚫</button>` : ''}
         </div>
