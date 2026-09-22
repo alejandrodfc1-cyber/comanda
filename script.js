@@ -457,7 +457,7 @@ function actualizarVistaModal() {
   const cantidadItems = mesa.pedido.reduce((s, i) => s + i.cantidad, 0);
   const fab = document.getElementById('btn-alternar-vista');
   fab.classList.toggle('oculto', !enMenu);
-  fab.textContent = `🧾 Detalle (${cantidadItems})`;
+  fab.innerHTML = `<span class="fab-detalle-texto">🧾 Ver pedido</span><span class="fab-detalle-badge">${cantidadItems}</span>`;
 }
 
 function renderTabsMenu() {
@@ -1678,20 +1678,12 @@ function actualizarReporteCaja() {
 
 function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
   const cont = document.getElementById('vista-previa-reporte-caja');
-  const filasCajaChica = DENOMINACIONES_CAJA_CHICA.map(d => {
-    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
-    if (cantidad === 0) return '';
-    return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
-  }).join('');
   const filasDenom = DENOMINACIONES_REPORTE.map(d => {
     const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
     if (cantidad === 0) return '';
     return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
   }).join('');
   const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(otros)}</span></div>` : '';
-  const filaDifCajaChica = diferenciaCajaChica !== 0
-    ? `<div class="vp-fila"><span>${diferenciaCajaChica < 0 ? 'Faltante' : 'Sobrante'} caja chica</span><span>${diferenciaCajaChica > 0 ? '+' : ''}${formatoMoneda(diferenciaCajaChica)}</span></div>`
-    : '';
   const filasGastos = gastosReporteCaja.length === 0
     ? '<div class="vp-fila vp-vacio"><span>(sin gastos)</span><span></span></div>'
     : gastosReporteCaja.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
@@ -1704,22 +1696,15 @@ function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectiv
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
-        <div class="vp-seccion-titulo">🪙 Caja chica inicial</div>
-        ${filasCajaChica}
-        <div class="vp-fila vp-subtotal"><span>Total caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
-      </div>
-      <div class="vp-seccion">
-        <div class="vp-seccion-titulo">💵 Efectivo contado</div>
+        <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
+        <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
         ${filasDenom}
         ${filaOtros}
         <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
-        ${filaDifCajaChica}
       </div>
       <div class="vp-seccion">
         <div class="vp-fila vp-fila-destacada"><span>💳 Venta con tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
-      </div>
-      <div class="vp-seccion">
-        <div class="vp-seccion-titulo">🧾 Gastos</div>
+        <div class="vp-seccion-titulo vp-seccion-titulo-gastos">🧾 Gastos</div>
         ${filasGastos}
         <div class="vp-fila vp-subtotal"><span>Total gastos</span><span>${formatoMoneda(totalGastos)}</span></div>
       </div>
