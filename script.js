@@ -1629,6 +1629,10 @@ function fechaReporteCajaTexto() {
   return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function horaReporteCajaTexto() {
+  return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 function actualizarReporteCaja() {
   let cajaChica = 0;
   DENOMINACIONES_CAJA_CHICA.forEach(d => {
@@ -1659,6 +1663,7 @@ function actualizarReporteCaja() {
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
   const turno = document.getElementById('reporte-caja-turno').value;
+  document.getElementById('efectivo-entregado-fecha-hora').textContent = `${fechaReporteCajaTexto()} · ${horaReporteCajaTexto()} · ${turno}° Turno`;
 
   renderGastosReporte(totalGastos);
 
@@ -1702,11 +1707,11 @@ function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectiv
     <div class="vp-header">
       <div class="vp-negocio">${NEGOCIO_NOMBRE}</div>
       <div class="vp-reporte-titulo">🧾 REPORTE DE CAJA</div>
-      <div class="vp-reporte-sub">${turno}° Turno · ${fechaReporteCajaTexto()}</div>
+      <div class="vp-reporte-sub">${turno}° Turno · ${fechaReporteCajaTexto()} · ${horaReporteCajaTexto()}</div>
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
-        <div class="vp-seccion-titulo">💵 Efectivo Entregado <span class="vp-seccion-sub">· Efectivo contado</span></div>
+        <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
         <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
         ${filasDenom}
         ${filaOtros}
@@ -1782,14 +1787,9 @@ function imprimirReporteCajaRawBT() {
   const turno = document.getElementById('reporte-caja-turno').value;
 
   let cajaChica = 0;
-  const lineasCajaChica = [];
   DENOMINACIONES_CAJA_CHICA.forEach(d => {
     const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
-    if (cantidad > 0) {
-      const subtotal = cantidad * d;
-      cajaChica += subtotal;
-      lineasCajaChica.push({ d, cantidad, subtotal });
-    }
+    cajaChica += cantidad * d;
   });
   const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
 
@@ -1811,17 +1811,9 @@ function imprimirReporteCajaRawBT() {
   const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
-  t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
+  t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`)}\n`;
   t += separador;
-  t += `${BOLD_ON}Caja chica inicial:${BOLD_OFF}\n`;
-  if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
-  lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
-  t += fila('  Total caja chica', formatoMonedaTxtReporte(cajaChica));
-  if (diferenciaCajaChica !== 0) {
-    t += fila(`  ${diferenciaCajaChica < 0 ? 'Faltante' : 'Sobrante'} caja chica`, formatoMonedaTxtReporte(diferenciaCajaChica));
-  }
-  t += separador;
-  t += `${BOLD_ON}Efectivo Entregado (efectivo contado):${BOLD_OFF}\n`;
+  t += `${BOLD_ON}Efectivo Entregado:${BOLD_OFF}\n`;
   t += fila('  Caja chica', formatoMonedaTxtReporte(cajaChica));
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
   if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));

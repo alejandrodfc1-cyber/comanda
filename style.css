@@ -1372,12 +1372,12 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   border-top: 1px dashed #e3b8bf;
 }
 .titulo-efectivo-principal { display: block; }
-.titulo-efectivo-sub {
+.titulo-efectivo-meta {
   display: block;
   font-size: .72rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .4px;
+  text-transform: none;
+  letter-spacing: .2px;
   color: #9a9a9a;
   margin-top: 2px;
 }
@@ -1533,7 +1533,6 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   border-bottom: 1px solid #f1d3d8;
 }
 .vp-seccion-titulo-gastos { margin-top: 10px; }
-.vp-seccion-sub { text-transform: none; font-weight: 500; color: #c98a95; letter-spacing: 0; }
 .vp-fila { display: flex; justify-content: space-between; gap: 8px; font-size: .86rem; padding: 3px 0; color: #333; }
 .vp-fila-referencia { color: #8a8a8a; font-style: italic; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px dashed #eee; }
 .vp-fila.vp-vacio { color: #999; font-style: italic; }
