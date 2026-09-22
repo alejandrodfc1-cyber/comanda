@@ -1813,12 +1813,13 @@ function imprimirReporteCajaRawBT() {
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
   t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`)}\n`;
   t += separador;
+  t += fila('Caja chica', formatoMonedaTxtReporte(cajaChica));
+  t += separador;
   t += `${BOLD_ON}Efectivo Entregado:${BOLD_OFF}\n`;
-  t += fila('  Caja chica', formatoMonedaTxtReporte(cajaChica));
   lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
   if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
   t += separador;
-  t += `${BOLD_ON}${fila('Total efectivo contado', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Total Efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
   t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
   t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
   if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
