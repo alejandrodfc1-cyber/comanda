@@ -1357,7 +1357,62 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   font-size: 1rem;
 }
 
-.titulo-reporte-caja-inicio { margin-top: 16px; padding-top: 12px; }
+.reporte-caja-tarjeton {
+  background: #fff;
+  border: 1px solid #ecdde0;
+  border-radius: 14px;
+  padding: 14px 16px 18px;
+  margin-top: 8px;
+}
+.titulo-reporte-caja-inicio { margin-top: 4px; padding-top: 0; border-top: none; }
+
+.titulo-efectivo-entregado {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed #e3b8bf;
+}
+.titulo-efectivo-principal { display: block; }
+.titulo-efectivo-sub {
+  display: block;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #9a9a9a;
+  margin-top: 2px;
+}
+.fila-cuadratura.fila-referencia {
+  color: #8a8a8a;
+  font-style: italic;
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #eee;
+}
+
+.bloque-totales-reporte {
+  border: 2px solid #9c1c2e;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.bloque-totales-reporte .categoria-total-fila {
+  margin-top: 0;
+  padding: 12px 14px;
+  border-top: none;
+  border-bottom: 1px dashed #e3b8bf;
+}
+.bloque-totales-reporte .categoria-total-fila:last-child { border-bottom: none; }
+.bloque-totales-reporte .total-venta-destacado {
+  background: #eafaf1;
+  color: #0e7a63;
+  font-size: 1rem;
+}
+.fila-cuadratura-grupo-nuevo {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #e0c987;
+  font-weight: 700;
+}
 
 .tabla-gastos-reporte {
   width: 100%;
@@ -1478,6 +1533,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   border-bottom: 1px solid #f1d3d8;
 }
 .vp-seccion-titulo-gastos { margin-top: 10px; }
+.vp-seccion-sub { text-transform: none; font-weight: 500; color: #c98a95; letter-spacing: 0; }
 .vp-fila { display: flex; justify-content: space-between; gap: 8px; font-size: .86rem; padding: 3px 0; color: #333; }
 .vp-fila-referencia { color: #8a8a8a; font-style: italic; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px dashed #eee; }
 .vp-fila.vp-vacio { color: #999; font-style: italic; }

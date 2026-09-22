@@ -1474,6 +1474,7 @@ const CAJA_CHICA_ESPERADA = 200000;
 const CLAVE_BORRADOR_REPORTE_CAJA = 'comanda_reporte_caja_borrador';
 let gastosReporteCaja = [];
 let reporteCajaVentasEfectivo = 0;
+let reporteCajaVentasTarjeta = 0;
 let reporteCajaInicializado = false;
 
 function iniciarReporteCaja() {
@@ -1581,7 +1582,7 @@ async function cargarDatosReporteCaja() {
   const totalTarjeta = ventas.filter(v => v.metodo_pago === 'tarjeta').reduce((s, v) => s + Number(v.total), 0);
   const totalTransferencia = ventas.filter(v => v.metodo_pago === 'transferencia').reduce((s, v) => s + Number(v.total), 0);
   reporteCajaVentasEfectivo = totalVentas - totalTarjeta - totalTransferencia;
-  document.getElementById('reporte-caja-tarjeta').value = totalTarjeta.toLocaleString('es-CO');
+  reporteCajaVentasTarjeta = totalTarjeta;
   actualizarReporteCaja();
 }
 
@@ -1642,6 +1643,7 @@ function actualizarReporteCaja() {
   filaDifCajaChica.textContent = (diferenciaCajaChica > 0 ? '+' : '') + formatoMoneda(diferenciaCajaChica);
   filaDifCajaChica.classList.toggle('texto-stock-agotado', diferenciaCajaChica < 0);
   filaDifCajaChica.classList.toggle('texto-stock-bajo', diferenciaCajaChica > 0);
+  document.getElementById('ref-caja-chica-entregado').textContent = formatoMoneda(cajaChica);
 
   let totalEfectivoContado = 0;
   DENOMINACIONES_REPORTE.forEach(d => {
@@ -1668,9 +1670,17 @@ function actualizarReporteCaja() {
   document.getElementById('cuadratura-esperado').textContent = formatoMoneda(efectivoEsperado);
   document.getElementById('cuadratura-contado').textContent = formatoMoneda(totalEfectivoContado);
   document.getElementById('cuadratura-diferencia').textContent = (diferencia > 0 ? '+' : '') + formatoMoneda(diferencia);
-  const filaDif = document.getElementById('cuadratura-diferencia').parentElement;
+  const filaDif = document.getElementById('fila-cuadratura-diferencia-efectivo');
   filaDif.classList.toggle('cuadra', diferencia === 0);
   filaDif.classList.toggle('no-cuadra', diferencia !== 0);
+
+  document.getElementById('cuadratura-tarjeta-esperado').textContent = formatoMoneda(reporteCajaVentasTarjeta);
+  document.getElementById('cuadratura-tarjeta-cargada').textContent = formatoMoneda(tarjeta);
+  const diferenciaTarjeta = tarjeta - reporteCajaVentasTarjeta;
+  document.getElementById('cuadratura-diferencia-tarjeta').textContent = (diferenciaTarjeta > 0 ? '+' : '') + formatoMoneda(diferenciaTarjeta);
+  const filaDifTarjeta = document.getElementById('fila-cuadratura-diferencia-tarjeta');
+  filaDifTarjeta.classList.toggle('cuadra', diferenciaTarjeta === 0);
+  filaDifTarjeta.classList.toggle('no-cuadra', diferenciaTarjeta !== 0);
 
   renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
   guardarBorradorReporteCaja();
@@ -1696,7 +1706,7 @@ function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectiv
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
-        <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
+        <div class="vp-seccion-titulo">💵 Efectivo Entregado <span class="vp-seccion-sub">· Efectivo contado</span></div>
         <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
         ${filasDenom}
         ${filaOtros}
@@ -1772,9 +1782,14 @@ function imprimirReporteCajaRawBT() {
   const turno = document.getElementById('reporte-caja-turno').value;
 
   let cajaChica = 0;
+  const lineasCajaChica = [];
   DENOMINACIONES_CAJA_CHICA.forEach(d => {
     const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
-    cajaChica += cantidad * d;
+    if (cantidad > 0) {
+      const subtotal = cantidad * d;
+      cajaChica += subtotal;
+      lineasCajaChica.push({ d, cantidad, subtotal });
+    }
   });
   const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
 
@@ -1798,21 +1813,24 @@ function imprimirReporteCajaRawBT() {
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
   t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
   t += separador;
-  t += `${BOLD_ON}Efectivo contado:${BOLD_OFF}\n`;
-  lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
-  if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
-  t += separador;
-  t += `${BOLD_ON}${fila('Total efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  t += `${BOLD_ON}Caja chica inicial:${BOLD_OFF}\n`;
+  if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
+  lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
+  t += fila('  Total caja chica', formatoMonedaTxtReporte(cajaChica));
   if (diferenciaCajaChica !== 0) {
     t += fila(`  ${diferenciaCajaChica < 0 ? 'Faltante' : 'Sobrante'} caja chica`, formatoMonedaTxtReporte(diferenciaCajaChica));
   }
   t += separador;
-  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
+  t += `${BOLD_ON}Efectivo Entregado (efectivo contado):${BOLD_OFF}\n`;
+  t += fila('  Caja chica', formatoMonedaTxtReporte(cajaChica));
+  lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
+  if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
   t += separador;
+  t += `${BOLD_ON}${fila('Total efectivo contado', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
   t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
   if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
   gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
-  t += separador;
   t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
   t += separador;
   t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
@@ -1826,7 +1844,7 @@ async function limpiarConteoReporteCaja() {
   DENOMINACIONES_CAJA_CHICA.forEach(d => { document.getElementById(`denom-caja-cant-${d}`).value = ''; });
   DENOMINACIONES_REPORTE.forEach(d => { document.getElementById(`denom-cant-${d}`).value = ''; });
   document.getElementById('denom-otros').value = '';
-  document.getElementById('reporte-caja-tarjeta').value = '0';
+  document.getElementById('reporte-caja-tarjeta').value = '';
   gastosReporteCaja = [];
   limpiarBorradorReporteCaja();
   actualizarReporteCaja();

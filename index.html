@@ -595,26 +595,31 @@
         </select>
       </label>
 
-      <h3 class="titulo-form titulo-seccion-nueva titulo-reporte-caja-inicio">🪙 Caja chica inicial (desglose)</h3>
-      <div id="lista-denominaciones-caja-chica"></div>
-      <div class="categoria-total-fila total-enmarcado"><span>Total caja chica</span><span id="total-caja-chica">$0</span></div>
-      <button type="button" class="btn btn-turquesa" id="btn-imprimir-caja-chica" onclick="imprimirCajaChicaRawBT()">🖨️ Imprimir caja chica</button>
-      <p class="texto-ayuda">Impresión aparte, para hacerla al preparar la caja chica antes de empezar el turno.</p>
+      <div class="reporte-caja-tarjeton">
+        <h3 class="titulo-form titulo-seccion-nueva titulo-reporte-caja-inicio">🪙 Caja chica inicial (desglose)</h3>
+        <div id="lista-denominaciones-caja-chica"></div>
+        <div class="categoria-total-fila total-enmarcado"><span>Total caja chica</span><span id="total-caja-chica">$0</span></div>
+        <div class="fila-cuadratura fila-dif-caja-chica" title="Si la caja chica quedó por debajo o por encima de $200.000, esta diferencia se suma o resta sola en la Venta total del turno."><span>Diferencia caja chica (vs. $200.000)</span><span id="diferencia-caja-chica">$0</span></div>
+        <button type="button" class="btn btn-turquesa" id="btn-imprimir-caja-chica" onclick="imprimirCajaChicaRawBT()">🖨️ Imprimir caja chica</button>
+        <p class="texto-ayuda">Impresión aparte, para hacerla al preparar la caja chica antes de empezar el turno.</p>
 
-      <h3 class="titulo-form titulo-seccion-nueva">💵 Efectivo contado (desglose)</h3>
-      <div id="lista-denominaciones-reporte"></div>
-      <div class="categoria-total-fila total-enmarcado"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
-      <div class="fila-cuadratura fila-dif-caja-chica"><span>Diferencia caja chica (vs. $200.000)</span><span id="diferencia-caja-chica">$0</span></div>
-      <p class="texto-ayuda">Si la caja chica quedó por debajo o por encima de $200.000, esta diferencia se suma o resta sola en la Venta total del turno.</p>
+        <h3 class="titulo-form titulo-seccion-nueva titulo-efectivo-entregado">
+          <span class="titulo-efectivo-principal">💵 Efectivo Entregado</span>
+          <span class="titulo-efectivo-sub">Efectivo contado</span>
+        </h3>
+        <div class="fila-cuadratura fila-referencia"><span>Caja chica</span><span id="ref-caja-chica-entregado">$0</span></div>
+        <div id="lista-denominaciones-reporte"></div>
 
-      <div class="categoria-total-fila total-enmarcado fila-total-input" title="Se precarga con el monto real de la app para este turno — puedes sobreescribirlo si es necesario.">
-        <span>💳 Venta con tarjeta</span>
-        <input type="text" inputmode="numeric" id="reporte-caja-tarjeta" value="0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+        <div class="bloque-totales-reporte">
+          <div class="categoria-total-fila"><span>Total efectivo contado</span><span id="total-efectivo-contado">$0</span></div>
+          <div class="categoria-total-fila fila-total-input" title="Escribe el monto real cobrado con tarjeta (del comprobante del POS). Compáralo con 'Venta tarjeta esperado' en la Cuadratura de abajo.">
+            <span>💳 Venta con tarjeta</span>
+            <input type="text" inputmode="numeric" id="reporte-caja-tarjeta" placeholder="$0" oninput="formatearMilesEnInput(event); actualizarReporteCaja()">
+          </div>
+          <div class="categoria-total-fila"><span>🧾 Total gastos</span><span id="total-gastos-reporte">$0</span></div>
+          <div class="categoria-total-fila total-venta-destacado"><span>💰 Venta total del turno</span><span id="reporte-caja-venta-total">$0</span></div>
+        </div>
       </div>
-
-      <div class="categoria-total-fila total-enmarcado"><span>🧾 Total gastos</span><span id="total-gastos-reporte">$0</span></div>
-
-      <div class="categoria-total-fila total-enmarcado total-venta-destacado"><span>💰 Venta total del turno</span><span id="reporte-caja-venta-total">$0</span></div>
 
       <div id="lista-gastos-reporte"></div>
       <select id="select-gastos-rapidos" class="select-gastos-rapidos" onchange="seleccionarGastoRapido(this.value)">
@@ -627,13 +632,16 @@
       </div>
 
       <button type="button" class="btn btn-turquesa" id="btn-recargar-reporte-caja" onclick="cargarDatosReporteCaja()">🔄 Volver a cargar de la app</button>
-      <p class="texto-ayuda">Vuelve a traer el monto de venta con tarjeta directo desde las ventas ya registradas en la app para el turno elegido — úsalo si cambiaste de turno o si se cobró una mesa nueva mientras preparabas el reporte.</p>
+      <p class="texto-ayuda">Actualiza los montos de referencia de la Cuadratura (efectivo esperado y venta con tarjeta según la app) para el turno elegido — no modifica lo que ya escribiste arriba.</p>
 
       <div class="panel-cuadratura-reporte" id="panel-cuadratura-reporte">
         <span class="panel-metodo-pago-titulo">🔍 Cuadratura (solo mientras preparas — no sale en el reporte)</span>
         <div class="fila-cuadratura"><span>Efectivo esperado</span><span id="cuadratura-esperado">$0</span></div>
         <div class="fila-cuadratura"><span>Efectivo contado</span><span id="cuadratura-contado">$0</span></div>
-        <div class="fila-cuadratura fila-cuadratura-diferencia"><span>Diferencia</span><span id="cuadratura-diferencia">$0</span></div>
+        <div class="fila-cuadratura fila-cuadratura-diferencia" id="fila-cuadratura-diferencia-efectivo"><span>Diferencia</span><span id="cuadratura-diferencia">$0</span></div>
+        <div class="fila-cuadratura fila-cuadratura-grupo-nuevo"><span>Venta tarjeta esperado</span><span id="cuadratura-tarjeta-esperado">$0</span></div>
+        <div class="fila-cuadratura"><span>Venta tarjeta cargada en máq.</span><span id="cuadratura-tarjeta-cargada">$0</span></div>
+        <div class="fila-cuadratura fila-cuadratura-diferencia" id="fila-cuadratura-diferencia-tarjeta"><span>Diferencia tarjeta</span><span id="cuadratura-diferencia-tarjeta">$0</span></div>
       </div>
 
       <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('vista-previa-reporte-caja', this)">
