@@ -125,8 +125,21 @@ async function toggleTurno() {
   if (!(await confirmarApp(`¿Cambiar a Turno ${siguienteTurno}?`))) return;
   turnoActivo = siguienteTurno;
   actualizarBotonTurno();
+  aplicarTurnoActivoAlReporte();
   await sb.from('configuracion').update({ valor: turnoActivo }).eq('clave', 'turno_activo');
 }
+
+// Si otro equipo cambia el turno, este equipo lo sigue (boton de la grilla y Reporte de Caja).
+sb
+  .channel('turno-cambios')
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'configuracion', filter: 'clave=eq.turno_activo' }, (payload) => {
+    const nuevo = payload.new?.valor;
+    if (!nuevo || nuevo === turnoActivo) return;
+    turnoActivo = nuevo;
+    actualizarBotonTurno();
+    aplicarTurnoActivoAlReporte();
+  })
+  .subscribe();
 
 document.getElementById('form-telefono-negocio').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -1497,12 +1510,26 @@ async function iniciarReporteCaja() {
   }
   renderMenuGastosRapidos();
   await sincronizarBorradorReporteCaja();
+  const { data } = await sb.from('configuracion').select('valor').eq('clave', 'turno_activo').maybeSingle();
+  if (data?.valor && data.valor !== turnoActivo) {
+    turnoActivo = data.valor;
+    actualizarBotonTurno();
+  }
+  document.getElementById('reporte-caja-turno').value = turnoActivo;
   cargarDatosReporteCaja();
+}
+
+// El turno del reporte sigue al turno activo de la grilla de mesas.
+function aplicarTurnoActivoAlReporte() {
+  if (!reporteCajaInicializado) return;
+  const select = document.getElementById('reporte-caja-turno');
+  if (select.value === turnoActivo) return;
+  select.value = turnoActivo;
+  cargarDatosReporteCaja(true);
 }
 
 function leerBorradorDelFormulario() {
   return {
-    turno: document.getElementById('reporte-caja-turno').value,
     cajaChica: DENOMINACIONES_CAJA_CHICA.map(d => document.getElementById(`denom-caja-cant-${d}`).value),
     efectivo: DENOMINACIONES_REPORTE.map(d => document.getElementById(`denom-cant-${d}`).value),
     otros: document.getElementById('denom-otros').value,
@@ -1516,7 +1543,6 @@ function aplicarBorradorAlFormulario(datos) {
     const el = document.getElementById(id);
     if (el && el !== document.activeElement) el.value = valor ?? '';
   };
-  if (datos.turno) document.getElementById('reporte-caja-turno').value = datos.turno;
   DENOMINACIONES_CAJA_CHICA.forEach((d, i) => poner(`denom-caja-cant-${d}`, datos.cajaChica?.[i]));
   DENOMINACIONES_REPORTE.forEach((d, i) => poner(`denom-cant-${d}`, datos.efectivo?.[i]));
   poner('denom-otros', datos.otros);
@@ -1589,11 +1615,9 @@ function recibirBorradorRemotoReporteCaja(payload) {
   const datos = payload.new?.datos;
   if (!reporteCajaInicializado || !datos || datos.dispositivo === ID_DISPOSITIVO_REPORTE) return;
   if (temporizadorSubirBorrador) return;
-  const turnoAntes = document.getElementById('reporte-caja-turno').value;
   aplicarBorradorAlFormulario(datos);
   guardarBorradorLocalReporteCaja(leerBorradorDelFormulario(), false);
-  if (document.getElementById('reporte-caja-turno').value !== turnoAntes) cargarDatosReporteCaja(true);
-  else actualizarReporteCaja();
+  actualizarReporteCaja();
 }
 
 sb
