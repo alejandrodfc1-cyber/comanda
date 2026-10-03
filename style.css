@@ -1598,3 +1598,25 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   }
   .no-imprimir { display: none !important; }
 }
+
+/* PRUEBA: letra mas grande en "Detalle de la mesa" (solo pantalla). Para volver atras, borrar este bloque. */
+@media screen {
+  #vista-detalle-mesa .item-pedido { padding: 12px 0; gap: 12px; flex-wrap: wrap; }
+  #vista-detalle-mesa .item-info { flex: 1 1 160px; }
+  #vista-detalle-mesa .item-acciones { margin-left: auto; }
+  #vista-detalle-mesa .item-icono { width: 54px; height: 54px; font-size: 2.2rem; }
+  #vista-detalle-mesa .item-nombre { font-size: 1.15rem; }
+  #vista-detalle-mesa .item-detalle { font-size: 1rem; }
+  #vista-detalle-mesa .item-nota { font-size: .95rem; }
+  #vista-detalle-mesa .item-cantidad-num { font-size: 1.15rem; min-width: 24px; }
+  #vista-detalle-mesa .item-pedido .btn-icono { width: 36px; height: 36px; font-size: 1.1rem; }
+  #vista-detalle-mesa .linea-resumen { font-size: 1.12rem; padding: 3px 0; }
+  #vista-detalle-mesa .linea-propina { font-size: 1rem; }
+  #vista-detalle-mesa .linea-total-final { font-size: 1.35rem; }
+  #vista-detalle-mesa .aviso-cuenta-solicitada { font-size: 1rem; }
+  #vista-detalle-mesa .btn { font-size: 1.05rem; }
+  #vista-detalle-mesa .acciones-modal .btn { font-size: .98rem; padding: 12px 4px; }
+  #vista-detalle-mesa .panel-metodo-pago-titulo { font-size: 1rem; }
+  #vista-detalle-mesa .btn-metodo-pago { font-size: .8rem; padding: 14px 2px; }
+  #vista-detalle-mesa .btn-cancelar-metodo-pago { font-size: .95rem; }
+}
