@@ -1477,55 +1477,141 @@ let reporteCajaVentasEfectivo = 0;
 let reporteCajaVentasTarjeta = 0;
 let reporteCajaInicializado = false;
 
-function iniciarReporteCaja() {
+// El borrador del reporte vive en Supabase (tabla reporte_caja_borrador, una sola fila)
+// para que celular, tablet y compu vean el mismo conteo. localStorage queda solo como
+// respaldo si se corta internet: "pendiente" marca cambios que aun no llegaron al servidor.
+const ID_DISPOSITIVO_REPORTE = Math.random().toString(36).slice(2);
+let ultimoBorradorJson = '';
+let temporizadorSubirBorrador = null;
+let borradorPorSubir = null;
+
+async function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
     renderDenominacionesCajaChica();
     renderDenominacionesReporte();
-    restaurarBorradorReporteCaja();
+    document.getElementById('reporte-caja-turno').value = turnoActivo;
+    const local = leerBorradorLocalReporteCaja();
+    if (local) aplicarBorradorAlFormulario(local.datos);
+    ultimoBorradorJson = JSON.stringify(leerBorradorDelFormulario());
     reporteCajaInicializado = true;
   }
   renderMenuGastosRapidos();
+  await sincronizarBorradorReporteCaja();
   cargarDatosReporteCaja();
 }
 
-function guardarBorradorReporteCaja() {
-  try {
-    const borrador = {
-      turno: document.getElementById('reporte-caja-turno').value,
-      cajaChica: DENOMINACIONES_CAJA_CHICA.map(d => document.getElementById(`denom-caja-cant-${d}`).value),
-      efectivo: DENOMINACIONES_REPORTE.map(d => document.getElementById(`denom-cant-${d}`).value),
-      otros: document.getElementById('denom-otros').value,
-      tarjeta: document.getElementById('reporte-caja-tarjeta').value,
-      gastos: gastosReporteCaja,
-    };
-    localStorage.setItem(CLAVE_BORRADOR_REPORTE_CAJA, JSON.stringify(borrador));
-  } catch (e) { /* localStorage no disponible: el conteo sigue funcionando, solo no sobrevive a una recarga */ }
+function leerBorradorDelFormulario() {
+  return {
+    turno: document.getElementById('reporte-caja-turno').value,
+    cajaChica: DENOMINACIONES_CAJA_CHICA.map(d => document.getElementById(`denom-caja-cant-${d}`).value),
+    efectivo: DENOMINACIONES_REPORTE.map(d => document.getElementById(`denom-cant-${d}`).value),
+    otros: document.getElementById('denom-otros').value,
+    tarjeta: document.getElementById('reporte-caja-tarjeta').value,
+    gastos: gastosReporteCaja,
+  };
 }
 
-function restaurarBorradorReporteCaja() {
-  let borrador;
+function aplicarBorradorAlFormulario(datos) {
+  const poner = (id, valor) => {
+    const el = document.getElementById(id);
+    if (el && el !== document.activeElement) el.value = valor ?? '';
+  };
+  if (datos.turno) document.getElementById('reporte-caja-turno').value = datos.turno;
+  DENOMINACIONES_CAJA_CHICA.forEach((d, i) => poner(`denom-caja-cant-${d}`, datos.cajaChica?.[i]));
+  DENOMINACIONES_REPORTE.forEach((d, i) => poner(`denom-cant-${d}`, datos.efectivo?.[i]));
+  poner('denom-otros', datos.otros);
+  poner('reporte-caja-tarjeta', datos.tarjeta);
+  gastosReporteCaja = Array.isArray(datos.gastos) ? datos.gastos : [];
+  ultimoBorradorJson = JSON.stringify(leerBorradorDelFormulario());
+}
+
+function leerBorradorLocalReporteCaja() {
   try {
     const raw = localStorage.getItem(CLAVE_BORRADOR_REPORTE_CAJA);
-    if (!raw) return;
-    borrador = JSON.parse(raw);
-  } catch (e) { return; }
-  if (borrador.turno) document.getElementById('reporte-caja-turno').value = borrador.turno;
-  DENOMINACIONES_CAJA_CHICA.forEach((d, i) => {
-    const valor = borrador.cajaChica?.[i];
-    if (valor) document.getElementById(`denom-caja-cant-${d}`).value = valor;
-  });
-  DENOMINACIONES_REPORTE.forEach((d, i) => {
-    const valor = borrador.efectivo?.[i];
-    if (valor) document.getElementById(`denom-cant-${d}`).value = valor;
-  });
-  if (borrador.otros) document.getElementById('denom-otros').value = borrador.otros;
-  if (borrador.tarjeta) document.getElementById('reporte-caja-tarjeta').value = borrador.tarjeta;
-  if (Array.isArray(borrador.gastos)) gastosReporteCaja = borrador.gastos;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Formato antiguo (solo los datos, sin marca de pendiente).
+    if (!parsed.datos) return { datos: parsed, pendiente: null };
+    return parsed;
+  } catch (e) { return null; }
 }
 
-function limpiarBorradorReporteCaja() {
-  try { localStorage.removeItem(CLAVE_BORRADOR_REPORTE_CAJA); } catch (e) { /* nada que limpiar */ }
+function guardarBorradorLocalReporteCaja(datos, pendiente) {
+  try {
+    localStorage.setItem(CLAVE_BORRADOR_REPORTE_CAJA, JSON.stringify({ datos, pendiente }));
+  } catch (e) { /* sin localStorage: igual se sincroniza por servidor */ }
 }
+
+function guardarBorradorReporteCaja() {
+  const datos = leerBorradorDelFormulario();
+  const json = JSON.stringify(datos);
+  if (json === ultimoBorradorJson) return;
+  ultimoBorradorJson = json;
+  guardarBorradorLocalReporteCaja(datos, true);
+  borradorPorSubir = datos;
+  clearTimeout(temporizadorSubirBorrador);
+  temporizadorSubirBorrador = setTimeout(subirBorradorReporteCaja, 600);
+}
+
+async function subirBorradorReporteCaja() {
+  clearTimeout(temporizadorSubirBorrador);
+  temporizadorSubirBorrador = null;
+  const datos = borradorPorSubir;
+  if (!datos) return;
+  borradorPorSubir = null;
+  const { error } = await sb.from('reporte_caja_borrador').upsert({
+    id: 1,
+    datos: { ...datos, dispositivo: ID_DISPOSITIVO_REPORTE },
+    actualizado_en: new Date().toISOString(),
+  });
+  if (error) { console.error('No se pudo sincronizar el reporte de caja:', error); return; }
+  if (!borradorPorSubir) guardarBorradorLocalReporteCaja(datos, false);
+}
+
+async function sincronizarBorradorReporteCaja() {
+  if (temporizadorSubirBorrador) return;
+  const { data, error } = await sb.from('reporte_caja_borrador').select('datos').eq('id', 1).maybeSingle();
+  if (error) return;
+  const remoto = data?.datos && Object.keys(data.datos).length > 0 ? data.datos : null;
+  const local = leerBorradorLocalReporteCaja();
+  const localPendiente = local && (local.pendiente === true || (local.pendiente === null && !remoto));
+  if (localPendiente) {
+    borradorPorSubir = local.datos;
+    await subirBorradorReporteCaja();
+    return;
+  }
+  if (!remoto) return;
+  aplicarBorradorAlFormulario(remoto);
+  guardarBorradorLocalReporteCaja(leerBorradorDelFormulario(), false);
+}
+
+function recibirBorradorRemotoReporteCaja(payload) {
+  const datos = payload.new?.datos;
+  if (!reporteCajaInicializado || !datos || datos.dispositivo === ID_DISPOSITIVO_REPORTE) return;
+  if (temporizadorSubirBorrador) return;
+  const turnoAntes = document.getElementById('reporte-caja-turno').value;
+  aplicarBorradorAlFormulario(datos);
+  guardarBorradorLocalReporteCaja(leerBorradorDelFormulario(), false);
+  if (document.getElementById('reporte-caja-turno').value !== turnoAntes) cargarDatosReporteCaja(true);
+  else actualizarReporteCaja();
+}
+
+sb
+  .channel('reporte-caja-borrador')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'reporte_caja_borrador' }, recibirBorradorRemotoReporteCaja)
+  .subscribe();
+
+// Respaldo del canal en tiempo real + refresca "efectivo esperado" y "venta tarjeta
+// esperado" a medida que entran ventas nuevas mientras el reporte esta abierto.
+setInterval(async () => {
+  if (seccionActivaDashboard !== 'reporte-caja' || !reporteCajaInicializado) return;
+  await sincronizarBorradorReporteCaja();
+  cargarDatosReporteCaja(true);
+}, 20000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && temporizadorSubirBorrador) subirBorradorReporteCaja();
+});
 
 function renderDenominacionesCajaChica() {
   const cont = document.getElementById('lista-denominaciones-caja-chica');
@@ -1567,14 +1653,14 @@ function seleccionarGastoRapido(nombre) {
   document.getElementById('gasto-monto-nuevo').focus();
 }
 
-async function cargarDatosReporteCaja() {
+async function cargarDatosReporteCaja(silencioso = false) {
   const turno = Number(document.getElementById('reporte-caja-turno').value);
   const hoy = new Date();
   const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
   const { data, error } = await sb.from('ventas').select('total, metodo_pago').gte('creado_en', inicioHoy).eq('turno', turno);
   if (error) {
     console.error(error);
-    alert('No se pudieron cargar las ventas del turno (problema de conexión). Puedes escribirlas a mano.');
+    if (!silencioso) alert('No se pudieron cargar las ventas del turno (problema de conexión). Puedes escribirlas a mano.');
     return;
   }
   const ventas = data || [];
@@ -1839,7 +1925,6 @@ async function limpiarConteoReporteCaja() {
   document.getElementById('denom-otros').value = '';
   document.getElementById('reporte-caja-tarjeta').value = '';
   gastosReporteCaja = [];
-  limpiarBorradorReporteCaja();
   actualizarReporteCaja();
 }
 
