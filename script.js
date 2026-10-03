@@ -1490,10 +1490,12 @@ let reporteCajaVentasEfectivo = 0;
 let reporteCajaVentasTarjeta = 0;
 let reporteCajaInicializado = false;
 
-// El borrador del reporte vive en Supabase (tabla reporte_caja_borrador, una sola fila)
-// para que celular, tablet y compu vean el mismo conteo. localStorage queda solo como
-// respaldo si se corta internet: "pendiente" marca cambios que aun no llegaron al servidor.
+// El borrador del reporte vive en Supabase (tabla reporte_caja_borrador, una fila por turno:
+// id 1 = 1° turno, id 2 = 2° turno) para que celular, tablet y compu vean el mismo conteo.
+// localStorage queda solo como respaldo si se corta internet: "pendiente" marca cambios que
+// aun no llegaron al servidor.
 const ID_DISPOSITIVO_REPORTE = Math.random().toString(36).slice(2);
+let turnoBorrador = null;
 let ultimoBorradorJson = '';
 let temporizadorSubirBorrador = null;
 let borradorPorSubir = null;
@@ -1502,30 +1504,39 @@ async function iniciarReporteCaja() {
   if (!reporteCajaInicializado) {
     renderDenominacionesCajaChica();
     renderDenominacionesReporte();
-    document.getElementById('reporte-caja-turno').value = turnoActivo;
-    const local = leerBorradorLocalReporteCaja();
-    if (local) aplicarBorradorAlFormulario(local.datos);
-    ultimoBorradorJson = JSON.stringify(leerBorradorDelFormulario());
+    try { localStorage.removeItem(CLAVE_BORRADOR_REPORTE_CAJA); } catch (e) { /* formato viejo, sin turno */ }
     reporteCajaInicializado = true;
   }
   renderMenuGastosRapidos();
-  await sincronizarBorradorReporteCaja();
   const { data } = await sb.from('configuracion').select('valor').eq('clave', 'turno_activo').maybeSingle();
   if (data?.valor && data.valor !== turnoActivo) {
     turnoActivo = data.valor;
     actualizarBotonTurno();
   }
-  document.getElementById('reporte-caja-turno').value = turnoActivo;
+  if (turnoBorrador !== turnoActivo) {
+    await cambiarTurnoDelBorrador(turnoActivo);
+    return;
+  }
+  await sincronizarBorradorReporteCaja();
   cargarDatosReporteCaja();
+}
+
+// Cada turno tiene su propio conteo y gastos: al cambiar de turno se sube lo pendiente
+// del turno anterior y se carga el borrador del nuevo.
+async function cambiarTurnoDelBorrador(turno) {
+  if (temporizadorSubirBorrador) await subirBorradorReporteCaja();
+  turnoBorrador = turno;
+  document.getElementById('reporte-caja-turno').value = turno;
+  const local = leerBorradorLocalReporteCaja();
+  aplicarBorradorAlFormulario(local ? local.datos : {}, true);
+  await sincronizarBorradorReporteCaja();
+  cargarDatosReporteCaja(true);
 }
 
 // El turno del reporte sigue al turno activo de la grilla de mesas.
 function aplicarTurnoActivoAlReporte() {
-  if (!reporteCajaInicializado) return;
-  const select = document.getElementById('reporte-caja-turno');
-  if (select.value === turnoActivo) return;
-  select.value = turnoActivo;
-  cargarDatosReporteCaja(true);
+  if (!reporteCajaInicializado || turnoBorrador === turnoActivo) return;
+  cambiarTurnoDelBorrador(turnoActivo);
 }
 
 function leerBorradorDelFormulario() {
@@ -1538,10 +1549,10 @@ function leerBorradorDelFormulario() {
   };
 }
 
-function aplicarBorradorAlFormulario(datos) {
+function aplicarBorradorAlFormulario(datos, forzar = false) {
   const poner = (id, valor) => {
     const el = document.getElementById(id);
-    if (el && el !== document.activeElement) el.value = valor ?? '';
+    if (el && (forzar || el !== document.activeElement)) el.value = valor ?? '';
   };
   DENOMINACIONES_CAJA_CHICA.forEach((d, i) => poner(`denom-caja-cant-${d}`, datos.cajaChica?.[i]));
   DENOMINACIONES_REPORTE.forEach((d, i) => poner(`denom-cant-${d}`, datos.efectivo?.[i]));
@@ -1551,30 +1562,31 @@ function aplicarBorradorAlFormulario(datos) {
   ultimoBorradorJson = JSON.stringify(leerBorradorDelFormulario());
 }
 
-function leerBorradorLocalReporteCaja() {
+function claveBorradorLocal(turno) {
+  return `${CLAVE_BORRADOR_REPORTE_CAJA}_turno${turno}`;
+}
+
+function leerBorradorLocalReporteCaja(turno = turnoBorrador) {
   try {
-    const raw = localStorage.getItem(CLAVE_BORRADOR_REPORTE_CAJA);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // Formato antiguo (solo los datos, sin marca de pendiente).
-    if (!parsed.datos) return { datos: parsed, pendiente: null };
-    return parsed;
+    const raw = localStorage.getItem(claveBorradorLocal(turno));
+    return raw ? JSON.parse(raw) : null;
   } catch (e) { return null; }
 }
 
-function guardarBorradorLocalReporteCaja(datos, pendiente) {
+function guardarBorradorLocalReporteCaja(datos, pendiente, turno = turnoBorrador) {
   try {
-    localStorage.setItem(CLAVE_BORRADOR_REPORTE_CAJA, JSON.stringify({ datos, pendiente }));
+    localStorage.setItem(claveBorradorLocal(turno), JSON.stringify({ datos, pendiente }));
   } catch (e) { /* sin localStorage: igual se sincroniza por servidor */ }
 }
 
 function guardarBorradorReporteCaja() {
+  if (!turnoBorrador) return;
   const datos = leerBorradorDelFormulario();
   const json = JSON.stringify(datos);
   if (json === ultimoBorradorJson) return;
   ultimoBorradorJson = json;
   guardarBorradorLocalReporteCaja(datos, true);
-  borradorPorSubir = datos;
+  borradorPorSubir = { turno: turnoBorrador, datos };
   clearTimeout(temporizadorSubirBorrador);
   temporizadorSubirBorrador = setTimeout(subirBorradorReporteCaja, 600);
 }
@@ -1582,39 +1594,37 @@ function guardarBorradorReporteCaja() {
 async function subirBorradorReporteCaja() {
   clearTimeout(temporizadorSubirBorrador);
   temporizadorSubirBorrador = null;
-  const datos = borradorPorSubir;
-  if (!datos) return;
+  const pendiente = borradorPorSubir;
+  if (!pendiente) return;
   borradorPorSubir = null;
   const { error } = await sb.from('reporte_caja_borrador').upsert({
-    id: 1,
-    datos: { ...datos, dispositivo: ID_DISPOSITIVO_REPORTE },
+    id: Number(pendiente.turno),
+    datos: { ...pendiente.datos, dispositivo: ID_DISPOSITIVO_REPORTE },
     actualizado_en: new Date().toISOString(),
   });
   if (error) { console.error('No se pudo sincronizar el reporte de caja:', error); return; }
-  if (!borradorPorSubir) guardarBorradorLocalReporteCaja(datos, false);
+  if (borradorPorSubir?.turno !== pendiente.turno) guardarBorradorLocalReporteCaja(pendiente.datos, false, pendiente.turno);
 }
 
 async function sincronizarBorradorReporteCaja() {
-  if (temporizadorSubirBorrador) return;
-  const { data, error } = await sb.from('reporte_caja_borrador').select('datos').eq('id', 1).maybeSingle();
-  if (error) return;
-  const remoto = data?.datos && Object.keys(data.datos).length > 0 ? data.datos : null;
+  if (temporizadorSubirBorrador || !turnoBorrador) return;
+  const turno = turnoBorrador;
+  const { data, error } = await sb.from('reporte_caja_borrador').select('datos').eq('id', Number(turno)).maybeSingle();
+  if (error || turno !== turnoBorrador) return;
   const local = leerBorradorLocalReporteCaja();
-  const localPendiente = local && (local.pendiente === true || (local.pendiente === null && !remoto));
-  if (localPendiente) {
-    borradorPorSubir = local.datos;
+  if (local?.pendiente) {
+    borradorPorSubir = { turno, datos: local.datos };
     await subirBorradorReporteCaja();
     return;
   }
-  if (!remoto) return;
-  aplicarBorradorAlFormulario(remoto);
+  aplicarBorradorAlFormulario(data?.datos || {});
   guardarBorradorLocalReporteCaja(leerBorradorDelFormulario(), false);
 }
 
 function recibirBorradorRemotoReporteCaja(payload) {
   const datos = payload.new?.datos;
   if (!reporteCajaInicializado || !datos || datos.dispositivo === ID_DISPOSITIVO_REPORTE) return;
-  if (temporizadorSubirBorrador) return;
+  if (String(payload.new.id) !== turnoBorrador || temporizadorSubirBorrador) return;
   aplicarBorradorAlFormulario(datos);
   guardarBorradorLocalReporteCaja(leerBorradorDelFormulario(), false);
   actualizarReporteCaja();
