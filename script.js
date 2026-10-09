@@ -626,9 +626,22 @@ function actualizarNombreMeseroMesa() {
   const etiqueta = document.getElementById('nombre-mesero-mesa');
   const n = parseInt(document.getElementById('input-mesero-numero').value, 10);
   const nombre = Number.isFinite(n) ? nombreMesero(n) : null;
-  etiqueta.textContent = nombre || (Number.isFinite(n) && meseros.length > 0 ? 'sin registrar' : '');
+  const sinRegistrar = !nombre && Number.isFinite(n) && meseros.length > 0;
+  etiqueta.textContent = nombre ? nombre.slice(0, 3) : (sinRegistrar ? '?' : '');
+  etiqueta.title = nombre || (sinRegistrar ? 'Mesero sin registrar' : '');
   etiqueta.classList.toggle('sin-registrar', !nombre);
 }
+
+function actualizarTiempoMesa() {
+  const el = document.getElementById('tiempo-mesa');
+  const mesa = mesaActiva();
+  if (!el) return;
+  if (!mesa?.abierta_en) { el.textContent = ''; return; }
+  const min = Math.max(0, minutosDesde(mesa.abierta_en));
+  el.textContent = '· ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
+}
+
+setInterval(() => { if (mesaActivaId) actualizarTiempoMesa(); }, 30000);
 
 let itemNotaEditandoId = null;
 
@@ -739,6 +752,7 @@ function renderPedido() {
   const inputMesero = document.getElementById('input-mesero-numero');
   if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';
   actualizarNombreMeseroMesa();
+  actualizarTiempoMesa();
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
   document.getElementById('total-pedido').textContent = formatoMoneda(total);

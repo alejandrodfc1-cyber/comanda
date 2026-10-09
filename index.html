@@ -65,7 +65,7 @@
 
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
       <div class="linea-inicio-mesero">
-        <span>Inicio: <b id="hora-inicio-mesa">—</b></span>
+        <span>Inicio <b id="hora-inicio-mesa">—</b> <b id="tiempo-mesa"></b></span>
         <label><span title="Mesero" class="icono-mesero-mesa">🧑‍🍳</span> <input type="number" inputmode="numeric" min="1" max="99" placeholder="N°" aria-label="Número de mesero" id="input-mesero-numero" class="input-mesero-num" oninput="actualizarNombreMeseroMesa()" onchange="guardarMeseroNumero(this.value)"><span class="nombre-mesero-mesa" id="nombre-mesero-mesa"></span></label>
       </div>
       <div id="lista-pedido"></div>
