@@ -399,8 +399,7 @@ function renderMesas() {
     if (esMesaLenta(mesa, minutosAbierta)) btn.classList.add('mesa-lenta');
     if (minutosAbierta !== null) {
       const tiempoCorto = minutosAbierta >= 60 ? `${Math.floor(minutosAbierta / 60)}h${String(minutosAbierta % 60).padStart(2, '0')}` : `${minutosAbierta}m`;
-      const nombreMeseroGrid = mesa.mesero_numero ? (nombreMesero(mesa.mesero_numero) || '').slice(0, 3) || `#${mesa.mesero_numero}` : '';
-      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}${esMesaLenta(mesa, minutosAbierta) ? ' con poco consumo' : ''}">${tiempoCorto}${nombreMeseroGrid ? ' · ' + nombreMeseroGrid : ''}</span>`;
+      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}${esMesaLenta(mesa, minutosAbierta) ? ' con poco consumo' : ''}">${tiempoCorto}</span>`;
     }
     const badgeTicket = (!esMeseroVista && minutosTicket !== null)
       ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
@@ -643,7 +642,7 @@ function actualizarNombreMeseroMesa() {
   const n = parseInt(document.getElementById('input-mesero-numero').value, 10);
   const nombre = Number.isFinite(n) ? nombreMesero(n) : null;
   const sinRegistrar = !nombre && Number.isFinite(n) && meseros.length > 0;
-  etiqueta.textContent = nombre ? nombre.slice(0, 3) : (sinRegistrar ? '?' : '');
+  etiqueta.textContent = nombre || (sinRegistrar ? '?' : '');
   etiqueta.title = nombre || (sinRegistrar ? 'Mesero sin registrar' : '');
   etiqueta.classList.toggle('sin-registrar', !nombre);
 }
