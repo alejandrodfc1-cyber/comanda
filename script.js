@@ -627,7 +627,7 @@ function agregarPlato(platoId) {
   if (!mesa) return;
   const plato = MENU.find(p => p.id === platoId);
   const item = mesa.pedido.find(i => i.id === platoId);
-  if (mesa.pedido.length === 0 && !mesa.abierta_en) mesa.abierta_en = new Date().toISOString();
+  if (mesa.pedido.length === 0) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
   else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
   limpiarSolicitudCuentaPorCambioPedido(mesa);
