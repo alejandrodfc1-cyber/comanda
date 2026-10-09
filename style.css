@@ -170,6 +170,13 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .numero-mesa { font-size: 2.2rem; font-weight: 800; line-height: 1; }
 .numero-mesa.etiqueta-texto { font-size: 1rem; text-align: center; padding: 0 4px; word-break: break-word; overflow-wrap: anywhere; }
 .mesa small { font-weight: 400; font-size: .8rem; margin-top: 4px; }
+.tiempo-mesa-grid { display: block; font-size: .62rem; font-weight: 600; margin-top: 2px; white-space: nowrap; opacity: .9; }
+.mesa.con-badge-ticket { padding-top: 20px; }
+.mesa.con-badge-ticket .badge-ticket-pendiente { top: 3px; left: 3px; }
+.mesa.con-badge-ticket .numero-mesa { font-size: 1.5rem; }
+.mesa.con-badge-ticket .numero-mesa.etiqueta-texto { font-size: .8rem; }
+.mesa.con-badge-ticket small { margin-top: 1px; }
+.mesa.con-badge-ticket .tiempo-mesa-grid { margin-top: 1px; }
 
 .modal {
   position: fixed; inset: 0;

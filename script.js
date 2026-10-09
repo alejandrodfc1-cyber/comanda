@@ -388,13 +388,22 @@ function renderMesas() {
     const esSoloNumero = /^\d+$/.test(String(etiqueta));
     const claseEtiqueta = mesa.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
     const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
+    const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
+    let lineaTiempo = '';
+    if (minutosAbierta !== null) {
+      const tiempoCorto = minutosAbierta >= 60 ? `${Math.floor(minutosAbierta / 60)}h${String(minutosAbierta % 60).padStart(2, '0')}` : `${minutosAbierta}m`;
+      const nombreMeseroGrid = mesa.mesero_numero ? (nombreMesero(mesa.mesero_numero) || '').slice(0, 3) || `#${mesa.mesero_numero}` : '';
+      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}">${tiempoCorto}${nombreMeseroGrid ? ' · ' + nombreMeseroGrid : ''}</span>`;
+    }
     const badgeTicket = (!esMeseroVista && minutosTicket !== null)
       ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
       : '';
+    if (badgeTicket && minutosAbierta !== null) btn.classList.add('con-badge-ticket');
     btn.innerHTML = (mesa.cuenta_solicitada ? '<span class="badge-pide-cuenta">🔔</span>' : '') +
       badgeTicket +
       `<span class="${claseEtiqueta}">${etiqueta}</span>` +
-      (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>');
+      (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>') +
+      lineaTiempo;
     btn.onclick = () => abrirModalMenu(mesa.id);
     grid.appendChild(btn);
   });
