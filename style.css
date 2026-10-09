@@ -172,8 +172,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .mesa small { font-weight: 400; font-size: .8rem; margin-top: 4px; }
 .tiempo-mesa-grid { display: block; font-size: .62rem; font-weight: 600; margin-top: 2px; white-space: nowrap; opacity: .9; }
 .mesa.mesa-lenta .tiempo-mesa-grid { color: #ffe08a; opacity: 1; }
-#tiempo-mesa { margin-left: 2px; }
-#tiempo-mesa:not(.tiempo-lenta):not(:empty)::before { content: '· '; }
+#tiempo-mesa { margin-left: 4px; }
 .linea-inicio-mesero b.tiempo-lenta {
   background: #ffe08a; color: #6b4300;
   padding: 2px 8px; border-radius: 10px;
