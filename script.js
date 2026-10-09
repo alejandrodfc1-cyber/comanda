@@ -316,6 +316,12 @@ async function cargarMesas() {
 }
 
 const UMBRAL_TICKET_OLVIDADO_MIN = 7;
+const UMBRAL_MESA_LENTA_MIN = 40;
+const UMBRAL_MESA_LENTA_TOTAL = 5000;
+
+function esMesaLenta(mesa, minutosAbierta) {
+  return minutosAbierta !== null && minutosAbierta >= UMBRAL_MESA_LENTA_MIN && totalMesa(mesa) < UMBRAL_MESA_LENTA_TOTAL;
+}
 
 function minutosDesde(fechaIso) {
   return Math.floor((Date.now() - new Date(fechaIso).getTime()) / 60000);
@@ -390,10 +396,11 @@ function renderMesas() {
     const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
     const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
     let lineaTiempo = '';
+    if (esMesaLenta(mesa, minutosAbierta)) btn.classList.add('mesa-lenta');
     if (minutosAbierta !== null) {
       const tiempoCorto = minutosAbierta >= 60 ? `${Math.floor(minutosAbierta / 60)}h${String(minutosAbierta % 60).padStart(2, '0')}` : `${minutosAbierta}m`;
       const nombreMeseroGrid = mesa.mesero_numero ? (nombreMesero(mesa.mesero_numero) || '').slice(0, 3) || `#${mesa.mesero_numero}` : '';
-      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}">${tiempoCorto}${nombreMeseroGrid ? ' · ' + nombreMeseroGrid : ''}</span>`;
+      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}${esMesaLenta(mesa, minutosAbierta) ? ' con poco consumo' : ''}">${tiempoCorto}${nombreMeseroGrid ? ' · ' + nombreMeseroGrid : ''}</span>`;
     }
     const badgeTicket = (!esMeseroVista && minutosTicket !== null)
       ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
@@ -645,8 +652,9 @@ function actualizarTiempoMesa() {
   const el = document.getElementById('tiempo-mesa');
   const mesa = mesaActiva();
   if (!el) return;
-  if (!mesa?.abierta_en) { el.textContent = ''; return; }
+  if (!mesa?.abierta_en) { el.textContent = ''; el.classList.remove('tiempo-lenta'); return; }
   const min = Math.max(0, minutosDesde(mesa.abierta_en));
+  el.classList.toggle('tiempo-lenta', esMesaLenta(mesa, min));
   el.textContent = '· ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
 }
 
