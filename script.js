@@ -734,7 +734,7 @@ function renderPedido() {
     cont.appendChild(el);
   });
   document.getElementById('hora-inicio-mesa').textContent = mesa.abierta_en
-    ? new Date(mesa.abierta_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(mesa.abierta_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
     : '—';
   const inputMesero = document.getElementById('input-mesero-numero');
   if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';

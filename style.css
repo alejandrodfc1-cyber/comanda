@@ -586,14 +586,18 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 }
 .pedido-actual .acciones-modal { margin-top: auto; padding-top: 16px; align-items: flex-end; }
 .linea-inicio-mesero {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: .82rem; color: #7a8794; padding-bottom: 6px;
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  font-size: .82rem; color: #7a8794; padding: 2px 2px 12px;
 }
 .linea-inicio-mesero b { color: #4a5663; font-weight: 600; }
-.nombre-mesero-mesa { margin-left: 6px; color: #4a5663; font-weight: 600; }
+.linea-inicio-mesero label { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.nombre-mesero-mesa {
+  color: #4a5663; font-weight: 600;
+  max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .nombre-mesero-mesa.sin-registrar { color: #b9722a; font-weight: 400; }
 .input-mesero-num {
-  width: 52px; padding: 3px 6px; margin-left: 4px;
+  width: 56px; padding: 4px 6px;
   border: 1px solid #d5dbe1; border-radius: 6px;
   font-size: .85rem; text-align: center; color: #4a5663; background: #fff;
 }
