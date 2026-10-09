@@ -701,7 +701,7 @@ function actualizarTiempoMesa() {
   if (!mesa?.abierta_en) { el.textContent = ''; el.classList.remove('tiempo-lenta'); return; }
   const min = Math.max(0, minutosDesde(mesa.abierta_en));
   el.classList.toggle('tiempo-lenta', esMesaLenta(mesa, min));
-  el.textContent = '⏱ ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
+  el.textContent = (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
 }
 
 setInterval(() => { if (mesaActivaId) actualizarTiempoMesa(); }, 30000);
