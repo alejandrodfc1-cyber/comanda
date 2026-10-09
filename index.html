@@ -64,6 +64,10 @@
     </div>
 
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
+      <div class="linea-inicio-mesero">
+        <span>Inicio: <b id="hora-inicio-mesa">—</b></span>
+        <label>Mesero N° <input type="number" inputmode="numeric" min="1" max="99" id="input-mesero-numero" class="input-mesero-num" onchange="guardarMeseroNumero(this.value)"></label>
+      </div>
       <div id="lista-pedido"></div>
       <div class="resumen-total" id="resumen-total">
         <div class="linea-resumen">Total: <span id="total-pedido">$0</span></div>

@@ -708,6 +708,11 @@ function renderPedido() {
       </div>` : ''}`;
     cont.appendChild(el);
   });
+  document.getElementById('hora-inicio-mesa').textContent = mesa.abierta_en
+    ? new Date(mesa.abierta_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    : '—';
+  const inputMesero = document.getElementById('input-mesero-numero');
+  if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
   document.getElementById('total-pedido').textContent = formatoMoneda(total);
@@ -729,6 +734,18 @@ function renderPedido() {
   btnMostrarTotal.textContent = mesa.total_visible_mesero ? '🙈 Ocultar total al mesero' : '👁️ Mostrar total al mesero';
   actualizarVistaModal();
   renderGaleriaMenu();
+}
+
+async function guardarMeseroNumero(valor) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const n = parseInt(valor, 10);
+  mesa.mesero_numero = Number.isFinite(n) && n > 0 ? n : null;
+  const { error } = await sb.from('mesas').update({ mesero_numero: mesa.mesero_numero }).eq('id', mesa.id);
+  if (error) {
+    console.error(error);
+    alert('No se pudo guardar el número de mesero (problema de conexión). Vuelve a ingresarlo.');
+  }
 }
 
 let cobroEnProceso = false;
@@ -808,7 +825,8 @@ async function cerrarMesa(metodoPago) {
       : null;
 
     const { data: venta, error } = await sb.from('ventas').insert({
-      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago
+      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago,
+      mesero_numero: mesa.mesero_numero ?? null
     }).select().single();
 
     if (error || !venta) {
@@ -828,7 +846,8 @@ async function cerrarMesa(metodoPago) {
     mesa.total_visible_mesero = false;
     mesa.comanda_cocina_enviada = {};
     mesa.ticket_impreso_en = null;
-    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null }).eq('id', mesa.id);
+    mesa.mesero_numero = null;
+    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null, mesero_numero: null }).eq('id', mesa.id);
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
@@ -889,6 +908,7 @@ async function imprimirComandaCocina() {
   t += separador;
   t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
+  if (mesa.mesero_numero) t += `${FUENTE_B}${centrar(`Mesero N° ${mesa.mesero_numero}`)}${FUENTE_A}\n`;
   t += separador;
   itemsCocina.forEach(item => {
     t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
