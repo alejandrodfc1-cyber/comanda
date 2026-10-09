@@ -66,7 +66,7 @@
     <div class="pedido-actual oculto" id="vista-detalle-mesa">
       <div class="linea-inicio-mesero">
         <span>Inicio: <b id="hora-inicio-mesa">—</b></span>
-        <label>Mesero N° <input type="number" inputmode="numeric" min="1" max="99" id="input-mesero-numero" class="input-mesero-num" onchange="guardarMeseroNumero(this.value)"></label>
+        <label>Mesero N° <input type="number" inputmode="numeric" min="1" max="99" id="input-mesero-numero" class="input-mesero-num" oninput="actualizarNombreMeseroMesa()" onchange="guardarMeseroNumero(this.value)"><span class="nombre-mesero-mesa" id="nombre-mesero-mesa"></span></label>
       </div>
       <div id="lista-pedido"></div>
       <div class="resumen-total" id="resumen-total">
@@ -252,6 +252,18 @@
         </div>
       </form>
       <div id="lista-admin-gastos-rapidos" class="con-espacio-fab"></div>
+
+      <h3 class="titulo-form titulo-seccion-nueva">🧑‍🍳 Meseros (quién dicta la comanda)</h3>
+      <p class="texto-ayuda">Cada mesero tiene un número fijo. Al tomar un pedido escribes ese número en la mesa y aparece su nombre para confirmar. Si eliminas a alguien, sus ventas pasadas conservan el número.</p>
+      <form id="form-mesero" class="form-admin">
+        <input type="number" inputmode="numeric" min="1" max="99" id="mesero-form-numero" placeholder="Número (ej: 1)" required>
+        <input type="text" id="mesero-form-nombre" placeholder="Nombre (ej: Pedro)" required>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn" id="btn-guardar-mesero">+ Agregar</button>
+          <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-mesero" onclick="cancelarEdicionMesero()">Cancelar</button>
+        </div>
+      </form>
+      <div id="lista-admin-meseros" class="con-espacio-fab"></div>
     </div>
 
     <div id="seccion-admin-usuarios" class="oculto">

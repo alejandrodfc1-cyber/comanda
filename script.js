@@ -242,11 +242,13 @@ async function crearCuenta() {
 
 let rolUsuario = null;
 let usuarioActualId = null;
+let usuarioActualNombre = null;
 
 async function cargarRolUsuario(userId) {
   usuarioActualId = userId;
-  const { data } = await sb.from('perfiles').select('rol, activo').eq('id', userId).single();
+  const { data } = await sb.from('perfiles').select('rol, activo, email').eq('id', userId).single();
   rolUsuario = data?.rol || 'mesero';
+  usuarioActualNombre = data?.email ? data.email.split('@')[0] : null;
   document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario === 'mesero');
   return data?.activo !== false;
 }
@@ -266,12 +268,13 @@ sb.auth.onAuthStateChange(async (_event, session) => {
     document.getElementById('barra-superior').classList.add('oculto');
     rolUsuario = null;
     usuarioActualId = null;
+    usuarioActualNombre = null;
     return;
   }
   const cuentaActiva = await cargarRolUsuario(session.user.id);
   aplicarEstadoCuenta(cuentaActiva);
   if (cuentaActiva) {
-    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas(); cargarGastosRapidos();
+    cargarMesas(); cargarCategoriasYProductos(); cargarConfiguracion(); cargarNotasRapidas(); cargarGastosRapidos(); cargarMeseros();
   }
 });
 
@@ -605,6 +608,28 @@ async function cargarGastosRapidos() {
   renderMenuGastosRapidos();
 }
 
+let meseros = [];
+
+async function cargarMeseros() {
+  const { data, error } = await sb.from('meseros').select('*').order('numero');
+  if (error) { console.error(error); return; }
+  meseros = data;
+  if (rolUsuario === 'dueno' && seccionActivaDashboard === 'config') renderMeserosAdmin();
+  if (mesaActivaId) actualizarNombreMeseroMesa();
+}
+
+function nombreMesero(numero) {
+  return meseros.find(m => m.numero === numero)?.nombre || null;
+}
+
+function actualizarNombreMeseroMesa() {
+  const etiqueta = document.getElementById('nombre-mesero-mesa');
+  const n = parseInt(document.getElementById('input-mesero-numero').value, 10);
+  const nombre = Number.isFinite(n) ? nombreMesero(n) : null;
+  etiqueta.textContent = nombre || (Number.isFinite(n) && meseros.length > 0 ? 'sin registrar' : '');
+  etiqueta.classList.toggle('sin-registrar', !nombre);
+}
+
 let itemNotaEditandoId = null;
 
 function editarNotaItem(platoId) {
@@ -713,6 +738,7 @@ function renderPedido() {
     : '—';
   const inputMesero = document.getElementById('input-mesero-numero');
   if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';
+  actualizarNombreMeseroMesa();
   const total = totalMesa(mesa);
   const propina = Math.round(total * 0.10);
   document.getElementById('total-pedido').textContent = formatoMoneda(total);
@@ -826,7 +852,7 @@ async function cerrarMesa(metodoPago) {
 
     const { data: venta, error } = await sb.from('ventas').insert({
       mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago,
-      mesero_numero: mesa.mesero_numero ?? null
+      mesero_numero: mesa.mesero_numero ?? null, cobrado_por: usuarioActualNombre
     }).select().single();
 
     if (error || !venta) {
@@ -908,7 +934,10 @@ async function imprimirComandaCocina() {
   t += separador;
   t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
   t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
-  if (mesa.mesero_numero) t += `${FUENTE_B}${centrar(`Mesero N° ${mesa.mesero_numero}`)}${FUENTE_A}\n`;
+  if (mesa.mesero_numero) {
+    const nombreMeseroComanda = nombreMesero(mesa.mesero_numero);
+    t += `${FUENTE_B}${centrar(`Mesero N° ${mesa.mesero_numero}${nombreMeseroComanda ? ' · ' + nombreMeseroComanda : ''}`)}${FUENTE_A}\n`;
+  }
   t += separador;
   itemsCocina.forEach(item => {
     t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
@@ -1161,7 +1190,7 @@ function mostrarSeccionDashboard(seccion) {
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
-  if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); }
+  if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); renderMeserosAdmin(); }
   if (seccion === 'reporte-caja') iniciarReporteCaja();
 }
 
@@ -1226,7 +1255,7 @@ let mapaMesasCache = {};
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
@@ -1435,12 +1464,19 @@ function renderMetricas(ventas, mapaMesas) {
         const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
         const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
         const metodo = etiquetasMetodoHistorial[v.metodo_pago] || 'Sin especificar';
+        const extras = [];
+        if (v.mesero_numero) {
+          const nombre = nombreMesero(v.mesero_numero);
+          extras.push(`Mesero N° ${v.mesero_numero}${nombre ? ' (' + nombre + ')' : ''}`);
+        }
+        if (v.cobrado_por) extras.push(`Cobró: ${v.cobrado_por}`);
         return `
       <div class="fila-admin">
         <span class="miniatura">🧾</span>
         <div class="info-admin">
           <strong>${etiquetaMesa} · ${formatoMoneda(Math.round(Number(v.total)))}</strong>
           <span>${fechaTexto} · ${metodo}</span>
+          ${extras.length ? `<span>${extras.join(' · ')}</span>` : ''}
         </div>
         <div class="acciones-fila-admin">
           <button class="btn-editar-admin" onclick="reimprimirVenta(${v.id})" title="Reimprimir recibo">🖨️</button>
@@ -3281,6 +3317,78 @@ document.getElementById('form-nueva-nota-rapida').addEventListener('submit', asy
   cancelarEdicionNotaRapida();
   await cargarNotasRapidas();
   renderNotasRapidasAdmin();
+});
+
+let meseroEditandoNumero = null;
+
+function renderMeserosAdmin() {
+  const cont = document.getElementById('lista-admin-meseros');
+  if (!cont) return;
+  cont.innerHTML = meseros.length === 0 ? '<p class="texto-vacio">Aún no hay meseros registrados</p>' : '';
+  meseros.forEach(m => {
+    const fila = document.createElement('div');
+    fila.className = 'fila-admin';
+    fila.innerHTML = `
+      <div class="miniatura">${m.numero}</div>
+      <div class="info-admin"><strong>${m.nombre}</strong></div>
+      <div class="acciones-fila-admin">
+        <button class="btn-editar-admin" onclick="editarMeseroAdmin(${m.numero})">✏️</button>
+        <button class="btn-toggle-visible" onclick="eliminarMeseroAdmin(${m.numero})">🗑️</button>
+      </div>`;
+    cont.appendChild(fila);
+  });
+}
+
+function editarMeseroAdmin(numero) {
+  const m = meseros.find(x => x.numero === numero);
+  if (!m) return;
+  meseroEditandoNumero = numero;
+  const inputNumero = document.getElementById('mesero-form-numero');
+  inputNumero.value = m.numero;
+  inputNumero.disabled = true;
+  document.getElementById('mesero-form-nombre').value = m.nombre;
+  document.getElementById('btn-guardar-mesero').textContent = '💾 Guardar cambios';
+  document.getElementById('btn-cancelar-mesero').classList.remove('oculto');
+  document.getElementById('mesero-form-nombre').focus();
+}
+
+function cancelarEdicionMesero() {
+  meseroEditandoNumero = null;
+  const inputNumero = document.getElementById('mesero-form-numero');
+  inputNumero.value = '';
+  inputNumero.disabled = false;
+  document.getElementById('mesero-form-nombre').value = '';
+  document.getElementById('btn-guardar-mesero').textContent = '+ Agregar';
+  document.getElementById('btn-cancelar-mesero').classList.add('oculto');
+}
+
+async function eliminarMeseroAdmin(numero) {
+  const m = meseros.find(x => x.numero === numero);
+  if (!m) return;
+  if (!(await confirmarApp(`¿Eliminar al mesero N° ${m.numero} (${m.nombre})? Sus ventas pasadas conservan el número.`))) return;
+  await sb.from('meseros').delete().eq('numero', numero);
+  if (meseroEditandoNumero === numero) cancelarEdicionMesero();
+  await cargarMeseros();
+}
+
+document.getElementById('form-mesero').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre = document.getElementById('mesero-form-nombre').value.trim();
+  const numero = meseroEditandoNumero ?? parseInt(document.getElementById('mesero-form-numero').value, 10);
+  if (!nombre || !Number.isFinite(numero) || numero < 1) return;
+  let error;
+  if (meseroEditandoNumero) {
+    ({ error } = await sb.from('meseros').update({ nombre }).eq('numero', numero));
+  } else {
+    if (meseros.some(m => m.numero === numero)) {
+      alert(`El número ${numero} ya está asignado a ${nombreMesero(numero)}.`);
+      return;
+    }
+    ({ error } = await sb.from('meseros').insert({ numero, nombre }));
+  }
+  if (error) { console.error(error); alert('No se pudo guardar el mesero (problema de conexión).'); return; }
+  cancelarEdicionMesero();
+  await cargarMeseros();
 });
 
 let gastoRapidoEditandoId = null;
