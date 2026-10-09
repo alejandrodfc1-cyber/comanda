@@ -222,6 +222,21 @@
         </div>
       </form>
 
+      <form id="form-mesa-lenta" class="form-admin">
+        <h3 class="titulo-form">⏱️ Alerta de mesa lenta</h3>
+        <p class="texto-ayuda">Se marca en amarillo el tiempo de una mesa cuando lleva esta cantidad de minutos o más abierta y su consumo todavía es menor al monto indicado. Pon los minutos en 0 para desactivar la alerta.</p>
+        <label class="campo-form">Minutos abierta (o más)
+          <input type="number" inputmode="numeric" min="0" max="600" id="config-mesa-lenta-min">
+        </label>
+        <label class="campo-form">Consumo menor a ($)
+          <input type="number" inputmode="numeric" min="0" step="500" id="config-mesa-lenta-total">
+        </label>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn btn-guardar">Guardar alerta</button>
+          <span id="config-mesa-lenta-msg" class="mensaje-guardado oculto">✓ Guardado</span>
+        </div>
+      </form>
+
       <div class="form-admin">
         <h3 class="titulo-form">🧹 Mantenimiento de fotos</h3>
         <p class="texto-ayuda">Borra fotos de productos que ya no se usan (por ejemplo, versiones viejas al reemplazar una foto) y reduce el tamaño de las que sí están en uso. Se puede ejecutar las veces que quieras, es seguro.</p>

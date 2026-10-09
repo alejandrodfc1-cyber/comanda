@@ -26,10 +26,26 @@ let NOMBRE_APP = 'La Españita';
 let NOMBRE_ICONO = 'Españita';
 let negocioTelefono = '';
 let turnoActivo = '1';
+let UMBRAL_MESA_LENTA_MIN = 40;
+let UMBRAL_MESA_LENTA_TOTAL = 5000;
+
+function aplicarUmbralesMesaLenta(datos) {
+  const min = parseInt(datos.find(d => d.clave === 'mesa_lenta_min')?.valor, 10);
+  const total = parseInt(datos.find(d => d.clave === 'mesa_lenta_total')?.valor, 10);
+  if (Number.isFinite(min) && min >= 0) UMBRAL_MESA_LENTA_MIN = min;
+  if (Number.isFinite(total) && total >= 0) UMBRAL_MESA_LENTA_TOTAL = total;
+  const inputMin = document.getElementById('config-mesa-lenta-min');
+  if (inputMin && document.activeElement !== inputMin) inputMin.value = UMBRAL_MESA_LENTA_MIN;
+  const inputTotal = document.getElementById('config-mesa-lenta-total');
+  if (inputTotal && document.activeElement !== inputTotal) inputTotal.value = UMBRAL_MESA_LENTA_TOTAL;
+  if (mesas.length > 0) renderMesas();
+  if (mesaActivaId) actualizarTiempoMesa();
+}
 
 async function cargarConfiguracion() {
   const { data } = await sb.from('configuracion').select('clave, valor')
-    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono']);
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono', 'mesa_lenta_min', 'mesa_lenta_total']);
+  aplicarUmbralesMesaLenta(data || []);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
@@ -114,6 +130,39 @@ document.getElementById('form-nombre-icono').addEventListener('submit', async (e
   mensaje.classList.remove('mensaje-error', 'oculto');
   setTimeout(() => mensaje.classList.add('oculto'), 2500);
 });
+
+document.getElementById('form-mesa-lenta').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const min = parseInt(document.getElementById('config-mesa-lenta-min').value, 10);
+  const total = parseInt(document.getElementById('config-mesa-lenta-total').value, 10);
+  const mensaje = document.getElementById('config-mesa-lenta-msg');
+  const mostrar = (texto, esError) => {
+    mensaje.textContent = texto;
+    mensaje.classList.toggle('mensaje-error', esError);
+    mensaje.classList.remove('oculto');
+    if (!esError) setTimeout(() => mensaje.classList.add('oculto'), 2500);
+  };
+  if (!Number.isFinite(min) || min < 0 || !Number.isFinite(total) || total < 0) {
+    mostrar('✕ Escribe números válidos (0 o más)', true);
+    return;
+  }
+  const { error } = await sb.from('configuracion').upsert([
+    { clave: 'mesa_lenta_min', valor: String(min) },
+    { clave: 'mesa_lenta_total', valor: String(total) },
+  ], { onConflict: 'clave' });
+  if (error) { mostrar('✕ No se pudo guardar: ' + error.message, true); return; }
+  aplicarUmbralesMesaLenta([{ clave: 'mesa_lenta_min', valor: String(min) }, { clave: 'mesa_lenta_total', valor: String(total) }]);
+  mostrar('✓ Guardado', false);
+});
+
+// Si el dueño cambia los umbrales en otro equipo, este se actualiza solo.
+sb
+  .channel('umbrales-mesa-lenta')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracion' }, (payload) => {
+    const fila = payload.new;
+    if (fila?.clave === 'mesa_lenta_min' || fila?.clave === 'mesa_lenta_total') aplicarUmbralesMesaLenta([fila]);
+  })
+  .subscribe();
 
 function actualizarBotonTurno() {
   const boton = document.getElementById('btn-turno');
@@ -316,11 +365,9 @@ async function cargarMesas() {
 }
 
 const UMBRAL_TICKET_OLVIDADO_MIN = 7;
-const UMBRAL_MESA_LENTA_MIN = 40;
-const UMBRAL_MESA_LENTA_TOTAL = 5000;
 
 function esMesaLenta(mesa, minutosAbierta) {
-  return minutosAbierta !== null && minutosAbierta >= UMBRAL_MESA_LENTA_MIN && totalMesa(mesa) < UMBRAL_MESA_LENTA_TOTAL;
+  return UMBRAL_MESA_LENTA_MIN > 0 && minutosAbierta !== null && minutosAbierta >= UMBRAL_MESA_LENTA_MIN && totalMesa(mesa) < UMBRAL_MESA_LENTA_TOTAL;
 }
 
 function minutosDesde(fechaIso) {
@@ -654,7 +701,7 @@ function actualizarTiempoMesa() {
   if (!mesa?.abierta_en) { el.textContent = ''; el.classList.remove('tiempo-lenta'); return; }
   const min = Math.max(0, minutosDesde(mesa.abierta_en));
   el.classList.toggle('tiempo-lenta', esMesaLenta(mesa, min));
-  el.textContent = '· ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
+  el.textContent = '⏱ ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
 }
 
 setInterval(() => { if (mesaActivaId) actualizarTiempoMesa(); }, 30000);
