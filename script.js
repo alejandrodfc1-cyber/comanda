@@ -465,9 +465,234 @@ function renderMesas() {
 let vistaModal = 'menu';
 let itemExpandidoId = null;
 
-function toggleExpandido(itemId) {
-  itemExpandidoId = itemExpandidoId === itemId ? null : itemId;
+function toggleExpandido(claveItem) {
+  itemExpandidoId = itemExpandidoId === claveItem ? null : claveItem;
   renderPedido();
+}
+
+// ---------- Cuentas por comensal ----------
+// Cada linea del pedido es (producto, comensal); sin comensal = cuenta general de la mesa.
+// comensalActivo: null = "Mesa" (se ve todo y lo que se agrega va a la cuenta general).
+let comensalActivo = null;
+
+const claveLinea = (item) => `${item.id}:${item.comensal || 0}`;
+const comensalDe = (item) => item.comensal || 0;
+
+function lineaPedido(mesa, platoId, comensal) {
+  return mesa.pedido.find(i => i.id === platoId && comensalDe(i) === (comensal || 0));
+}
+
+function comensalesDeMesa(mesa) {
+  const lista = Array.isArray(mesa.comensales) ? mesa.comensales.map(c => ({ ...c })) : [];
+  mesa.pedido.forEach(i => {
+    if (i.comensal && !lista.some(c => c.n === i.comensal)) lista.push({ n: i.comensal, nombre: null });
+  });
+  return lista.sort((a, b) => a.n - b.n);
+}
+
+function nombreCortoComensal(mesa, n) {
+  const c = comensalesDeMesa(mesa).find(c => c.n === n);
+  return c?.nombre || `Comensal ${n}`;
+}
+
+function etiquetaComensal(mesa, n) {
+  const c = comensalesDeMesa(mesa).find(c => c.n === n);
+  return c?.nombre ? `Comensal ${n} · ${c.nombre}` : `Comensal ${n}`;
+}
+
+function itemsDeComensal(mesa, n) {
+  return mesa.pedido.filter(i => comensalDe(i) === n);
+}
+
+function totalDeItems(items) {
+  return items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+}
+
+function escaparHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function guardarComensales(mesa, lista) {
+  mesa.comensales = lista;
+  const { error } = await sb.from('mesas').update({ comensales: lista }).eq('id', mesa.id);
+  if (error) {
+    console.error(error);
+    alert('No se pudo guardar el cambio de comensales (problema de conexión). Vuelve a intentarlo.');
+  }
+}
+
+function seleccionarComensal(n) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  if (n !== null && comensalActivo === n) { abrirModalComensal(n); return; }
+  comensalActivo = n;
+  itemExpandidoId = null;
+  ocultarPanelMetodoPago();
+  renderPedido();
+}
+
+async function agregarComensal() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const lista = comensalesDeMesa(mesa);
+  const siguiente = lista.reduce((max, c) => Math.max(max, c.n), 0) + 1;
+  lista.push({ n: siguiente, nombre: null });
+  comensalActivo = siguiente;
+  itemExpandidoId = null;
+  renderPedido();
+  await guardarComensales(mesa, lista);
+  return siguiente;
+}
+
+async function separarCuentas() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const lista = comensalesDeMesa(mesa);
+  if (lista.length === 0) lista.push({ n: 1, nombre: null }, { n: 2, nombre: null });
+  comensalActivo = lista[0].n;
+  renderPedido();
+  await guardarComensales(mesa, lista);
+}
+
+function renderBarraComensales(mesa) {
+  const barra = document.getElementById('barra-comensales');
+  const lista = comensalesDeMesa(mesa);
+  if (comensalActivo !== null && !lista.some(c => c.n === comensalActivo)) comensalActivo = null;
+  if (lista.length === 0) {
+    barra.innerHTML = `<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()">👥 Separar cuentas por comensal</button>`;
+    return;
+  }
+  const chip = (n, texto, extraClase = '') => `<button type="button" class="chip-comensal ${extraClase} ${comensalActivo === n ? 'activa' : ''}" onclick="seleccionarComensal(${n})">${texto}</button>`;
+  barra.innerHTML = `<div class="fila-chips-comensales">
+    ${chip(null, '🍽️ Mesa', 'chip-mesa')}
+    ${lista.map(c => chip(c.n, `👤 ${escaparHtml(c.nombre || String(c.n))}`)).join('')}
+    <button type="button" class="chip-comensal chip-agregar" onclick="agregarComensal()" title="Agregar comensal">＋</button>
+  </div>
+  <div class="ayuda-comensal">${comensalActivo === null
+    ? 'Lo que agregues va a la cuenta general de la mesa'
+    : `Agregando a <b>${escaparHtml(etiquetaComensal(mesa, comensalActivo))}</b> · tócalo de nuevo para renombrar`}</div>`;
+}
+
+let comensalEditando = null;
+
+function abrirModalComensal(n) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  comensalEditando = n;
+  const c = comensalesDeMesa(mesa).find(c => c.n === n);
+  const tieneItems = itemsDeComensal(mesa, n).length > 0;
+  document.getElementById('comensal-titulo').textContent = `👤 Comensal ${n}`;
+  document.getElementById('campo-nombre-comensal').value = c?.nombre || '';
+  document.getElementById('comensal-ayuda').textContent = tieneItems
+    ? 'Para quitarlo, primero mueve o cobra sus productos.'
+    : '';
+  document.getElementById('btn-quitar-comensal').disabled = tieneItems;
+  document.getElementById('modal-comensal').classList.remove('oculto');
+}
+
+function cerrarModalComensal() {
+  document.getElementById('modal-comensal').classList.add('oculto');
+  comensalEditando = null;
+}
+
+async function guardarNombreComensal() {
+  const mesa = mesaActiva();
+  if (!mesa || comensalEditando === null) return;
+  const nombre = document.getElementById('campo-nombre-comensal').value.trim();
+  const lista = comensalesDeMesa(mesa).map(c => c.n === comensalEditando ? { ...c, nombre: nombre || null } : c);
+  cerrarModalComensal();
+  renderPedido();
+  await guardarComensales(mesa, lista);
+  renderPedido();
+}
+
+async function quitarComensal() {
+  const mesa = mesaActiva();
+  if (!mesa || comensalEditando === null) return;
+  if (itemsDeComensal(mesa, comensalEditando).length > 0) return;
+  const lista = comensalesDeMesa(mesa).filter(c => c.n !== comensalEditando);
+  if (comensalActivo === comensalEditando) comensalActivo = null;
+  cerrarModalComensal();
+  renderPedido();
+  await guardarComensales(mesa, lista);
+  renderPedido();
+}
+
+// Mover un producto (o parte de sus unidades) a otro comensal o a la cuenta general.
+let itemMoviendo = null;
+let cantidadMover = 1;
+
+function abrirModalMover(platoId, comensal) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const item = lineaPedido(mesa, platoId, comensal);
+  if (!item) return;
+  itemMoviendo = { id: platoId, comensal: comensal || 0 };
+  cantidadMover = item.cantidad;
+  document.getElementById('mover-item-titulo').textContent = `👤 Mover "${item.nombre}" a…`;
+  document.getElementById('mover-cantidad-fila').classList.toggle('oculto', item.cantidad <= 1);
+  renderModalMover(mesa, item);
+  document.getElementById('modal-mover-item').classList.remove('oculto');
+}
+
+function renderModalMover(mesa, item) {
+  document.getElementById('mover-cantidad').textContent = cantidadMover;
+  document.getElementById('mover-cantidad-max').textContent = item.cantidad;
+  const origen = comensalDe(item);
+  const destinos = [];
+  if (origen !== 0) destinos.push(`<button type="button" class="btn btn-secundario" onclick="moverItemA(0)">🍽️ Cuenta general de la mesa</button>`);
+  comensalesDeMesa(mesa).filter(c => c.n !== origen).forEach(c => {
+    destinos.push(`<button type="button" class="btn btn-turquesa" onclick="moverItemA(${c.n})">👤 ${escaparHtml(etiquetaComensal(mesa, c.n))}</button>`);
+  });
+  destinos.push(`<button type="button" class="btn" onclick="moverItemA('nuevo')">＋ Nuevo comensal</button>`);
+  document.getElementById('mover-destinos').innerHTML = destinos.join('');
+}
+
+function cambiarCantidadMover(delta) {
+  const mesa = mesaActiva();
+  if (!mesa || !itemMoviendo) return;
+  const item = lineaPedido(mesa, itemMoviendo.id, itemMoviendo.comensal);
+  if (!item) return;
+  cantidadMover = Math.min(item.cantidad, Math.max(1, cantidadMover + delta));
+  renderModalMover(mesa, item);
+}
+
+function cerrarModalMover() {
+  document.getElementById('modal-mover-item').classList.add('oculto');
+  itemMoviendo = null;
+}
+
+async function moverItemA(destino) {
+  const mesa = mesaActiva();
+  if (!mesa || !itemMoviendo) return;
+  const { id, comensal: origen } = itemMoviendo;
+  const item = lineaPedido(mesa, id, origen);
+  if (!item) { cerrarModalMover(); return; }
+  const cantidad = Math.min(cantidadMover, item.cantidad);
+  cerrarModalMover();
+  let hacia = destino;
+  if (destino === 'nuevo') {
+    const actual = comensalActivo;
+    hacia = await agregarComensal();
+    comensalActivo = actual;
+  }
+  item.cantidad -= cantidad;
+  if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i !== item);
+  const enDestino = lineaPedido(mesa, id, hacia);
+  if (enDestino) enDestino.cantidad += cantidad;
+  else {
+    const nuevo = { ...item, cantidad };
+    delete nuevo.comensal;
+    if (hacia) nuevo.comensal = hacia;
+    mesa.pedido.push(nuevo);
+  }
+  itemExpandidoId = null;
+  renderPedido();
+  sincronizarItemPedido(() => sb.rpc('mover_item_pedido', {
+    p_mesa_id: mesa.id, p_item_id: id, p_desde: origen || null, p_hacia: hacia || null, p_cantidad: cantidad,
+  }));
 }
 
 async function pedirCuentaACaja() {
@@ -497,6 +722,7 @@ function abrirModalMenu(mesaId) {
   if (!mesaAbierta) return;
   mesaActivaId = mesaId;
   itemExpandidoId = null;
+  comensalActivo = null;
   categoriaActiva = 'Top20';
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
@@ -565,14 +791,16 @@ function renderGaleriaMenu() {
     ? idsTop20.map(id => MENU.find(p => p.id === id)).filter(Boolean)
     : MENU.filter(p => p.categoria === categoriaActiva);
   platos.forEach(plato => {
-    const enPedido = mesa.pedido.find(i => i.id === plato.id);
+    const cantidadEnPedido = mesa.pedido
+      .filter(i => i.id === plato.id && (comensalActivo === null || comensalDe(i) === comensalActivo))
+      .reduce((s, i) => s + i.cantidad, 0);
     const el = document.createElement('div');
     el.className = 'plato';
     const iconoHtml = plato.foto_url
       ? `<img src="${plato.foto_url}" alt="">`
       : (plato.icono || '🍽️');
     el.innerHTML = `
-      ${enPedido ? `<span class="badge-cantidad">${enPedido.cantidad}</span>` : ''}
+      ${cantidadEnPedido ? `<span class="badge-cantidad">${cantidadEnPedido}</span>` : ''}
       <span class="icono">${iconoHtml}</span>
       <span class="nombre">${plato.nombre}</span>
       <span class="precio">${formatoMoneda(plato.precio)}</span>`;
@@ -626,28 +854,35 @@ function agregarPlato(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
   const plato = MENU.find(p => p.id === platoId);
-  const item = mesa.pedido.find(i => i.id === platoId);
+  const comensal = comensalActivo;
+  const item = lineaPedido(mesa, platoId, comensal);
   if (mesa.pedido.length === 0) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
-  else mesa.pedido.push({ id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 });
+  else {
+    const nuevo = { id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 };
+    if (comensal) nuevo.comensal = comensal;
+    mesa.pedido.push(nuevo);
+  }
   limpiarSolicitudCuentaPorCambioPedido(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('agregar_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: plato.id, p_nombre: plato.nombre,
     p_precio: plato.precio, p_icono: plato.icono || null, p_foto_url: plato.foto_url || null,
+    p_comensal: comensal || null,
   }));
 }
 
-function cambiarCantidad(platoId, delta) {
+function cambiarCantidad(platoId, delta, comensal = 0) {
   const mesa = mesaActiva();
   if (!mesa) return;
-  const item = mesa.pedido.find(i => i.id === platoId);
+  const item = lineaPedido(mesa, platoId, comensal);
+  if (!item) return;
   item.cantidad += delta;
-  if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
+  if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i !== item);
   else if (delta > 0) limpiarSolicitudCuentaPorCambioPedido(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('cambiar_cantidad_item_pedido', {
-    p_mesa_id: mesa.id, p_item_id: platoId, p_delta: delta,
+    p_mesa_id: mesa.id, p_item_id: platoId, p_delta: delta, p_comensal: comensal || null,
   }));
 }
 
@@ -707,13 +942,15 @@ function actualizarTiempoMesa() {
 setInterval(() => { if (mesaActivaId) actualizarTiempoMesa(); }, 30000);
 
 let itemNotaEditandoId = null;
+let itemNotaEditandoComensal = 0;
 
-function editarNotaItem(platoId) {
+function editarNotaItem(platoId, comensal = 0) {
   const mesa = mesaActiva();
   if (!mesa) return;
-  const item = mesa.pedido.find(i => i.id === platoId);
+  const item = lineaPedido(mesa, platoId, comensal);
   if (!item) return;
   itemNotaEditandoId = platoId;
+  itemNotaEditandoComensal = comensal || 0;
   document.getElementById('nota-item-titulo').textContent = `📝 Nota: ${item.nombre}`;
   document.getElementById('chips-notas-rapidas').innerHTML = notasRapidas
     .map(n => `<button type="button" class="chip-nota" onclick="agregarNotaRapida('${n.texto.replace(/'/g, "\\'")}')">${n.texto}</button>`)
@@ -748,30 +985,31 @@ function cerrarModalNota() {
 function guardarNotaItem() {
   const mesa = mesaActiva();
   if (!mesa || itemNotaEditandoId === null) return;
-  const item = mesa.pedido.find(i => i.id === itemNotaEditandoId);
+  const comensal = itemNotaEditandoComensal;
+  const item = lineaPedido(mesa, itemNotaEditandoId, comensal);
   if (!item) return;
   const notaLimpia = document.getElementById('campo-nota-item').value.trim();
   if (notaLimpia) item.nota = notaLimpia;
   else delete item.nota;
   const platoId = itemNotaEditandoId;
   cerrarModalNota();
-  if (itemExpandidoId === platoId) itemExpandidoId = null;
+  if (itemExpandidoId === claveLinea(item)) itemExpandidoId = null;
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('actualizar_nota_item_pedido', {
-    p_mesa_id: mesa.id, p_item_id: platoId, p_nota: notaLimpia || null,
+    p_mesa_id: mesa.id, p_item_id: platoId, p_nota: notaLimpia || null, p_comensal: comensal || null,
   }));
 }
 
-async function eliminarDelPedido(platoId) {
+async function eliminarDelPedido(platoId, comensal = 0) {
   const mesa = mesaActiva();
   if (!mesa) return;
-  const item = mesa.pedido.find(i => i.id === platoId);
+  const item = lineaPedido(mesa, platoId, comensal);
   if (!item) return;
   if (!(await confirmarApp(`¿Quitar "${item.nombre}" del pedido?`))) return;
-  mesa.pedido = mesa.pedido.filter(i => i.id !== platoId);
+  mesa.pedido = mesa.pedido.filter(i => i !== item);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('quitar_item_pedido', {
-    p_mesa_id: mesa.id, p_item_id: platoId,
+    p_mesa_id: mesa.id, p_item_id: platoId, p_comensal: comensal || null,
   }));
 }
 
@@ -780,14 +1018,19 @@ function renderPedido() {
   if (!mesa) return;
   const esMesero = rolUsuario === 'mesero';
   const ocultarMontos = esMesero && !mesa.total_visible_mesero;
+  renderBarraComensales(mesa);
+  const comensales = comensalesDeMesa(mesa);
+  const hayComensales = comensales.length > 0;
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
-  mesa.pedido.forEach(item => {
+  const dibujarItem = (item) => {
     const subtotal = item.precio * item.cantidad;
-    const expandido = item.id === itemExpandidoId;
+    const clave = claveLinea(item);
+    const c = comensalDe(item);
+    const expandido = clave === itemExpandidoId;
     const el = document.createElement('div');
     el.className = 'item-pedido';
-    el.onclick = () => toggleExpandido(item.id);
+    el.onclick = () => toggleExpandido(clave);
     const iconoItemHtml = item.foto_url ? `<img src="${item.foto_url}" alt="">` : (item.icono || '🍽️');
     const detalleTexto = ocultarMontos
       ? `Cantidad: ${item.cantidad}`
@@ -801,14 +1044,38 @@ function renderPedido() {
       </div>
       ${expandido ? `
       <div class="item-acciones" onclick="event.stopPropagation()">
-        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, -1)">−</button>
+        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, -1, ${c})">−</button>
         <span class="item-cantidad-num">${item.cantidad}</span>
-        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1)">+</button>
-        <button class="btn-icono" onclick="editarNotaItem(${item.id})" title="Nota">📝</button>
-        <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id})" title="Quitar">🗑️</button>
+        <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1, ${c})">+</button>
+        <button class="btn-icono" onclick="editarNotaItem(${item.id}, ${c})" title="Nota">📝</button>
+        <button class="btn-icono" onclick="abrirModalMover(${item.id}, ${c})" title="Mover a otro comensal">👤</button>
+        <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id}, ${c})" title="Quitar">🗑️</button>
       </div>` : ''}`;
     cont.appendChild(el);
-  });
+  };
+  const dibujarGrupo = (titulo, items) => {
+    const h = document.createElement('div');
+    h.className = 'grupo-comensal';
+    h.innerHTML = `<span>${titulo}</span>${ocultarMontos ? '' : `<span>${formatoMoneda(totalDeItems(items))}</span>`}`;
+    cont.appendChild(h);
+    items.forEach(dibujarItem);
+  };
+  if (comensalActivo !== null) {
+    const items = itemsDeComensal(mesa, comensalActivo);
+    if (items.length === 0) {
+      cont.innerHTML = `<p class="texto-vacio">${escaparHtml(etiquetaComensal(mesa, comensalActivo))} todavía no tiene productos. Agrégalos desde el Menú, o mueve productos con el botón 👤 de cada uno.</p>`;
+    }
+    items.forEach(dibujarItem);
+  } else if (hayComensales) {
+    const generales = itemsDeComensal(mesa, 0);
+    if (generales.length) dibujarGrupo('🍽️ Sin asignar (cuenta general)', generales);
+    comensales.forEach(c => {
+      const items = itemsDeComensal(mesa, c.n);
+      if (items.length) dibujarGrupo(`👤 ${escaparHtml(etiquetaComensal(mesa, c.n))}`, items);
+    });
+  } else {
+    mesa.pedido.forEach(dibujarItem);
+  }
   document.getElementById('hora-inicio-mesa').textContent = mesa.abierta_en
     ? new Date(mesa.abierta_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
     : '—';
@@ -816,14 +1083,25 @@ function renderPedido() {
   if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';
   actualizarNombreMeseroMesa();
   actualizarTiempoMesa();
-  const total = totalMesa(mesa);
+  const total = comensalActivo !== null ? totalDeItems(itemsDeComensal(mesa, comensalActivo)) : totalMesa(mesa);
   const propina = Math.round(total * 0.10);
   document.getElementById('total-pedido').textContent = formatoMoneda(total);
   document.getElementById('propina-pedido').textContent = formatoMoneda(propina);
   document.getElementById('total-con-propina').textContent = formatoMoneda(total + propina);
+  const resumenDe = document.getElementById('resumen-de');
+  resumenDe.classList.toggle('oculto', !hayComensales);
+  resumenDe.textContent = comensalActivo !== null
+    ? `Cuenta de ${etiquetaComensal(mesa, comensalActivo)}`
+    : 'Cuenta de toda la mesa';
   document.getElementById('resumen-total').classList.toggle('oculto', ocultarMontos);
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
+  document.getElementById('btn-cobrar').textContent = comensalActivo !== null
+    ? `💰 Cobrar a ${nombreCortoComensal(mesa, comensalActivo)}`
+    : '💰 Cobrar';
   document.getElementById('btn-imprimir-ticket').classList.toggle('oculto', esMesero);
+  document.getElementById('btn-imprimir-ticket').textContent = comensalActivo !== null
+    ? `🖨️ Imprimir ticket de ${nombreCortoComensal(mesa, comensalActivo)}`
+    : '🖨️ Imprimir ticket';
   const sinCierreEnCurso = !mesa.cuenta_solicitada && !mesa.total_visible_mesero;
   const hayPendienteCocina = itemsPendientesCocina(mesa).length > 0;
   // "Enviar a cocina" solo depende de si hay algo pendiente -- si piden la
@@ -860,7 +1138,52 @@ function mostrarPanelMetodoPago() {
     alert('La mesa no tiene pedidos.');
     return;
   }
+  if (comensalActivo !== null && itemsDeComensal(mesa, comensalActivo).length === 0) {
+    alert(`${etiquetaComensal(mesa, comensalActivo)} no tiene productos por cobrar.`);
+    return;
+  }
+  document.getElementById('titulo-metodo-pago').textContent = comensalActivo !== null
+    ? `¿Cómo pagó ${nombreCortoComensal(mesa, comensalActivo)}?`
+    : '¿Cómo pagó?';
   document.getElementById('panel-metodo-pago').classList.remove('oculto');
+}
+
+async function cobrarComensal(mesa, n, metodoPago) {
+  const items = itemsDeComensal(mesa, n);
+  if (items.length === 0) return;
+  const etiqueta = etiquetaComensal(mesa, n);
+  const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
+  const quedaAlgo = mesa.pedido.length > items.length;
+  if (!(await confirmarApp(`¿Cobrar a ${etiqueta} (${mesa.nombre || `Mesa ${mesa.id}`}) por ${formatoMoneda(totalDeItems(items))} en ${etiquetaMetodo}?${quedaAlgo ? ' El resto de la mesa sigue abierto.' : ' Es lo último de la mesa: se cierra.'}`))) return;
+
+  ocultarPanelMetodoPago();
+  cobroEnProceso = true;
+  const btnCobrar = document.getElementById('btn-cobrar');
+  if (btnCobrar) { btnCobrar.disabled = true; btnCobrar.textContent = 'Procesando...'; }
+  try {
+    const { data, error } = await sb.rpc('cobrar_comensal', {
+      p_mesa_id: mesa.id, p_comensal: n, p_metodo_pago: metodoPago,
+      p_turno: Number(turnoActivo), p_cobrado_por: usuarioActualNombre, p_etiqueta: etiqueta,
+    });
+    if (error || !data) {
+      console.error(error);
+      alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
+      return;
+    }
+    reproducirSonidoCobro(metodoPago);
+    comensalActivo = null;
+    itemExpandidoId = null;
+    if (data.mesa_cerrada) {
+      cerrarModalMenu();
+      cargarMesas();
+    } else {
+      await cargarMesas();
+    }
+  } finally {
+    cobroEnProceso = false;
+    if (btnCobrar) btnCobrar.disabled = false;
+    renderPedido();
+  }
 }
 
 function ocultarPanelMetodoPago() {
@@ -912,10 +1235,12 @@ async function cerrarMesa(metodoPago) {
     return;
   }
   if (cobroEnProceso) return;
+  if (comensalActivo !== null) { await cobrarComensal(mesa, comensalActivo, metodoPago); return; }
 
   const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
   const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
-  if (!(await confirmarApp(`¿Cobrar ${etiqueta} por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}? Esta acción cierra la mesa.`))) return;
+  const avisoComensales = comensalesDeMesa(mesa).length > 0 ? ' Incluye a todos los comensales.' : '';
+  if (!(await confirmarApp(`¿Cobrar ${etiqueta} completa por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}?${avisoComensales} Esta acción cierra la mesa.`))) return;
 
   ocultarPanelMetodoPago();
   cobroEnProceso = true;
@@ -950,7 +1275,8 @@ async function cerrarMesa(metodoPago) {
     mesa.comanda_cocina_enviada = {};
     mesa.ticket_impreso_en = null;
     mesa.mesero_numero = null;
-    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null, mesero_numero: null }).eq('id', mesa.id);
+    mesa.comensales = [];
+    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null, mesero_numero: null, comensales: [] }).eq('id', mesa.id);
     const mesaLimpiada = await guardarPedido(mesa);
     if (!mesaLimpiada) {
       alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
@@ -965,14 +1291,26 @@ async function cerrarMesa(metodoPago) {
   }
 }
 
+// Cocina trabaja por producto: si el mismo producto esta en varias cuentas de comensal,
+// se suma en una sola linea (con todas sus notas).
+function cantidadesCocinaPorProducto(mesa) {
+  const porProducto = new Map();
+  mesa.pedido.forEach(item => {
+    const producto = MENU.find(p => p.id === item.id);
+    if (producto && producto.prepara_cocina === false) return;
+    const acc = porProducto.get(item.id) || { ...item, cantidad: 0, notas: [] };
+    delete acc.comensal;
+    acc.cantidad += item.cantidad;
+    if (item.nota && !acc.notas.includes(item.nota)) acc.notas.push(item.nota);
+    porProducto.set(item.id, acc);
+  });
+  return [...porProducto.values()].map(({ notas, ...item }) => ({ ...item, nota: notas.join(' / ') || undefined }));
+}
+
 function itemsPendientesCocina(mesa) {
   const yaEnviado = mesa.comanda_cocina_enviada || {};
-  const itemsDeCocina = mesa.pedido.filter(item => {
-    const producto = MENU.find(p => p.id === item.id);
-    return producto ? producto.prepara_cocina !== false : true;
-  });
   // Solo lo nuevo desde el ultimo envio: si ya se mandaron 2 y ahora hay 3, se imprime solo 1.
-  return itemsDeCocina
+  return cantidadesCocinaPorProducto(mesa)
     .map(item => ({ ...item, cantidad: item.cantidad - (yaEnviado[item.id] || 0) }))
     .filter(item => item.cantidad > 0);
 }
@@ -1023,10 +1361,7 @@ async function imprimirComandaCocina() {
   t += separador;
 
   const nuevoEstado = { ...yaEnviado };
-  mesa.pedido.forEach(item => {
-    const producto = MENU.find(p => p.id === item.id);
-    if (producto ? producto.prepara_cocina !== false : true) nuevoEstado[item.id] = item.cantidad;
-  });
+  cantidadesCocinaPorProducto(mesa).forEach(item => { nuevoEstado[item.id] = item.cantidad; });
   mesa.comanda_cocina_enviada = nuevoEstado;
   renderPedido();
   const { error } = await sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
@@ -1038,7 +1373,19 @@ async function imprimirComandaCocina() {
 
 let reciboActual = null;
 
+// En el recibo, el mismo producto repartido entre comensales se muestra en una sola linea.
+function agruparItemsRecibo(items) {
+  const agrupados = [];
+  items.forEach(item => {
+    const igual = agrupados.find(a => a.id === item.id && a.precio === item.precio && (a.nota || '') === (item.nota || ''));
+    if (igual) igual.cantidad += item.cantidad;
+    else agrupados.push({ ...item });
+  });
+  return agrupados;
+}
+
 function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, esReimpresion, esPrevia, metodoPago }) {
+  pedido = agruparItemsRecibo(pedido);
   const propina = Math.round(total * 0.10);
   reciboActual = { pedido: [...pedido], numeroRecibo, fecha, hora, total, propina, etiquetaMesa, esReimpresion, esPrevia, metodoPago };
 
@@ -1093,14 +1440,21 @@ async function mostrarCuentaPrevia() {
     alert('La mesa no tiene pedidos.');
     return;
   }
+  const items = comensalActivo !== null ? itemsDeComensal(mesa, comensalActivo) : mesa.pedido;
+  if (items.length === 0) {
+    alert(`${etiquetaComensal(mesa, comensalActivo)} no tiene productos.`);
+    return;
+  }
   const ahora = new Date();
   renderRecibo({
-    pedido: mesa.pedido,
+    pedido: items,
     numeroRecibo: null,
-    etiquetaMesa: mesa.nombre || mesa.id,
+    etiquetaMesa: comensalActivo !== null
+      ? `${mesa.nombre || mesa.id} · ${nombreCortoComensal(mesa, comensalActivo)}`
+      : (mesa.nombre || mesa.id),
     fecha: ahora.toLocaleDateString('es-CL'),
     hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-    total: totalMesa(mesa),
+    total: totalDeItems(items),
     esPrevia: true,
   });
 
@@ -1120,7 +1474,7 @@ function reimprimirVenta(ventaId) {
   renderRecibo({
     pedido: venta.items || [],
     numeroRecibo: venta.id,
-    etiquetaMesa: mapaMesasCache[venta.mesa_id] || `Mesa ${venta.mesa_id}`,
+    etiquetaMesa: (mapaMesasCache[venta.mesa_id] || `Mesa ${venta.mesa_id}`) + (venta.comensal ? ` · ${venta.comensal}` : ''),
     fecha: fechaVenta.toLocaleDateString('es-CL'),
     hora: fechaVenta.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: Number(venta.total),
@@ -1332,7 +1686,7 @@ let mapaMesasCache = {};
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por, comensal').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
@@ -1539,7 +1893,7 @@ function renderMetricas(ventas, mapaMesas) {
     : recientes.map(v => {
         const fecha = new Date(v.creado_en);
         const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
-        const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
+        const etiquetaMesa = (mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`) + (v.comensal ? ` · 👤 ${escaparHtml(v.comensal)}` : '');
         const metodo = etiquetasMetodoHistorial[v.metodo_pago] || 'Sin especificar';
         const extras = [];
         if (v.mesero_numero) {

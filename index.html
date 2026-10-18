@@ -56,6 +56,7 @@
         <h2 id="titulo-mesa"></h2>
         <button class="btn-cerrar" onclick="cerrarModalMenu()">✕</button>
       </div>
+      <div class="barra-comensales" id="barra-comensales"></div>
       <div class="categoria-tabs" id="tabs-menu"></div>
     </div>
 
@@ -70,6 +71,7 @@
       </div>
       <div id="lista-pedido"></div>
       <div class="resumen-total" id="resumen-total">
+        <div class="resumen-de oculto" id="resumen-de"></div>
         <div class="linea-resumen">Total: <span id="total-pedido">$0</span></div>
         <div class="linea-resumen linea-propina">Propina (10%): <span id="propina-pedido">$0</span></div>
         <div class="linea-resumen linea-total-final">Total + propina: <span id="total-con-propina">$0</span></div>
@@ -86,7 +88,7 @@
         <button class="btn btn-peligro" id="btn-cobrar" onclick="mostrarPanelMetodoPago()">💰 Cobrar</button>
       </div>
       <div class="panel-metodo-pago oculto" id="panel-metodo-pago">
-        <span class="panel-metodo-pago-titulo">¿Cómo pagó?</span>
+        <span class="panel-metodo-pago-titulo" id="titulo-metodo-pago">¿Cómo pagó?</span>
         <div class="fila-metodos-pago">
           <button class="btn-metodo-pago" onclick="cerrarMesa('efectivo')">💵 Efectivo</button>
           <button class="btn-metodo-pago" onclick="cerrarMesa('tarjeta')">💳 Tarjeta</button>
@@ -719,6 +721,40 @@
     <div class="acciones-modal">
       <button class="btn btn-secundario" onclick="cerrarModalNota()">Cancelar</button>
       <button class="btn" onclick="guardarNotaItem()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: mover un producto a otro comensal -->
+<div id="modal-mover-item" class="modal oculto">
+  <div class="modal-caja">
+    <div class="modal-header">
+      <h3 class="titulo-form" id="mover-item-titulo">Mover a…</h3>
+      <button class="btn-cerrar" onclick="cerrarModalMover()">✕</button>
+    </div>
+    <div class="mover-cantidad" id="mover-cantidad-fila">
+      <span>¿Cuántos?</span>
+      <button type="button" class="btn-icono" onclick="cambiarCantidadMover(-1)">−</button>
+      <b id="mover-cantidad">1</b>
+      <span>de <span id="mover-cantidad-max">1</span></span>
+      <button type="button" class="btn-icono" onclick="cambiarCantidadMover(1)">+</button>
+    </div>
+    <div class="mover-destinos" id="mover-destinos"></div>
+  </div>
+</div>
+
+<!-- Modal: renombrar o quitar un comensal -->
+<div id="modal-comensal" class="modal oculto">
+  <div class="modal-caja">
+    <div class="modal-header">
+      <h3 class="titulo-form" id="comensal-titulo">Comensal</h3>
+      <button class="btn-cerrar" onclick="cerrarModalComensal()">✕</button>
+    </div>
+    <input type="text" id="campo-nombre-comensal" class="campo-nota-item" maxlength="20" placeholder="Nombre (opcional)">
+    <p class="texto-ayuda" id="comensal-ayuda"></p>
+    <div class="acciones-modal">
+      <button class="btn btn-peligro" id="btn-quitar-comensal" onclick="quitarComensal()">🗑️ Quitar</button>
+      <button class="btn" onclick="guardarNombreComensal()">💾 Guardar</button>
     </div>
   </div>
 </div>

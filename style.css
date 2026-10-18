@@ -673,6 +673,83 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   padding-top: 6px;
 }
 
+/* Cuentas por comensal */
+.barra-comensales { margin-bottom: 8px; }
+.btn-separar-cuentas {
+  border: 1px dashed #16a085;
+  background: #f0faf7;
+  color: #0e7a63;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fila-chips-comensales {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.chip-comensal {
+  flex-shrink: 0;
+  border: 1.5px solid #16a085;
+  background: #fff;
+  color: #0e7a63;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-comensal.activa { background: #16a085; color: #fff; }
+.chip-comensal.chip-mesa { border-color: #7f8c8d; color: #4d5a5b; }
+.chip-comensal.chip-mesa.activa { background: #4d5a5b; color: #fff; }
+.chip-comensal.chip-agregar { border-style: dashed; padding: 6px 12px; }
+.ayuda-comensal { font-size: .72rem; color: #7a8a8b; margin-top: 4px; }
+.grupo-comensal {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 6px 10px;
+  background: #eef7f4;
+  border-radius: 6px;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #0e7a63;
+}
+.grupo-comensal:first-child { margin-top: 0; }
+.resumen-de {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #0e7a63;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  margin-bottom: 4px;
+}
+.mover-cantidad {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: .95rem;
+}
+.mover-cantidad .btn-icono {
+  width: 34px; height: 34px;
+  border: none;
+  background: #f2f2f2;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mover-destinos { display: flex; flex-direction: column; gap: 8px; }
+.mover-destinos .btn { width: 100%; text-align: left; }
+#btn-quitar-comensal:disabled { opacity: .45; cursor: not-allowed; }
+
 .acciones-modal {
   display: flex; gap: 6px; margin-top: 14px; flex-wrap: nowrap;
 }
