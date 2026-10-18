@@ -69,7 +69,6 @@
         <span>Inicio <b id="hora-inicio-mesa">—</b> <b id="tiempo-mesa"></b></span>
         <label><span title="Mesero" class="icono-mesero-mesa">🧑‍🍳</span> <input type="number" inputmode="numeric" min="1" max="99" placeholder="N°" aria-label="Número de mesero" id="input-mesero-numero" class="input-mesero-num" oninput="actualizarNombreMeseroMesa()" onchange="guardarMeseroNumero(this.value)"><span class="nombre-mesero-mesa" id="nombre-mesero-mesa"></span></label>
       </div>
-      <div class="fila-acciones-mesa" id="fila-acciones-mesa"></div>
       <div id="lista-pedido"></div>
       <div class="resumen-total" id="resumen-total">
         <div class="resumen-de oculto" id="resumen-de"></div>
@@ -83,6 +82,7 @@
       <button class="btn btn-turquesa oculto" id="btn-mostrar-total-mesero" onclick="toggleTotalVisibleMesero()">👁️ Mostrar total al mesero</button>
       <button class="btn btn-cocina" id="btn-comanda-cocina" onclick="imprimirComandaCocina()">🍳 Enviar a cocina</button>
       <button class="btn btn-turquesa oculto" id="btn-imprimir-ticket" onclick="mostrarCuentaPrevia()">🖨️ Imprimir ticket</button>
+      <div class="fila-acciones-mesa" id="fila-acciones-mesa"></div>
       <div class="acciones-modal">
         <button class="btn btn-guardar" onclick="cerrarModalMenu()">💾 Guardar</button>
         <button class="btn btn-turquesa" onclick="alternarVistaModal()">🍽️ Menú</button>

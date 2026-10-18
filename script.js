@@ -1123,8 +1123,9 @@ function renderPedido() {
   document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesa);
   const accionesMesa = [];
   if (mesa.pedido.length > 0) {
-    accionesMesa.push(`<button type="button" class="btn-sub-mesa" onclick="crearSubMesa()">🪑 Otro cliente en esta mesa<small>Abre la ${escaparHtml(nombreSiguienteSubMesa(mesa))} con su propia cuenta</small></button>`);
-    if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()">👥 Dividir esta cuenta por comensal</button>`);
+    const siguiente = nombreSiguienteSubMesa(mesa);
+    accionesMesa.push(`<button type="button" class="btn-sub-mesa" onclick="crearSubMesa()" title="Otro cliente se sienta en esta mesa: abre la ${escaparHtml(siguiente)} con su propia cuenta">🪑 Otro cliente · ${escaparHtml(siguiente.replace(/^Mesa /, ''))}</button>`);
+    if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()" title="Dividir la cuenta de esta mesa por persona">👥 Dividir cuenta</button>`);
   }
   document.getElementById('fila-acciones-mesa').innerHTML = accionesMesa.join('');
   const cont = document.getElementById('lista-pedido');
