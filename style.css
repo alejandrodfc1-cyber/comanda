@@ -168,6 +168,33 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 }
 .badge-tickets-olvidados { background: #e74c3c; }
 .numero-mesa { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+.numero-mesa.con-letra:not(.etiqueta-texto) { font-size: 1.6rem; white-space: nowrap; }
+.mesa.sub-mesa { outline: 2px dashed rgba(255,255,255,.85); outline-offset: -5px; }
+
+/* Mesa partida en su mismo cuadro (sub-mesas) */
+.mesa-dividida {
+  aspect-ratio: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+}
+.mesa.mesa-mini {
+  aspect-ratio: auto;
+  min-height: 0;
+  padding: 0 2px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.mesa.mesa-mini.sub-mesa { outline-offset: -3px; outline-width: 1.5px; }
+.mesa-dividida .mesa-mini .numero-mesa,
+.mesa-dividida .mesa-mini .numero-mesa.con-letra:not(.etiqueta-texto) { font-size: .85rem; }
+.mesa-dividida .mesa-mini .numero-mesa.etiqueta-texto { font-size: .7rem; }
+.mesa-dividida .mesa-mini small { font-size: .55rem; margin-top: 1px; }
+.mesa-dividida .mesa-mini .tiempo-mesa-grid,
+.mesa-dividida .mesa-mini .badge-ticket-pendiente { display: none; }
+.mesa-dividida .mesa-mini .badge-pide-cuenta { top: 1px; right: 2px; font-size: .7rem; }
 .numero-mesa.etiqueta-texto { font-size: 1rem; text-align: center; padding: 0 4px; word-break: break-word; overflow-wrap: anywhere; }
 .mesa small { font-weight: 400; font-size: .8rem; margin-top: 4px; }
 .tiempo-mesa-grid { display: block; font-size: .62rem; font-weight: 600; margin-top: 2px; white-space: nowrap; opacity: .9; }
@@ -673,8 +700,28 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   padding-top: 6px;
 }
 
-/* Cuentas por comensal */
+/* Sub-mesas y cuentas por comensal */
+.fila-acciones-mesa { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.fila-acciones-mesa:empty { display: none; }
+.btn-sub-mesa {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  border: 2px solid #2980b9;
+  background: #eef6fc;
+  color: #1f6391;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.btn-sub-mesa small { font-size: .74rem; font-weight: 500; color: #4a7ea3; margin-top: 2px; }
+.fila-acciones-mesa .btn-separar-cuentas { align-self: flex-start; }
 .barra-comensales { margin-bottom: 8px; }
+.barra-comensales:empty { display: none; }
 .btn-separar-cuentas {
   border: 1px dashed #16a085;
   background: #f0faf7;

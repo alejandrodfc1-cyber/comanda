@@ -346,7 +346,7 @@ async function cargarMesas() {
   const teniaPedidoAntes = !!mesaAntes && mesaAntes.pedido.length > 0;
   const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden');
   if (error) { console.error(error); return; }
-  mesas = data;
+  mesas = ordenarConSubMesas(data);
   if (mesaActivaId && !mesaActiva()) {
     cerrarModalMenu();
   } else if (mesaActivaId) {
@@ -427,39 +427,135 @@ function formatoDuracion(minutos) {
   return horas > 0 ? `${horas} h ${mins} min` : `${mins} min`;
 }
 
+// ---------- Sub-mesas ----------
+// Clientes independientes que comparten una mesa fisica: la mesa principal es la "A"
+// (solo se nota cuando existe una sub-mesa) y las demas son filas propias (3-B, 3-C...),
+// enlazadas por mesa_padre_id, que se crean al llegar otro cliente y se borran al cobrarlas.
+function subMesasDe(mesaId) {
+  return mesas.filter(m => m.mesa_padre_id === mesaId);
+}
+
+function mesaPrincipalDe(mesa) {
+  return mesa.mesa_padre_id ? (mesas.find(m => m.id === mesa.mesa_padre_id) || null) : mesa;
+}
+
+function etiquetaCortaMesa(mesa) {
+  const principal = mesaPrincipalDe(mesa);
+  const base = principal ? (principal.nombre || principal.id) : mesa.mesa_padre_id;
+  if (mesa.mesa_padre_id) return `${base}-${mesa.sub_letra}`;
+  return subMesasDe(mesa.id).length ? `${base}-A` : String(base);
+}
+
+function nombreMesaVisible(mesa) {
+  const principal = mesaPrincipalDe(mesa);
+  const corta = etiquetaCortaMesa(mesa);
+  return principal?.nombre ? corta : `Mesa ${corta}`;
+}
+
+function etiquetaSubMesaParaVenta(mesa) {
+  return (mesa.mesa_padre_id || subMesasDe(mesa.id).length) ? nombreMesaVisible(mesa) : null;
+}
+
+function nombreSiguienteSubMesa(mesa) {
+  const principal = mesaPrincipalDe(mesa) || mesa;
+  const usadas = subMesasDe(principal.id).map(m => m.sub_letra);
+  const letra = 'BCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(l => !usadas.includes(l)) || '?';
+  const base = principal.nombre || principal.id;
+  return principal.nombre ? `${base}-${letra}` : `Mesa ${base}-${letra}`;
+}
+
+function ordenarConSubMesas(lista) {
+  const principales = lista.filter(m => !m.mesa_padre_id);
+  const resultado = [];
+  principales.forEach(p => {
+    resultado.push(p);
+    lista.filter(m => m.mesa_padre_id === p.id)
+      .sort((a, b) => a.sub_letra.localeCompare(b.sub_letra))
+      .forEach(s => resultado.push(s));
+  });
+  lista.filter(m => m.mesa_padre_id && !principales.some(p => p.id === m.mesa_padre_id)).forEach(s => resultado.push(s));
+  return resultado;
+}
+
+let creandoSubMesa = false;
+
+async function crearSubMesa() {
+  const mesa = mesaActiva();
+  if (!mesa || creandoSubMesa) return;
+  creandoSubMesa = true;
+  try {
+    const { data, error } = await sb.rpc('crear_sub_mesa', { p_mesa_id: mesa.id });
+    if (error || !data) {
+      console.error(error);
+      alert('No se pudo abrir la sub-mesa (problema de conexión). Intenta de nuevo.');
+      return;
+    }
+    await cargarMesas();
+    abrirModalMenu(data.id);
+  } finally {
+    creandoSubMesa = false;
+  }
+}
+
+async function eliminarSubMesaVacia(mesaId) {
+  const { error } = await sb.rpc('eliminar_sub_mesa_vacia', { p_mesa_id: mesaId });
+  if (error) console.error('No se pudo borrar la sub-mesa vacía:', error);
+  cargarMesas();
+}
+
+// La columna derecha de la grilla son los puestos de la barra (YO, E, Poste...), asi que las
+// sub-mesas no se intercalan: la tarjeta de la mesa se parte en 2x2 dentro de su mismo cuadro
+// (3-A, 3-B, 3-C...), aunque sobren cuadritos, para que nada se corra de lugar.
 function renderMesas() {
   const grid = document.getElementById('grid-mesas');
   grid.innerHTML = '';
-  const esMeseroVista = rolUsuario === 'mesero';
-  mesas.forEach(mesa => {
-    const ocupada = mesa.pedido.length > 0;
-    const btn = document.createElement('button');
-    const minutosTicket = mesa.ticket_impreso_en ? minutosDesde(mesa.ticket_impreso_en) : null;
-    const ticketOlvidado = minutosTicket !== null && minutosTicket >= UMBRAL_TICKET_OLVIDADO_MIN;
-    btn.className = 'mesa' + (ocupada ? ' ocupada' : '') + (mesa.cuenta_solicitada ? ' pide-cuenta' : '') + (ticketOlvidado && !esMeseroVista ? ' ticket-olvidado' : '');
-    const etiqueta = mesa.nombre || mesa.id;
-    const esSoloNumero = /^\d+$/.test(String(etiqueta));
-    const claseEtiqueta = mesa.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa';
-    const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
-    const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
-    let lineaTiempo = '';
-    if (esMesaLenta(mesa, minutosAbierta)) btn.classList.add('mesa-lenta');
-    if (minutosAbierta !== null) {
-      const tiempoCorto = minutosAbierta >= 60 ? `${Math.floor(minutosAbierta / 60)}h${String(minutosAbierta % 60).padStart(2, '0')}` : `${minutosAbierta}m`;
-      lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}${esMesaLenta(mesa, minutosAbierta) ? ' con poco consumo' : ''}">${tiempoCorto}</span>`;
-    }
-    const badgeTicket = (!esMeseroVista && minutosTicket !== null)
-      ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
-      : '';
-    if (badgeTicket && minutosAbierta !== null) btn.classList.add('con-badge-ticket');
-    btn.innerHTML = (mesa.cuenta_solicitada ? '<span class="badge-pide-cuenta">🔔</span>' : '') +
-      badgeTicket +
-      `<span class="${claseEtiqueta}">${etiqueta}</span>` +
-      (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>') +
-      lineaTiempo;
-    btn.onclick = () => abrirModalMenu(mesa.id);
-    grid.appendChild(btn);
+  const principales = mesas.filter(m => !m.mesa_padre_id);
+  principales.forEach(p => {
+    const subs = subMesasDe(p.id).sort((a, b) => a.sub_letra.localeCompare(b.sub_letra));
+    if (!subs.length) { grid.appendChild(crearTarjetaMesa(p)); return; }
+    const celda = document.createElement('div');
+    celda.className = 'mesa-dividida';
+    [p, ...subs].forEach(m => {
+      const mini = crearTarjetaMesa(m);
+      mini.classList.add('mesa-mini');
+      celda.appendChild(mini);
+    });
+    grid.appendChild(celda);
   });
+  mesas.filter(m => m.mesa_padre_id && !principales.some(p => p.id === m.mesa_padre_id))
+    .forEach(s => grid.appendChild(crearTarjetaMesa(s)));
+}
+
+function crearTarjetaMesa(mesa) {
+  const esMeseroVista = rolUsuario === 'mesero';
+  const ocupada = mesa.pedido.length > 0;
+  const btn = document.createElement('button');
+  const minutosTicket = mesa.ticket_impreso_en ? minutosDesde(mesa.ticket_impreso_en) : null;
+  const ticketOlvidado = minutosTicket !== null && minutosTicket >= UMBRAL_TICKET_OLVIDADO_MIN;
+  btn.className = 'mesa' + (ocupada ? ' ocupada' : '') + (mesa.cuenta_solicitada ? ' pide-cuenta' : '') + (ticketOlvidado && !esMeseroVista ? ' ticket-olvidado' : '') + (mesa.mesa_padre_id ? ' sub-mesa' : '');
+  const etiqueta = etiquetaCortaMesa(mesa);
+  const principal = mesaPrincipalDe(mesa);
+  const esSoloNumero = /^\d+(-[A-Z])?$/.test(String(etiqueta));
+  const claseEtiqueta = (principal?.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa') + (/-[A-Z]$/.test(etiqueta) ? ' con-letra' : '');
+  const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
+  const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
+  let lineaTiempo = '';
+  if (esMesaLenta(mesa, minutosAbierta)) btn.classList.add('mesa-lenta');
+  if (minutosAbierta !== null) {
+    const tiempoCorto = minutosAbierta >= 60 ? `${Math.floor(minutosAbierta / 60)}h${String(minutosAbierta % 60).padStart(2, '0')}` : `${minutosAbierta}m`;
+    lineaTiempo = `<span class="tiempo-mesa-grid" title="Abierta hace ${formatoDuracion(minutosAbierta)}${esMesaLenta(mesa, minutosAbierta) ? ' con poco consumo' : ''}">${tiempoCorto}</span>`;
+  }
+  const badgeTicket = (!esMeseroVista && minutosTicket !== null)
+    ? `<span class="badge-ticket-pendiente${ticketOlvidado ? ' alerta' : ''}" title="Se imprimió el ticket hace ${minutosTicket} min y la mesa sigue sin cerrarse">${ticketOlvidado ? '⏰' : '🎫'} ${minutosTicket}m</span>`
+    : '';
+  if (badgeTicket && minutosAbierta !== null) btn.classList.add('con-badge-ticket');
+  btn.innerHTML = (mesa.cuenta_solicitada ? '<span class="badge-pide-cuenta">🔔</span>' : '') +
+    badgeTicket +
+    `<span class="${claseEtiqueta}">${etiqueta}</span>` +
+    (ocupada ? `<small>${detalleOcupada}</small>` : '<small>Libre</small>') +
+    lineaTiempo;
+  btn.onclick = () => abrirModalMenu(mesa.id);
+  return btn;
 }
 
 let vistaModal = 'menu';
@@ -561,7 +657,7 @@ function renderBarraComensales(mesa) {
   const lista = comensalesDeMesa(mesa);
   if (comensalActivo !== null && !lista.some(c => c.n === comensalActivo)) comensalActivo = null;
   if (lista.length === 0) {
-    barra.innerHTML = `<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()">👥 Separar cuentas por comensal</button>`;
+    barra.innerHTML = '';
     return;
   }
   const chip = (n, texto, extraClase = '') => `<button type="button" class="chip-comensal ${extraClase} ${comensalActivo === n ? 'activa' : ''}" onclick="seleccionarComensal(${n})">${texto}</button>`;
@@ -725,7 +821,7 @@ function abrirModalMenu(mesaId) {
   comensalActivo = null;
   categoriaActiva = 'Top20';
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
-  document.getElementById('titulo-mesa').textContent = mesaAbierta.nombre || `Mesa ${mesaId}`;
+  document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesaAbierta);
   if (USAR_TOP20_AUTOMATICO) cargarTop20Automatico().then(renderGaleriaMenu);
   renderListaMenu();
   renderPedido();
@@ -737,9 +833,12 @@ function abrirModalMenu(mesaId) {
 }
 
 function cerrarModalMenu() {
+  const mesa = mesaActivaId ? mesaActiva() : null;
   document.getElementById('modal-menu').classList.add('oculto');
   mesaActivaId = null;
   window.scrollTo(0, 0);
+  // Una sub-mesa que se cierra sin productos (abierta por error, o recien cobrada) se borra.
+  if (mesa?.mesa_padre_id && mesa.pedido.length === 0) eliminarSubMesaVacia(mesa.id);
 }
 
 function alternarVistaModal() {
@@ -1021,6 +1120,13 @@ function renderPedido() {
   renderBarraComensales(mesa);
   const comensales = comensalesDeMesa(mesa);
   const hayComensales = comensales.length > 0;
+  document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesa);
+  const accionesMesa = [];
+  if (mesa.pedido.length > 0) {
+    accionesMesa.push(`<button type="button" class="btn-sub-mesa" onclick="crearSubMesa()">🪑 Otro cliente en esta mesa<small>Abre la ${escaparHtml(nombreSiguienteSubMesa(mesa))} con su propia cuenta</small></button>`);
+    if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()">👥 Dividir esta cuenta por comensal</button>`);
+  }
+  document.getElementById('fila-acciones-mesa').innerHTML = accionesMesa.join('');
   const cont = document.getElementById('lista-pedido');
   cont.innerHTML = '';
   const dibujarItem = (item) => {
@@ -1154,7 +1260,7 @@ async function cobrarComensal(mesa, n, metodoPago) {
   const etiqueta = etiquetaComensal(mesa, n);
   const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
   const quedaAlgo = mesa.pedido.length > items.length;
-  if (!(await confirmarApp(`¿Cobrar a ${etiqueta} (${mesa.nombre || `Mesa ${mesa.id}`}) por ${formatoMoneda(totalDeItems(items))} en ${etiquetaMetodo}?${quedaAlgo ? ' El resto de la mesa sigue abierto.' : ' Es lo último de la mesa: se cierra.'}`))) return;
+  if (!(await confirmarApp(`¿Cobrar a ${etiqueta} (${nombreMesaVisible(mesa)}) por ${formatoMoneda(totalDeItems(items))} en ${etiquetaMetodo}?${quedaAlgo ? ' El resto de la mesa sigue abierto.' : ' Es lo último de la mesa: se cierra.'}`))) return;
 
   ocultarPanelMetodoPago();
   cobroEnProceso = true;
@@ -1164,6 +1270,7 @@ async function cobrarComensal(mesa, n, metodoPago) {
     const { data, error } = await sb.rpc('cobrar_comensal', {
       p_mesa_id: mesa.id, p_comensal: n, p_metodo_pago: metodoPago,
       p_turno: Number(turnoActivo), p_cobrado_por: usuarioActualNombre, p_etiqueta: etiqueta,
+      p_sub_mesa: etiquetaSubMesaParaVenta(mesa),
     });
     if (error || !data) {
       console.error(error);
@@ -1237,7 +1344,7 @@ async function cerrarMesa(metodoPago) {
   if (cobroEnProceso) return;
   if (comensalActivo !== null) { await cobrarComensal(mesa, comensalActivo, metodoPago); return; }
 
-  const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
+  const etiqueta = nombreMesaVisible(mesa);
   const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
   const avisoComensales = comensalesDeMesa(mesa).length > 0 ? ' Incluye a todos los comensales.' : '';
   if (!(await confirmarApp(`¿Cobrar ${etiqueta} completa por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}?${avisoComensales} Esta acción cierra la mesa.`))) return;
@@ -1253,8 +1360,8 @@ async function cerrarMesa(metodoPago) {
       : null;
 
     const { data: venta, error } = await sb.from('ventas').insert({
-      mesa_id: mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago,
-      mesero_numero: mesa.mesero_numero ?? null, cobrado_por: usuarioActualNombre
+      mesa_id: mesa.mesa_padre_id ?? mesa.id, items: mesa.pedido, total: totalMesa(mesa), duracion_minutos: duracionMinutos, turno: Number(turnoActivo), metodo_pago: metodoPago,
+      mesero_numero: mesa.mesero_numero ?? null, cobrado_por: usuarioActualNombre, sub_mesa: etiquetaSubMesaParaVenta(mesa)
     }).select().single();
 
     if (error || !venta) {
@@ -1334,7 +1441,7 @@ async function imprimirComandaCocina() {
   }
   const ahora = new Date();
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const etiqueta = mesa.nombre || `Mesa ${mesa.id}`;
+  const etiqueta = nombreMesaVisible(mesa);
 
   const ANCHO = 32;
   const centrar = (linea) => {
@@ -1426,7 +1533,7 @@ function mostrarRecibo(mesa, numeroRecibo) {
   renderRecibo({
     pedido: mesa.pedido,
     numeroRecibo,
-    etiquetaMesa: mesa.nombre || mesa.id,
+    etiquetaMesa: etiquetaCortaMesa(mesa),
     fecha: ahora.toLocaleDateString('es-CL'),
     hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: totalMesa(mesa),
@@ -1450,8 +1557,8 @@ async function mostrarCuentaPrevia() {
     pedido: items,
     numeroRecibo: null,
     etiquetaMesa: comensalActivo !== null
-      ? `${mesa.nombre || mesa.id} · ${nombreCortoComensal(mesa, comensalActivo)}`
-      : (mesa.nombre || mesa.id),
+      ? `${etiquetaCortaMesa(mesa)} · ${nombreCortoComensal(mesa, comensalActivo)}`
+      : etiquetaCortaMesa(mesa),
     fecha: ahora.toLocaleDateString('es-CL'),
     hora: ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: totalDeItems(items),
@@ -1474,7 +1581,7 @@ function reimprimirVenta(ventaId) {
   renderRecibo({
     pedido: venta.items || [],
     numeroRecibo: venta.id,
-    etiquetaMesa: (mapaMesasCache[venta.mesa_id] || `Mesa ${venta.mesa_id}`) + (venta.comensal ? ` · ${venta.comensal}` : ''),
+    etiquetaMesa: (venta.sub_mesa || mapaMesasCache[venta.mesa_id] || `Mesa ${venta.mesa_id}`) + (venta.comensal ? ` · ${venta.comensal}` : ''),
     fecha: fechaVenta.toLocaleDateString('es-CL'),
     hora: fechaVenta.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
     total: Number(venta.total),
@@ -1686,7 +1793,7 @@ let mapaMesasCache = {};
 
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por, comensal').order('creado_en', { ascending: true });
+  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por, comensal, sub_mesa').order('creado_en', { ascending: true });
   if (desde) query = query.gte('creado_en', desde.toISOString());
   if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
   const [{ data }, { data: mesasData }] = await Promise.all([
@@ -1893,7 +2000,7 @@ function renderMetricas(ventas, mapaMesas) {
     : recientes.map(v => {
         const fecha = new Date(v.creado_en);
         const fechaTexto = `${fecha.toLocaleDateString('es-CL')} · ${fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
-        const etiquetaMesa = (mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`) + (v.comensal ? ` · 👤 ${escaparHtml(v.comensal)}` : '');
+        const etiquetaMesa = escaparHtml(v.sub_mesa || mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`) + (v.comensal ? ` · 👤 ${escaparHtml(v.comensal)}` : '');
         const metodo = etiquetasMetodoHistorial[v.metodo_pago] || 'Sin especificar';
         const extras = [];
         if (v.mesero_numero) {
@@ -2525,7 +2632,7 @@ let mesasAdminCache = [];
 let mesaEditandoId = null;
 
 async function cargarMesasAdmin() {
-  const { data } = await sb.from('mesas').select('*').order('orden');
+  const { data } = await sb.from('mesas').select('*').is('mesa_padre_id', null).order('orden');
   mesasAdminCache = data || [];
   renderMesasAdmin();
 }
