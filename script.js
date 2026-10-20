@@ -1810,17 +1810,39 @@ function inicioPeriodo(periodo) {
 let ventasCache = [];
 let mapaMesasCache = {};
 
+const FILAS_POR_PAGINA = 1000;
+
+// Supabase entrega como maximo ~1000 filas por consulta: sin paginar, los reportes de
+// periodos largos se quedaban con las ventas mas antiguas y perdian las recientes.
+// La consulta debe venir ordenada de forma estable (creado_en, id).
+async function traerTodasLasFilas(armarConsulta) {
+  const filas = [];
+  for (;;) {
+    const { data, error } = await armarConsulta().range(filas.length, filas.length + FILAS_POR_PAGINA - 1);
+    if (error) { console.error(error); return null; }
+    if (!data || data.length === 0) return filas;
+    filas.push(...data);
+  }
+}
+
+function fechaLocalStr(fecha) {
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+}
+
 async function cargarMetricas() {
   const desde = inicioPeriodo(periodoMetricas);
-  let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por, comensal, sub_mesa').order('creado_en', { ascending: true });
-  if (desde) query = query.gte('creado_en', desde.toISOString());
-  if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
-  const [{ data }, { data: mesasData }] = await Promise.all([
-    query,
+  const [filas, { data: mesasData }] = await Promise.all([
+    traerTodasLasFilas(() => {
+      let query = sb.from('ventas').select('id, mesa_id, items, total, creado_en, duracion_minutos, metodo_pago, mesero_numero, cobrado_por, comensal, sub_mesa')
+        .order('creado_en', { ascending: true }).order('id', { ascending: true });
+      if (desde) query = query.gte('creado_en', desde.toISOString());
+      if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
+      return query;
+    }),
     sb.from('mesas').select('id, nombre'),
   ]);
   const mapaMesas = Object.fromEntries((mesasData || []).map(m => [m.id, m.nombre || `Mesa ${m.id}`]));
-  renderMetricas(data || [], mapaMesas);
+  renderMetricas(filas || [], mapaMesas);
 }
 
 function toggleColapso(contenidoId, tituloEl) {
@@ -1858,7 +1880,7 @@ function renderMetricas(ventas, mapaMesas) {
 
     const fecha = new Date(v.creado_en);
     const diaSemana = fecha.getDay();
-    const fechaStr = v.creado_en.slice(0, 10);
+    const fechaStr = fechaLocalStr(fecha);
     if (!tallyDiaSemana[diaSemana]) tallyDiaSemana[diaSemana] = { total: 0, fechas: new Set() };
     tallyDiaSemana[diaSemana].total += Number(v.total);
     tallyDiaSemana[diaSemana].fechas.add(fechaStr);
@@ -1988,7 +2010,7 @@ function renderMetricas(ventas, mapaMesas) {
 
   const tallyDias = {};
   ventas.forEach(v => {
-    const dia = v.creado_en.slice(0, 10);
+    const dia = fechaLocalStr(new Date(v.creado_en));
     tallyDias[dia] = (tallyDias[dia] || 0) + Number(v.total);
   });
   const dias = Object.entries(tallyDias).sort((a, b) => a[0].localeCompare(b[0])).slice(-14);
@@ -2059,10 +2081,21 @@ async function cargarComparativas() {
   const mesAnteriorFin = new Date(ahora.getFullYear(), ahora.getMonth() - 1, Math.min(diaDelMes, ultimoDiaMesAnterior) + 1);
 
   const desde = mesAnteriorIni < semanaAnteriorIni ? mesAnteriorIni : semanaAnteriorIni;
-  let query = sb.from('ventas').select('items, total, creado_en').gte('creado_en', desde.toISOString());
-  if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
-  const { data } = await query;
-  const ventas = data || [];
+  const [filasTotales, filasHoy] = await Promise.all([
+    traerTodasLasFilas(() => {
+      let query = sb.from('ventas').select('id, total, creado_en').gte('creado_en', desde.toISOString())
+        .order('creado_en', { ascending: true }).order('id', { ascending: true });
+      if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
+      return query;
+    }),
+    traerTodasLasFilas(() => {
+      let query = sb.from('ventas').select('id, items, creado_en').gte('creado_en', hoyIni.toISOString())
+        .order('creado_en', { ascending: true }).order('id', { ascending: true });
+      if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
+      return query;
+    }),
+  ]);
+  const ventas = filasTotales || [];
 
   const sumaEntre = (ini, fin) => ventas
     .filter(v => { const t = new Date(v.creado_en); return t >= ini && (!fin || t < fin); })
@@ -2083,7 +2116,7 @@ async function cargarComparativas() {
     { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
   ]);
 
-  const ventasHoy = ventas.filter(v => new Date(v.creado_en) >= hoyIni);
+  const ventasHoy = filasHoy || [];
   const tallyHoy = {};
   ventasHoy.forEach(v => (v.items || []).forEach(it => { tallyHoy[it.nombre] = (tallyHoy[it.nombre] || 0) + it.cantidad; }));
   const rankingHoy = Object.entries(tallyHoy).sort((a, b) => b[1] - a[1]);
