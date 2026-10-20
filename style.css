@@ -315,17 +315,19 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 }
 #modal-menu .modal-header h2::before {
   content: '';
-  width: 8px;
-  height: 8px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: #fff;
+  background: #ffe94d;
+  border: 2px solid #fff;
   flex-shrink: 0;
-  animation: pulso-mesa-activa 1.8s ease-out infinite;
+  animation: pulso-mesa-activa 1.2s ease-out infinite;
 }
 @keyframes pulso-mesa-activa {
-  0% { box-shadow: 0 0 0 0 rgba(255,255,255,.65); }
-  70% { box-shadow: 0 0 0 9px rgba(255,255,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  0% { box-shadow: 0 0 0 0 rgba(255,233,77,.95); transform: scale(1); }
+  35% { transform: scale(1.25); }
+  70% { box-shadow: 0 0 0 13px rgba(255,233,77,0); transform: scale(1); }
+  100% { box-shadow: 0 0 0 0 rgba(255,233,77,0); transform: scale(1); }
 }
 #modal-menu .btn-cerrar {
   position: absolute;

@@ -1319,28 +1319,35 @@ function reproducirSonidoCobro(metodoPago) {
     const ctx = contextoAudioCobro;
     if (ctx.state === 'suspended') ctx.resume();
 
-    // Cada metodo tiene su propio patron para reconocerlo sin mirar la pantalla.
+    // Cada metodo tiene su propio patron para reconocerlo sin mirar la pantalla. El local es
+    // ruidoso: onda cuadrada, tonos agudos (1-2.6 kHz, donde el oido es mas sensible), volumen
+    // al maximo sostenido en cada nota y el patron repetido dos veces.
     const patrones = {
-      efectivo: [{ freq: 523, dur: 0.09 }, { freq: 659, dur: 0.09 }, { freq: 784, dur: 0.2 }],
-      tarjeta: [{ freq: 880, dur: 0.11 }, { freq: 1318, dur: 0.22 }],
-      transferencia: [{ freq: 700, dur: 0.08 }, { freq: 700, dur: 0.08, espera: 0.05 }],
+      efectivo: [{ freq: 1047, dur: 0.12 }, { freq: 1319, dur: 0.12 }, { freq: 1568, dur: 0.28 }],
+      tarjeta: [{ freq: 1760, dur: 0.15 }, { freq: 2637, dur: 0.3 }],
+      transferencia: [{ freq: 1400, dur: 0.12 }, { freq: 1400, dur: 0.12, espera: 0.07 }],
     };
     const notas = patrones[metodoPago] || patrones.efectivo;
-    let inicio = ctx.currentTime;
-    notas.forEach(nota => {
-      inicio += nota.espera || 0;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = nota.freq;
-      gain.gain.setValueAtTime(0.85, inicio);
-      gain.gain.exponentialRampToValueAtTime(0.001, inicio + nota.dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(inicio);
-      osc.stop(inicio + nota.dur + 0.02);
-      inicio += nota.dur;
-    });
+    let inicio = ctx.currentTime + 0.02;
+    for (let repeticion = 0; repeticion < 2; repeticion++) {
+      notas.forEach(nota => {
+        inicio += nota.espera || 0;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = nota.freq;
+        gain.gain.setValueAtTime(0, inicio);
+        gain.gain.linearRampToValueAtTime(1, inicio + 0.005);
+        gain.gain.setValueAtTime(1, inicio + nota.dur * 0.8);
+        gain.gain.linearRampToValueAtTime(0, inicio + nota.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(inicio);
+        osc.stop(inicio + nota.dur + 0.02);
+        inicio += nota.dur;
+      });
+      inicio += 0.15;
+    }
   } catch (e) {
     // Sonido no disponible en este navegador/dispositivo -- no debe interrumpir el cobro.
   }
