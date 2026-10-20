@@ -292,12 +292,15 @@ async function crearCuenta() {
 let rolUsuario = null;
 let usuarioActualId = null;
 let usuarioActualNombre = null;
+// Mesero de la lista asociado a la cuenta que inicio sesion (Admin -> Usuarios).
+let miMeseroNumero = null;
 
 async function cargarRolUsuario(userId) {
   usuarioActualId = userId;
-  const { data } = await sb.from('perfiles').select('rol, activo, email').eq('id', userId).single();
+  const { data } = await sb.from('perfiles').select('rol, activo, email, mesero_numero').eq('id', userId).single();
   rolUsuario = data?.rol || 'mesero';
   usuarioActualNombre = data?.email ? data.email.split('@')[0] : null;
+  miMeseroNumero = data?.mesero_numero ?? null;
   document.getElementById('btn-admin-dashboard').classList.toggle('oculto', rolUsuario === 'mesero');
   return data?.activo !== false;
 }
@@ -318,6 +321,7 @@ sb.auth.onAuthStateChange(async (_event, session) => {
     rolUsuario = null;
     usuarioActualId = null;
     usuarioActualNombre = null;
+    miMeseroNumero = null;
     return;
   }
   const cuentaActiva = await cargarRolUsuario(session.user.id);
@@ -962,6 +966,11 @@ function agregarPlato(platoId) {
     if (comensal) nuevo.comensal = comensal;
     mesa.pedido.push(nuevo);
   }
+  if (!mesa.mesero_numero && miMeseroNumero) {
+    mesa.mesero_numero = miMeseroNumero;
+    sb.from('mesas').update({ mesero_numero: miMeseroNumero }).eq('id', mesa.id)
+      .then(({ error }) => { if (error) console.error('No se pudo asignar el mesero a la mesa:', error); });
+  }
   limpiarSolicitudCuentaPorCambioPedido(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('agregar_item_pedido', {
@@ -1187,7 +1196,9 @@ function renderPedido() {
     ? new Date(mesa.abierta_en).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
     : '—';
   const inputMesero = document.getElementById('input-mesero-numero');
-  if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? '';
+  // Mesa sin mesero: se muestra la mesera de esta cuenta (queda asignada al agregar el primer producto).
+  if (document.activeElement !== inputMesero) inputMesero.value = mesa.mesero_numero ?? miMeseroNumero ?? '';
+  inputMesero.readOnly = rolUsuario === 'mesero' && miMeseroNumero !== null;
   actualizarNombreMeseroMesa();
   actualizarTiempoMesa();
   const total = comensalActivo !== null ? totalDeItems(itemsDeComensal(mesa, comensalActivo)) : totalMesa(mesa);
@@ -2898,12 +2909,18 @@ function renderUsuariosAdmin() {
     : lista.map(u => {
       const esUnoMismo = u.id === usuarioActualId;
       const pendiente = !u.activo;
+      const opcionesMesero = `<option value="">Sin mesero asociado</option>` + meseros
+        .map(m => `<option value="${m.numero}" ${u.mesero_numero === m.numero ? 'selected' : ''}>N° ${m.numero} · ${escaparHtml(m.nombre)}</option>`)
+        .join('');
       return `
       <div class="fila-admin${pendiente ? ' fila-usuario-pendiente' : ''}">
         <div class="miniatura">${pendiente ? '⏳' : (ICONO_ROL[u.rol] || '👤')}</div>
         <div class="info-admin">
           <strong>${u.email || '(sin correo)'}</strong>
           <span>${pendiente ? '<span class="texto-stock-agotado">Pendiente de activar</span>' : (ETIQUETAS_ROL[u.rol] || u.rol)}${esUnoMismo ? ' · Tu cuenta' : ''}</span>
+          <label class="fila-mesero-usuario" title="Mesero de la lista que usa esta cuenta: su nombre aparece en el detalle de la mesa y las mesas que abre quedan a su nombre">🧑‍🍳
+            <select class="selector-mesero-usuario" onchange="asociarMeseroAUsuario('${u.id}', this.value)">${opcionesMesero}</select>
+          </label>
         </div>
         <div class="acciones-fila-admin">
           ${pendiente ? `<button class="btn-editar-admin" onclick="activarUsuario('${u.id}')" title="Activar cuenta">✅</button>` : ''}
@@ -2933,6 +2950,14 @@ async function desactivarUsuario(id) {
   if (!(await confirmarApp(`¿Desactivar la cuenta de "${usuario.email}"? No va a poder usar la app hasta que la vuelvas a activar.`))) return;
   const { error } = await sb.from('perfiles').update({ activo: false }).eq('id', id);
   if (error) { alert('No se pudo desactivar: ' + error.message); return; }
+  await cargarUsuariosAdmin();
+}
+
+async function asociarMeseroAUsuario(id, valor) {
+  const numero = valor ? Number(valor) : null;
+  const { error } = await sb.from('perfiles').update({ mesero_numero: numero }).eq('id', id);
+  if (error) { alert('No se pudo asociar el mesero: ' + error.message); return; }
+  if (id === usuarioActualId) miMeseroNumero = numero;
   await cargarUsuariosAdmin();
 }
 

@@ -354,11 +354,13 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .fab-detalle-carrito {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 172px;
+  gap: 8px;
+  min-width: 150px;
   justify-content: center;
-  padding: 15px 22px;
-  font-size: 1rem;
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  right: 16px;
+  padding: 11px 18px;
+  font-size: .92rem;
   font-weight: 700;
   letter-spacing: .2px;
   background: linear-gradient(135deg, #2ecc71, #1e8449);
@@ -368,9 +370,9 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   background: #fff;
   color: #1e8449;
   font-weight: 800;
-  font-size: .85rem;
-  min-width: 24px;
-  height: 24px;
+  font-size: .8rem;
+  min-width: 22px;
+  height: 22px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -1210,6 +1212,17 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   background: #fff;
 }
 .selector-rol-usuario:disabled { opacity: .5; background: #f0f0f0; }
+.fila-mesero-usuario { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: .85rem; }
+.selector-mesero-usuario {
+  padding: 4px 6px;
+  border: 1px solid #d8dcdf;
+  border-radius: 6px;
+  font-size: .78rem;
+  color: #2c3e50;
+  background: #fff;
+  max-width: 190px;
+}
+.input-mesero-num[readonly] { background: #f4f6f8; color: #2c3e50; font-weight: 700; }
 .btn-toggle-cocina {
   border: 1px solid #d8dcdf;
   background: #eceff1;
