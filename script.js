@@ -1862,6 +1862,7 @@ let ventasCache = [];
 let mapaMesasCache = {};
 
 const FILAS_POR_PAGINA = 1000;
+const DURACION_MAXIMA_MESA_MIN = 300;
 
 // Supabase entrega como maximo ~1000 filas por consulta: sin paginar, los reportes de
 // periodos largos se quedaban con las ventas mas antiguas y perdian las recientes.
@@ -1910,7 +1911,8 @@ function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
   const nVentas = ventas.length;
   const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
 
-  const duraciones = ventas.filter(v => !idsParaLlevar.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0);
+  // Mesas abiertas mas de 5 horas se consideran olvidadas (error de uso) y no entran al promedio.
+  const duraciones = ventas.filter(v => !idsParaLlevar.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0 && d <= DURACION_MAXIMA_MESA_MIN);
   const duracionPromedio = duraciones.length > 0 ? duraciones.reduce((s, d) => s + d, 0) / duraciones.length : null;
 
   const mapaProductos = Object.fromEntries(MENU.map(p => [p.id, p]));
