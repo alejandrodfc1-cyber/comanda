@@ -240,6 +240,21 @@
         </div>
       </form>
 
+      <form id="form-envases" class="form-admin">
+        <h3 class="titulo-form">🥡 Envases para llevar</h3>
+        <p class="texto-ayuda">Solo en la mesa marcada "para llevar": cada completo o sándwich suma este valor a su precio. Qué productos cobran envase se define en la ficha de cada producto.</p>
+        <label class="campo-form">Envase de completos ($)
+          <input type="number" inputmode="numeric" min="0" step="50" id="config-envase-completo">
+        </label>
+        <label class="campo-form">Envase de sándwiches ($)
+          <input type="number" inputmode="numeric" min="0" step="50" id="config-envase-sandwich">
+        </label>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn btn-guardar">Guardar envases</button>
+          <span id="config-envases-msg" class="mensaje-guardado oculto">✓ Guardado</span>
+        </div>
+      </form>
+
       <div class="form-admin">
         <h3 class="titulo-form">🧹 Mantenimiento de fotos</h3>
         <p class="texto-ayuda">Borra fotos de productos que ya no se usan (por ejemplo, versiones viejas al reemplazar una foto) y reduce el tamaño de las que sí están en uso. Se puede ejecutar las veces que quieras, es seguro.</p>
@@ -299,6 +314,10 @@
         <label class="campo-form">Nombre de la mesa
           <input type="text" id="nueva-mesa-nombre" placeholder="Opcional: temporada, cliente...">
         </label>
+        <label class="campo-checkbox-form">
+          <input type="checkbox" id="nueva-mesa-llevar">
+          🥡 Mesa para llevar (cobra envase y no cuenta en los promedios de mesa)
+        </label>
         <div class="fila-botones-form">
           <button type="submit" class="btn" id="btn-guardar-mesa">+ Agregar mesa</button>
           <button type="button" class="btn btn-secundario oculto" id="btn-cancelar-mesa" onclick="cancelarEdicionMesa()">Cancelar</button>
@@ -321,6 +340,13 @@
         <label class="campo-checkbox-form">
           <input type="checkbox" id="nuevo-producto-cocina" checked>
           🍳 Se prepara en cocina (aparece en "Enviar a cocina")
+        </label>
+        <label class="campo-form">🥡 Envase en la mesa para llevar
+          <select id="nuevo-producto-envase">
+            <option value="">Sin envase</option>
+            <option value="completo">Completo (suma el envase de completos)</option>
+            <option value="sandwich">Sándwich (suma el envase de sándwiches)</option>
+          </select>
         </label>
         <div class="fila-campos-form">
           <label class="campo-form">💵 Costo

@@ -28,6 +28,29 @@ let negocioTelefono = '';
 let turnoActivo = '1';
 let UMBRAL_MESA_LENTA_MIN = 40;
 let UMBRAL_MESA_LENTA_TOTAL = 5000;
+let ENVASE_COMPLETO = 100;
+let ENVASE_SANDWICH = 200;
+
+function aplicarEnvases(datos) {
+  const completo = parseInt(datos.find(d => d.clave === 'envase_completo')?.valor, 10);
+  const sandwich = parseInt(datos.find(d => d.clave === 'envase_sandwich')?.valor, 10);
+  if (Number.isFinite(completo) && completo >= 0) ENVASE_COMPLETO = completo;
+  if (Number.isFinite(sandwich) && sandwich >= 0) ENVASE_SANDWICH = sandwich;
+  const inputCompleto = document.getElementById('config-envase-completo');
+  if (inputCompleto && document.activeElement !== inputCompleto) inputCompleto.value = ENVASE_COMPLETO;
+  const inputSandwich = document.getElementById('config-envase-sandwich');
+  if (inputSandwich && document.activeElement !== inputSandwich) inputSandwich.value = ENVASE_SANDWICH;
+  if (mesaActivaId) renderGaleriaMenu();
+}
+
+// En una mesa "para llevar" los completos y sandwiches suman el valor del envase al precio.
+function precioEnMesa(plato, mesa) {
+  const precio = Number(plato.precio);
+  if (!mesa?.para_llevar) return precio;
+  if (plato.tipo_envase === 'completo') return precio + ENVASE_COMPLETO;
+  if (plato.tipo_envase === 'sandwich') return precio + ENVASE_SANDWICH;
+  return precio;
+}
 
 function aplicarUmbralesMesaLenta(datos) {
   const min = parseInt(datos.find(d => d.clave === 'mesa_lenta_min')?.valor, 10);
@@ -44,8 +67,9 @@ function aplicarUmbralesMesaLenta(datos) {
 
 async function cargarConfiguracion() {
   const { data } = await sb.from('configuracion').select('clave, valor')
-    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono', 'mesa_lenta_min', 'mesa_lenta_total']);
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono', 'mesa_lenta_min', 'mesa_lenta_total', 'envase_completo', 'envase_sandwich']);
   aplicarUmbralesMesaLenta(data || []);
+  aplicarEnvases(data || []);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
@@ -155,12 +179,37 @@ document.getElementById('form-mesa-lenta').addEventListener('submit', async (e) 
   mostrar('✓ Guardado', false);
 });
 
+document.getElementById('form-envases')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const completo = parseInt(document.getElementById('config-envase-completo').value, 10);
+  const sandwich = parseInt(document.getElementById('config-envase-sandwich').value, 10);
+  const mensaje = document.getElementById('config-envases-msg');
+  const mostrar = (texto, esError) => {
+    mensaje.textContent = texto;
+    mensaje.classList.toggle('mensaje-error', esError);
+    mensaje.classList.remove('oculto');
+    if (!esError) setTimeout(() => mensaje.classList.add('oculto'), 2500);
+  };
+  if (!Number.isFinite(completo) || completo < 0 || !Number.isFinite(sandwich) || sandwich < 0) {
+    mostrar('✕ Escribe números válidos (0 o más)', true);
+    return;
+  }
+  const { error } = await sb.from('configuracion').upsert([
+    { clave: 'envase_completo', valor: String(completo) },
+    { clave: 'envase_sandwich', valor: String(sandwich) },
+  ], { onConflict: 'clave' });
+  if (error) { mostrar('✕ No se pudo guardar: ' + error.message, true); return; }
+  aplicarEnvases([{ clave: 'envase_completo', valor: String(completo) }, { clave: 'envase_sandwich', valor: String(sandwich) }]);
+  mostrar('✓ Guardado', false);
+});
+
 // Si el dueño cambia los umbrales en otro equipo, este se actualiza solo.
 sb
   .channel('umbrales-mesa-lenta')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracion' }, (payload) => {
     const fila = payload.new;
     if (fila?.clave === 'mesa_lenta_min' || fila?.clave === 'mesa_lenta_total') aplicarUmbralesMesaLenta([fila]);
+    if (fila?.clave === 'envase_completo' || fila?.clave === 'envase_sandwich') aplicarEnvases([fila]);
   })
   .subscribe();
 
@@ -236,6 +285,7 @@ async function cargarCategoriasYProductos() {
     foto_url: p.foto_url,
     categoria: mapaCategorias[p.categoria_id],
     prepara_cocina: p.prepara_cocina,
+    tipo_envase: p.tipo_envase,
   }));
 
   TOP20_IDS = (productos || [])
@@ -906,7 +956,7 @@ function renderGaleriaMenu() {
       ${cantidadEnPedido ? `<span class="badge-cantidad">${cantidadEnPedido}</span>` : ''}
       <span class="icono">${iconoHtml}</span>
       <span class="nombre">${plato.nombre}</span>
-      <span class="precio">${formatoMoneda(plato.precio)}</span>`;
+      <span class="precio">${formatoMoneda(precioEnMesa(plato, mesa))}</span>`;
     el.onclick = () => agregarPlato(plato.id);
     galeria.appendChild(el);
   });
@@ -957,12 +1007,13 @@ function agregarPlato(platoId) {
   const mesa = mesaActiva();
   if (!mesa) return;
   const plato = MENU.find(p => p.id === platoId);
+  const precio = precioEnMesa(plato, mesa);
   const comensal = comensalActivo;
   const item = lineaPedido(mesa, platoId, comensal);
   if (mesa.pedido.length === 0) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
   else {
-    const nuevo = { id: plato.id, nombre: plato.nombre, precio: plato.precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 };
+    const nuevo = { id: plato.id, nombre: plato.nombre, precio, icono: plato.icono, foto_url: plato.foto_url, cantidad: 1 };
     if (comensal) nuevo.comensal = comensal;
     mesa.pedido.push(nuevo);
   }
@@ -975,7 +1026,7 @@ function agregarPlato(platoId) {
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('agregar_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: plato.id, p_nombre: plato.nombre,
-    p_precio: plato.precio, p_icono: plato.icono || null, p_foto_url: plato.foto_url || null,
+    p_precio: precio, p_icono: plato.icono || null, p_foto_url: plato.foto_url || null,
     p_comensal: comensal || null,
   }));
 }
@@ -1839,10 +1890,11 @@ async function cargarMetricas() {
       if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
       return query;
     }),
-    sb.from('mesas').select('id, nombre'),
+    sb.from('mesas').select('id, nombre, para_llevar'),
   ]);
   const mapaMesas = Object.fromEntries((mesasData || []).map(m => [m.id, m.nombre || `Mesa ${m.id}`]));
-  renderMetricas(filas || [], mapaMesas);
+  const idsParaLlevar = new Set((mesasData || []).filter(m => m.para_llevar).map(m => m.id));
+  renderMetricas(filas || [], mapaMesas, idsParaLlevar);
 }
 
 function toggleColapso(contenidoId, tituloEl) {
@@ -1851,12 +1903,14 @@ function toggleColapso(contenidoId, tituloEl) {
   tituloEl.classList.toggle('expandido', !colapsado);
 }
 
-function renderMetricas(ventas, mapaMesas) {
+// idsParaLlevar: las mesas para llevar siguen contando en todos los totales, pero no en
+// el tiempo promedio por mesa ni en el ranking de mesas.
+function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
   const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
 
-  const duraciones = ventas.map(v => v.duracion_minutos).filter(d => d != null && d >= 0);
+  const duraciones = ventas.filter(v => !idsParaLlevar.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0);
   const duracionPromedio = duraciones.length > 0 ? duraciones.reduce((s, d) => s + d, 0) / duraciones.length : null;
 
   const mapaProductos = Object.fromEntries(MENU.map(p => [p.id, p]));
@@ -1870,9 +1924,11 @@ function renderMetricas(ventas, mapaMesas) {
 
   ventas.forEach(v => {
     const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
-    if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
-    tallyMesas[v.mesa_id].veces += 1;
-    tallyMesas[v.mesa_id].monto += Number(v.total);
+    if (!idsParaLlevar.has(v.mesa_id)) {
+      if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
+      tallyMesas[v.mesa_id].veces += 1;
+      tallyMesas[v.mesa_id].monto += Number(v.total);
+    }
 
     const etiquetasMetodoReporte = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
     const metodoPago = etiquetasMetodoReporte[v.metodo_pago] || 'Sin especificar';
@@ -2776,6 +2832,7 @@ function editarMesa(id) {
   if (!mesa) return;
   mesaEditandoId = id;
   document.getElementById('nueva-mesa-nombre').value = mesa.nombre || '';
+  document.getElementById('nueva-mesa-llevar').checked = !!mesa.para_llevar;
   document.getElementById('titulo-form-mesa').textContent = `Editando: ${mesa.nombre || `Mesa ${mesa.id}`}`;
   document.getElementById('btn-guardar-mesa').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-mesa').classList.remove('oculto');
@@ -2786,6 +2843,7 @@ function editarMesa(id) {
 function cancelarEdicionMesa() {
   mesaEditandoId = null;
   document.getElementById('nueva-mesa-nombre').value = '';
+  document.getElementById('nueva-mesa-llevar').checked = false;
   document.getElementById('titulo-form-mesa').textContent = 'Nueva mesa';
   document.getElementById('btn-guardar-mesa').textContent = '+ Agregar mesa';
   document.getElementById('btn-cancelar-mesa').classList.add('oculto');
@@ -2795,12 +2853,13 @@ document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) 
   e.preventDefault();
   const nombreInput = document.getElementById('nueva-mesa-nombre');
   const nombre = nombreInput.value.trim() || null;
+  const paraLlevar = document.getElementById('nueva-mesa-llevar').checked;
 
   if (mesaEditandoId) {
-    await sb.from('mesas').update({ nombre }).eq('id', mesaEditandoId);
+    await sb.from('mesas').update({ nombre, para_llevar: paraLlevar }).eq('id', mesaEditandoId);
   } else {
     const siguienteOrden = Math.max(0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
-    await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden });
+    await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden, para_llevar: paraLlevar });
   }
   cancelarEdicionMesa();
   cargarMesas();
@@ -3378,6 +3437,7 @@ function editarProducto(id) {
   document.getElementById('nuevo-producto-nombre').value = p.nombre;
   document.getElementById('nuevo-producto-categoria').value = p.categoria_id;
   document.getElementById('nuevo-producto-cocina').checked = p.prepara_cocina !== false;
+  document.getElementById('nuevo-producto-envase').value = p.tipo_envase || '';
   document.getElementById('nuevo-producto-costo').value = p.costo ? Number(p.costo).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-precio').value = p.precio ? Number(p.precio).toLocaleString('es-CO') : '';
   document.getElementById('nuevo-producto-inventario').value = p.inventario;
@@ -3740,6 +3800,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
 
   const datos = {
     nombre, categoria_id: categoriaId, costo, precio, inventario, foto_url: fotoUrl, prepara_cocina: preparaCocina,
+    tipo_envase: document.getElementById('nuevo-producto-envase').value || null,
     controla_stock: controlaStock, insumo_id: insumoId, consumo_insumo: consumoInsumo,
   };
   if (productoEditandoId) {
