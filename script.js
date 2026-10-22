@@ -2917,6 +2917,7 @@ function filaProductoAdminHtml(p) {
     <div class="acciones-fila-admin">
       <button class="btn-editar-admin" onclick="editarProducto(${p.id})">✏️</button>
       <button class="btn-toggle-cocina${p.prepara_cocina ? ' activo' : ''}" onclick="toggleCocinaProducto(${p.id}, ${p.prepara_cocina})" title="${p.prepara_cocina ? 'Va a cocina' : 'No va a cocina'}">🍳</button>
+      <button class="btn-toggle-envase${p.tipo_envase ? ' activo' : ''}" onclick="rotarEnvaseProducto(${p.id})" title="${textoEnvaseProducto(p.tipo_envase)}">🥡${p.tipo_envase ? ' ' + formatoMoneda(p.tipo_envase === 'completo' ? ENVASE_COMPLETO : ENVASE_SANDWICH) : ''}</button>
       <button class="btn-toggle-visible" onclick="toggleVisibleProducto(${p.id}, ${p.visible})">${p.visible ? '👁️ Visible' : '🚫 Oculto'}</button>
       <button class="btn-toggle-visible" onclick="eliminarProducto(${p.id})">🗑️</button>
     </div>`;
@@ -2969,6 +2970,27 @@ function renderProductosAdmin(lista) {
 async function toggleVisibleProducto(id, actual) {
   await sb.from('productos').update({ visible: !actual }).eq('id', id);
   cargarProductosAdmin();
+}
+
+function textoEnvaseProducto(tipo) {
+  if (tipo === 'completo') return `Cobra envase de completo (${formatoMoneda(ENVASE_COMPLETO)}) en la mesa para llevar. Toca para cambiar`;
+  if (tipo === 'sandwich') return `Cobra envase de sándwich (${formatoMoneda(ENVASE_SANDWICH)}) en la mesa para llevar. Toca para cambiar`;
+  return 'Sin envase en la mesa para llevar. Toca para cambiar';
+}
+
+async function rotarEnvaseProducto(id) {
+  const p = productosAdminCache.find(x => x.id === id);
+  if (!p) return;
+  const nuevo = p.tipo_envase === 'completo' ? 'sandwich' : (p.tipo_envase === 'sandwich' ? null : 'completo');
+  const { error } = await sb.from('productos').update({ tipo_envase: nuevo }).eq('id', id);
+  if (error) {
+    console.error(error);
+    alert('No se pudo cambiar el envase (problema de conexión).');
+    return;
+  }
+  p.tipo_envase = nuevo;
+  renderProductosAdmin(filtrarProductosAdmin());
+  cargarCategoriasYProductos();
 }
 
 async function toggleCocinaProducto(id, actual) {

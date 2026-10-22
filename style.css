@@ -1243,6 +1243,24 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   opacity: 1;
   filter: none;
 }
+.btn-toggle-envase {
+  border: 1px solid #d8dcdf;
+  background: #eceff1;
+  color: #8a949c;
+  border-radius: 6px;
+  padding: 6px 9px;
+  cursor: pointer;
+  font-size: .85rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.btn-toggle-envase:not(.activo) { opacity: .5; filter: grayscale(1); }
+.btn-toggle-envase.activo {
+  background: #bfe8d9;
+  border-color: #8fd1b9;
+  color: #1d5c46;
+  font-weight: 600;
+}
 .acciones-fila-admin { display: flex; gap: 6px; flex-shrink: 0; }
 @media (max-width: 420px) {
   .fila-admin { flex-wrap: wrap; }
