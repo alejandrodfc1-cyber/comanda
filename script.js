@@ -867,13 +867,19 @@ async function toggleTotalVisibleMesero() {
   await sb.from('mesas').update(datos).eq('id', mesa.id);
 }
 
+// Las mesas para llevar parten en la pestaña Cocina; el resto, en Top20.
+function categoriaInicial(mesa) {
+  const cocina = CATEGORIAS.find(c => c.toLowerCase() === 'cocina');
+  return mesa?.para_llevar && cocina ? cocina : 'Top20';
+}
+
 function abrirModalMenu(mesaId) {
   const mesaAbierta = mesas.find(m => m.id === mesaId);
   if (!mesaAbierta) return;
   mesaActivaId = mesaId;
   itemExpandidoId = null;
   comensalActivo = null;
-  categoriaActiva = 'Top20';
+  categoriaActiva = categoriaInicial(mesaAbierta);
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesaAbierta);
   if (USAR_TOP20_AUTOMATICO) cargarTop20Automatico().then(renderGaleriaMenu);
@@ -898,7 +904,7 @@ function cerrarModalMenu() {
 function alternarVistaModal() {
   vistaModal = vistaModal === 'menu' ? 'detalle' : 'menu';
   if (vistaModal === 'menu') {
-    categoriaActiva = 'Top20';
+    categoriaActiva = categoriaInicial(mesaActiva());
     renderListaMenu();
   }
   actualizarVistaModal();
