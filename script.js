@@ -2136,9 +2136,12 @@ function inicioDia(fecha) {
 async function cargarComparativas() {
   const ahora = new Date();
   const hoyIni = inicioDia(ahora);
-  const ayerIni = new Date(hoyIni); ayerIni.setDate(ayerIni.getDate() - 1);
-  const semanaActualIni = new Date(hoyIni); semanaActualIni.setDate(semanaActualIni.getDate() - 6);
-  const semanaAnteriorIni = new Date(hoyIni); semanaAnteriorIni.setDate(semanaAnteriorIni.getDate() - 13);
+  // Hoy hasta esta hora vs. el mismo dia de la semana pasada hasta la misma hora.
+  const mismoDiaPasadoIni = new Date(hoyIni); mismoDiaPasadoIni.setDate(mismoDiaPasadoIni.getDate() - 7);
+  const mismoDiaPasadoAhora = new Date(ahora); mismoDiaPasadoAhora.setDate(mismoDiaPasadoAhora.getDate() - 7);
+  // Semana = ultimos 7 dias completos (hasta ayer) vs. los 7 anteriores; hoy queda fuera por estar a medias.
+  const semanaActualIni = new Date(hoyIni); semanaActualIni.setDate(semanaActualIni.getDate() - 7);
+  const semanaAnteriorIni = new Date(hoyIni); semanaAnteriorIni.setDate(semanaAnteriorIni.getDate() - 14);
   const mesActualIni = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
   const diaDelMes = ahora.getDate();
   const mesAnteriorIni = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
@@ -2167,17 +2170,20 @@ async function cargarComparativas() {
     .reduce((s, v) => s + Number(v.total), 0);
 
   const hoy = sumaEntre(hoyIni, null);
-  const ayer = sumaEntre(ayerIni, hoyIni);
-  const semanaActual = sumaEntre(semanaActualIni, null);
+  const mismoDiaPasado = sumaEntre(mismoDiaPasadoIni, mismoDiaPasadoAhora);
+  const semanaActual = sumaEntre(semanaActualIni, hoyIni);
   const semanaAnterior = sumaEntre(semanaAnteriorIni, semanaActualIni);
   const mesActual = sumaEntre(mesActualIni, null);
   const mesAnterior = sumaEntre(mesAnteriorIni, mesAnteriorFin);
 
   const nombreMes = f => f.toLocaleDateString('es-CL', { month: 'long' }).replace(/^./, c => c.toUpperCase());
 
+  const nombreDia = ahora.toLocaleDateString('es-CL', { weekday: 'long' }).replace(/^./, c => c.toUpperCase());
+  const horaAhora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
   renderComparativas([
-    { titulo: 'Ayer vs. Hoy', anteriorLabel: 'Ayer', anterior: ayer, actualLabel: 'Hoy', actual: hoy },
-    { titulo: 'Semana anterior vs. Esta semana', anteriorLabel: 'Sem. anterior', anterior: semanaAnterior, actualLabel: 'Esta semana', actual: semanaActual },
+    { titulo: `${nombreDia} pasado vs. Hoy (hasta las ${horaAhora})`, anteriorLabel: `${nombreDia} pasado`, anterior: mismoDiaPasado, actualLabel: 'Hoy', actual: hoy },
+    { titulo: 'Últimos 7 días vs. los 7 anteriores (hasta ayer)', anteriorLabel: '7 previos', anterior: semanaAnterior, actualLabel: 'Últ. 7 días', actual: semanaActual },
     { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
   ]);
 
