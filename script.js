@@ -1909,7 +1909,10 @@ function toggleColapso(contenidoId, tituloEl) {
 function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
-  const ticketPromedio = nVentas > 0 ? totalVendido / nVentas : 0;
+  const ventasLlevar = ventas.filter(v => idsParaLlevar.has(v.mesa_id));
+  const totalLlevar = ventasLlevar.reduce((s, v) => s + Number(v.total), 0);
+  const nSalon = nVentas - ventasLlevar.length;
+  const ticketPromedio = nSalon > 0 ? (totalVendido - totalLlevar) / nSalon : 0;
 
   // Mesas abiertas mas de 5 horas se consideran olvidadas (error de uso) y no entran al promedio.
   const duraciones = ventas.filter(v => !idsParaLlevar.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0 && d <= DURACION_MAXIMA_MESA_MIN);
@@ -1965,6 +1968,10 @@ function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
   document.getElementById('metrica-total-vendido').textContent = formatoMonedaCompacto(Math.round(totalVendido));
   document.getElementById('metrica-n-ventas').textContent = nVentas;
   document.getElementById('metrica-ticket-promedio').textContent = formatoMonedaCompacto(Math.round(ticketPromedio));
+  document.getElementById('metrica-llevar').textContent = ventasLlevar.length > 0 ? formatoMonedaCompacto(Math.round(totalLlevar)) : '—';
+  document.getElementById('metrica-llevar-detalle').textContent = ventasLlevar.length > 0
+    ? `${ventasLlevar.length} ${ventasLlevar.length === 1 ? 'venta' : 'ventas'} · ticket ${formatoMonedaCompacto(Math.round(totalLlevar / ventasLlevar.length))} · ${Math.round(totalLlevar / totalVendido * 100)}% del total`
+    : 'Sin ventas para llevar en este período';
   document.getElementById('metrica-ganancia').textContent = formatoMonedaCompacto(Math.round(ganancia));
   document.getElementById('metrica-tiempo-mesa').textContent = formatoDuracion(duracionPromedio);
 

@@ -1471,6 +1471,8 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .metrica-rosa     { --color-metrica: #d81b60; }
 .metrica-indigo   { --color-metrica: #3f51b5; }
 .metrica-naranja  { --color-metrica: #e67e22; }
+.metrica-cafe     { --color-metrica: #8d6e63; }
+.metrica-ancha    { grid-column: 1 / -1; }
 
 .grafico-barras-dias {
   display: flex;
