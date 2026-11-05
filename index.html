@@ -668,18 +668,18 @@
       <p class="texto-ayuda aviso-fecha-reporte oculto" id="aviso-fecha-reporte-caja"></p>
 
       <div class="reporte-caja-tarjeton">
-        <h3 class="titulo-form titulo-seccion-nueva titulo-reporte-caja-inicio">🪙 Caja chica inicial (desglose)</h3>
+        <h3 class="titulo-form titulo-seccion-nueva titulo-reporte-caja-inicio">🪙 Sencillo inicial (desglose)</h3>
         <div id="lista-denominaciones-caja-chica"></div>
-        <div class="categoria-total-fila total-enmarcado"><span>Total caja chica</span><span id="total-caja-chica">$0</span></div>
-        <div class="fila-cuadratura fila-dif-caja-chica" title="Si la caja chica quedó por debajo o por encima de $200.000, esta diferencia se suma o resta sola en la Venta total del turno."><span>Diferencia caja chica (vs. $200.000)</span><span id="diferencia-caja-chica">$0</span></div>
-        <button type="button" class="btn btn-turquesa" id="btn-imprimir-caja-chica" onclick="imprimirCajaChicaRawBT()">🖨️ Imprimir caja chica</button>
-        <p class="texto-ayuda">Impresión aparte, para hacerla al preparar la caja chica antes de empezar el turno.</p>
+        <div class="categoria-total-fila total-enmarcado"><span>Total sencillo</span><span id="total-caja-chica">$0</span></div>
+        <div class="fila-cuadratura fila-dif-caja-chica" title="Si el sencillo quedó por debajo o por encima de $200.000, esta diferencia se suma o resta sola en la Venta total del turno."><span>Diferencia sencillo (vs. $200.000)</span><span id="diferencia-caja-chica">$0</span></div>
+        <button type="button" class="btn btn-turquesa" id="btn-imprimir-caja-chica" onclick="imprimirCajaChicaRawBT()">🖨️ Imprimir sencillo</button>
+        <p class="texto-ayuda">Impresión aparte, para hacerla al preparar el sencillo antes de empezar el turno.</p>
 
         <h3 class="titulo-form titulo-seccion-nueva titulo-efectivo-entregado">
           <span class="titulo-efectivo-principal">💵 Efectivo Entregado</span>
           <span class="titulo-efectivo-meta" id="efectivo-entregado-fecha-hora">—</span>
         </h3>
-        <div class="fila-cuadratura fila-referencia"><span>Caja chica</span><span id="ref-caja-chica-entregado">$0</span></div>
+        <div class="fila-cuadratura fila-referencia"><span>Sencillo</span><span id="ref-caja-chica-entregado">$0</span></div>
         <div id="lista-denominaciones-reporte"></div>
 
         <div class="bloque-totales-reporte">
@@ -730,7 +730,7 @@
       </div>
       <p class="mensaje-guardado oculto" id="estado-guardado-reporte-caja"></p>
       <button type="button" class="btn btn-secundario btn-limpiar-conteo" onclick="limpiarConteoReporteCaja()">🧹 Limpiar conteo</button>
-      <p class="texto-ayuda">Pone en cero caja chica, efectivo contado y gastos para empezar un conteo nuevo (hazlo después de imprimir o compartir este reporte).</p>
+      <p class="texto-ayuda">Pone en cero sencillo, efectivo contado y gastos para empezar un conteo nuevo (hazlo después de imprimir o compartir este reporte).</p>
 
       <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('bloque-reportes-guardados', this); cargarReportesGuardados()">
         <div class="titulo-fila">

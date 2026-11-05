@@ -2644,7 +2644,7 @@ function htmlReporteCajaDesdeDatos(d, subtitulo) {
     <div class="vp-cuerpo">
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
-        <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(d.cajaChica)}</span></div>
+        <div class="vp-fila vp-fila-referencia"><span>Sencillo</span><span>${formatoMoneda(d.cajaChica)}</span></div>
         ${filasDenom}
         ${filaOtros}
         <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(d.totalEfectivoContado)}</span></div>
@@ -2708,13 +2708,13 @@ function imprimirCajaChicaRawBT() {
   });
 
   const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
-  let t = `${BOLD_ON}${centrar('CAJA CHICA INICIAL')}${BOLD_OFF}\n`;
+  let t = `${BOLD_ON}${centrar('SENCILLO INICIAL')}${BOLD_OFF}\n`;
   t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
   t += separador;
   if (lineasCajaChica.length === 0) t += '  (sin desglose)\n';
   lineasCajaChica.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
   t += separador;
-  t += `${BOLD_ON}${fila('Total caja chica', formatoMonedaTxtReporte(cajaChica))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Total sencillo', formatoMonedaTxtReporte(cajaChica))}${BOLD_OFF}`;
   t += separador;
 
   enviarARawBT(t);
@@ -2829,7 +2829,7 @@ async function imprimirReporteCajaRawBT() {
 }
 
 async function limpiarConteoReporteCaja() {
-  if (!(await confirmarApp('¿Limpiar caja chica, efectivo contado y gastos para empezar un conteo nuevo?'))) return;
+  if (!(await confirmarApp('¿Limpiar sencillo, efectivo contado y gastos para empezar un conteo nuevo?'))) return;
   DENOMINACIONES_CAJA_CHICA.forEach(d => { document.getElementById(`denom-caja-cant-${d}`).value = ''; });
   DENOMINACIONES_REPORTE.forEach(d => { document.getElementById(`denom-cant-${d}`).value = ''; });
   document.getElementById('denom-otros').value = '';
@@ -2949,7 +2949,7 @@ function exportarReportesGuardadosCsv() {
   if (grupos.length === 0) { alert('No hay reportes en ese rango de fechas para exportar.'); return; }
   const texto = valor => `"${String(valor ?? '').replace(/"/g, '""')}"`;
   const lineas = [[
-    'Fecha', 'Turno', 'Versión', 'Caja chica', 'Dif. caja chica (vs. $200.000)', 'Efectivo contado', 'Venta tarjeta',
+    'Fecha', 'Turno', 'Versión', 'Sencillo', 'Dif. sencillo (vs. $200.000)', 'Efectivo contado', 'Venta tarjeta',
     'Total gastos', 'Venta total', 'Efectivo esperado (app)', 'Dif. efectivo', 'Tarjeta esperada (app)', 'Dif. tarjeta',
     'Detalle de gastos', 'Guardado por', 'Guardado el',
   ].join(';')];
