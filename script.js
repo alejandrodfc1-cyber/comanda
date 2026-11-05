@@ -2755,8 +2755,8 @@ function textoTicketReporteCaja(d, lineasEncabezado) {
   t += fuerte;
 
   t += '\n';
-  t += titulo('CAJA CHICA');
-  t += fila('  Caja chica', dinero(d.cajaChica));
+  t += titulo('SENCILLO');
+  t += fila('  Total sencillo', dinero(d.cajaChica));
   t += fila(`  Dif. vs ${dinero(CAJA_CHICA_ESPERADA)}`, conSigno(d.diferenciaCajaChica));
   t += suave;
 
@@ -2781,7 +2781,7 @@ function textoTicketReporteCaja(d, lineasEncabezado) {
   t += fila('  Efectivo entregado', dinero(d.totalEfectivoContado));
   t += fila('  + Venta con tarjeta', dinero(d.tarjeta));
   t += fila('  + Gastos pagados', dinero(d.totalGastos));
-  if (d.diferenciaCajaChica !== 0) t += fila('  Dif. caja chica', conSigno(d.diferenciaCajaChica));
+  if (d.diferenciaCajaChica !== 0) t += fila('  Dif. sencillo', conSigno(d.diferenciaCajaChica));
   t += suave;
   t += total(`VENTA ${d.turno}° TURNO`, dinero(d.ventaTotal));
   t += fuerte;
