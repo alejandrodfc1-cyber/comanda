@@ -2627,7 +2627,25 @@ function reunirSistemaReporteCaja(datos) {
   };
 }
 
+function montoConSigno(n) {
+  return (n > 0 ? '+' : n < 0 ? '-' : '') + formatoMoneda(Math.abs(n));
+}
+
 function htmlReporteCajaDesdeDatos(d, subtitulo) {
+  // Si el sencillo no cierra en el monto esperado, la diferencia se ve y se explica en la suma.
+  const hayDif = d.diferenciaCajaChica !== 0;
+  const claseDif = d.diferenciaCajaChica < 0 ? 'falta' : 'sobra';
+  const filaDifSencillo = hayDif
+    ? `<div class="vp-fila vp-fila-referencia vp-fila-dif ${claseDif}"><span>Dif. vs ${formatoMoneda(CAJA_CHICA_ESPERADA)}</span><span>${montoConSigno(d.diferenciaCajaChica)}</span></div>`
+    : '';
+  const bloqueCalculo = hayDif ? `
+      <div class="vp-calculo">
+        <div class="vp-seccion-titulo">Cómo se calcula la venta</div>
+        <div class="vp-fila"><span>Efectivo entregado</span><span>${formatoMoneda(d.totalEfectivoContado)}</span></div>
+        <div class="vp-fila"><span>+ Venta con tarjeta</span><span>${formatoMoneda(d.tarjeta)}</span></div>
+        <div class="vp-fila"><span>+ Gastos pagados</span><span>${formatoMoneda(d.totalGastos)}</span></div>
+        <div class="vp-fila vp-fila-dif ${claseDif}"><span>Dif. sencillo</span><span>${montoConSigno(d.diferenciaCajaChica)}</span></div>
+      </div>` : '';
   const filasDenom = d.efectivo.map(l =>
     `<div class="vp-fila"><span>${formatoMoneda(l.d)} x ${l.cantidad}</span><span>${formatoMoneda(l.d * l.cantidad)}</span></div>`).join('');
   const filaOtros = d.otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(d.otros)}</span></div>` : '';
@@ -2644,7 +2662,8 @@ function htmlReporteCajaDesdeDatos(d, subtitulo) {
     <div class="vp-cuerpo">
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
-        <div class="vp-fila vp-fila-referencia"><span>Sencillo</span><span>${formatoMoneda(d.cajaChica)}</span></div>
+        <div class="vp-fila vp-fila-referencia${hayDif ? ' vp-sin-borde' : ''}"><span>Sencillo</span><span>${formatoMoneda(d.cajaChica)}</span></div>
+        ${filaDifSencillo}
         ${filasDenom}
         ${filaOtros}
         <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(d.totalEfectivoContado)}</span></div>
@@ -2655,6 +2674,7 @@ function htmlReporteCajaDesdeDatos(d, subtitulo) {
         ${filasGastos}
         <div class="vp-fila vp-subtotal"><span>Total gastos</span><span>${formatoMoneda(d.totalGastos)}</span></div>
       </div>
+      ${bloqueCalculo}
       <div class="vp-final">
         <span>VENTA ${d.turno}° TURNO</span>
         <span>${formatoMoneda(d.ventaTotal)}</span>

@@ -1739,6 +1739,12 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .vp-fila { display: flex; justify-content: space-between; gap: 8px; font-size: .86rem; padding: 3px 0; color: #333; }
 .vp-fila-referencia { color: #8a8a8a; font-style: italic; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px dashed #eee; }
 .vp-fila.vp-vacio { color: #999; font-style: italic; }
+.vp-sin-borde { border-bottom: 0; margin-bottom: 0; padding-bottom: 3px; }
+.vp-fila-dif { font-weight: 700; font-style: normal; }
+.vp-fila-dif.falta { color: #c0392b; }
+.vp-fila-dif.sobra { color: #0e7a63; }
+.vp-calculo { background: #faf7f4; border: 1px dashed #e3d9d0; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+.vp-calculo .vp-seccion-titulo { margin-bottom: 4px; }
 .vp-fila-destacada {
   font-size: .92rem;
   font-weight: 700;
