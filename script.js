@@ -2231,6 +2231,7 @@ async function iniciarReporteCaja() {
     reporteCajaInicializado = true;
   }
   renderMenuGastosRapidos();
+  document.getElementById('reporte-caja-fecha').max = fechaLocalStr(new Date());
   const { data } = await sb.from('configuracion').select('valor').eq('clave', 'turno_activo').maybeSingle();
   if (data?.valor && data.valor !== turnoActivo) {
     turnoActivo = data.valor;
@@ -2269,7 +2270,15 @@ function leerBorradorDelFormulario() {
     otros: document.getElementById('denom-otros').value,
     tarjeta: document.getElementById('reporte-caja-tarjeta').value,
     gastos: gastosReporteCaja,
+    fecha: fechaReporteCajaIso(),
   };
+}
+
+function borradorTieneDatos(datos) {
+  return [...(datos.cajaChica || []), ...(datos.efectivo || [])].some(v => v !== '' && v != null && Number(v) !== 0)
+    || (datos.otros !== '' && datos.otros != null && Number(String(datos.otros).replace(/\D/g, '')) > 0)
+    || (datos.tarjeta !== '' && datos.tarjeta != null && Number(String(datos.tarjeta).replace(/\D/g, '')) > 0)
+    || (Array.isArray(datos.gastos) && datos.gastos.length > 0);
 }
 
 function aplicarBorradorAlFormulario(datos, forzar = false) {
@@ -2282,6 +2291,9 @@ function aplicarBorradorAlFormulario(datos, forzar = false) {
   poner('denom-otros', datos.otros);
   poner('reporte-caja-tarjeta', datos.tarjeta);
   gastosReporteCaja = Array.isArray(datos.gastos) ? datos.gastos : [];
+  // Un borrador con datos conserva su fecha (para enviarlo al dia siguiente sin que cambie);
+  // uno vacio parte siempre en el dia de hoy.
+  poner('reporte-caja-fecha', borradorTieneDatos(datos) && datos.fecha ? datos.fecha : fechaLocalStr(new Date()));
   ultimoBorradorJson = JSON.stringify(leerBorradorDelFormulario());
 }
 
@@ -2412,9 +2424,11 @@ function seleccionarGastoRapido(nombre) {
 
 async function cargarDatosReporteCaja(silencioso = false) {
   const turno = Number(document.getElementById('reporte-caja-turno').value);
-  const hoy = new Date();
-  const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString();
-  const { data, error } = await sb.from('ventas').select('total, metodo_pago').gte('creado_en', inicioHoy).eq('turno', turno);
+  const [anio, mes, dia] = fechaReporteCajaIso().split('-').map(Number);
+  const inicioDiaReporte = new Date(anio, mes - 1, dia).toISOString();
+  const inicioDiaSiguiente = new Date(anio, mes - 1, dia + 1).toISOString();
+  const { data, error } = await sb.from('ventas').select('total, metodo_pago')
+    .gte('creado_en', inicioDiaReporte).lt('creado_en', inicioDiaSiguiente).eq('turno', turno);
   if (error) {
     console.error(error);
     if (!silencioso) alert('No se pudieron cargar las ventas del turno (problema de conexión). Puedes escribirlas a mano.');
@@ -2468,12 +2482,49 @@ function quitarGastoReporte(i) {
   actualizarReporteCaja();
 }
 
+function fechaReporteCajaIso() {
+  return document.getElementById('reporte-caja-fecha')?.value || fechaLocalStr(new Date());
+}
+
 function fechaReporteCajaTexto() {
-  return new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const [anio, mes, dia] = fechaReporteCajaIso().split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function reporteCajaEsDeHoy() {
+  return fechaReporteCajaIso() === fechaLocalStr(new Date());
 }
 
 function horaReporteCajaTexto() {
   return new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function envioReporteCajaTexto() {
+  const hoy = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
+  return `enviado ${hoy} ${horaReporteCajaTexto()}`;
+}
+
+// Si el reporte es de un dia anterior, la hora que se muestra es la de envio, no la del dia del reporte.
+function fechaHoraReporteCajaTexto() {
+  return reporteCajaEsDeHoy()
+    ? `${fechaReporteCajaTexto()} · ${horaReporteCajaTexto()}`
+    : `${fechaReporteCajaTexto()} · ${envioReporteCajaTexto()}`;
+}
+
+function cambiarFechaReporteCaja() {
+  actualizarReporteCaja();
+  cargarDatosReporteCaja();
+}
+
+function actualizarAvisoFechaReporteCaja() {
+  const aviso = document.getElementById('aviso-fecha-reporte-caja');
+  if (!aviso) return;
+  aviso.classList.toggle('oculto', reporteCajaEsDeHoy());
+  if (!reporteCajaEsDeHoy()) {
+    const [anio, mes, dia] = fechaReporteCajaIso().split('-').map(Number);
+    const nombreDia = new Date(anio, mes - 1, dia).toLocaleDateString('es-CL', { weekday: 'long' });
+    aviso.textContent = `⚠️ Este reporte es del ${nombreDia} ${fechaReporteCajaTexto()}, no de hoy.`;
+  }
 }
 
 function actualizarReporteCaja() {
@@ -2506,7 +2557,8 @@ function actualizarReporteCaja() {
   const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
   const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
   const turno = document.getElementById('reporte-caja-turno').value;
-  document.getElementById('efectivo-entregado-fecha-hora').textContent = `${fechaReporteCajaTexto()} · ${horaReporteCajaTexto()} · ${turno}° Turno`;
+  document.getElementById('efectivo-entregado-fecha-hora').textContent = `${fechaHoraReporteCajaTexto()} · ${turno}° Turno`;
+  actualizarAvisoFechaReporteCaja();
 
   renderGastosReporte(totalGastos);
 
@@ -2550,7 +2602,7 @@ function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectiv
     <div class="vp-header">
       <div class="vp-negocio">${NEGOCIO_NOMBRE}</div>
       <div class="vp-reporte-titulo">🧾 REPORTE DE CAJA</div>
-      <div class="vp-reporte-sub">${turno}° Turno · ${fechaReporteCajaTexto()} · ${horaReporteCajaTexto()}</div>
+      <div class="vp-reporte-sub">${turno}° Turno · ${fechaHoraReporteCajaTexto()}</div>
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
@@ -2654,7 +2706,12 @@ function imprimirReporteCajaRawBT() {
   const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
-  t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`)}\n`;
+  if (reporteCajaEsDeHoy()) {
+    t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`)}\n`;
+  } else {
+    t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
+    t += `${centrar(envioReporteCajaTexto())}\n`;
+  }
   t += separador;
   t += fila('Caja chica', formatoMonedaTxtReporte(cajaChica));
   t += separador;
@@ -2682,7 +2739,9 @@ async function limpiarConteoReporteCaja() {
   document.getElementById('denom-otros').value = '';
   document.getElementById('reporte-caja-tarjeta').value = '';
   gastosReporteCaja = [];
+  document.getElementById('reporte-caja-fecha').value = fechaLocalStr(new Date());
   actualizarReporteCaja();
+  cargarDatosReporteCaja(true);
 }
 
 async function compartirReporteCajaImagen() {
