@@ -2582,48 +2582,91 @@ function actualizarReporteCaja() {
   filaDifTarjeta.classList.toggle('cuadra', diferenciaTarjeta === 0);
   filaDifTarjeta.classList.toggle('no-cuadra', diferenciaTarjeta !== 0);
 
-  renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno });
+  renderVistaPreviaReporte();
   guardarBorradorReporteCaja();
 }
 
-function renderVistaPreviaReporte({ cajaChica, diferenciaCajaChica, totalEfectivoContado, otros, tarjeta, totalGastos, ventaTotal, turno }) {
-  const cont = document.getElementById('vista-previa-reporte-caja');
-  const filasDenom = DENOMINACIONES_REPORTE.map(d => {
+// Reune lo que hay en el formulario en un objeto: es lo que se muestra, se imprime y se guarda.
+function reunirDatosReporteCaja() {
+  const cajaChicaDesglose = [];
+  let cajaChica = 0;
+  DENOMINACIONES_CAJA_CHICA.forEach(d => {
+    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
+    if (cantidad > 0) cajaChicaDesglose.push({ d, cantidad });
+    cajaChica += cantidad * d;
+  });
+  const efectivo = [];
+  let totalEfectivoContado = 0;
+  DENOMINACIONES_REPORTE.forEach(d => {
     const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
-    if (cantidad === 0) return '';
-    return `<div class="vp-fila"><span>${formatoMoneda(d)} x ${cantidad}</span><span>${formatoMoneda(d * cantidad)}</span></div>`;
-  }).join('');
-  const filaOtros = otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(otros)}</span></div>` : '';
-  const filasGastos = gastosReporteCaja.length === 0
-    ? '<div class="vp-fila vp-vacio"><span>(sin gastos)</span><span></span></div>'
-    : gastosReporteCaja.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
+    if (cantidad > 0) efectivo.push({ d, cantidad });
+    totalEfectivoContado += cantidad * d;
+  });
+  const otros = valorNumericoInput('denom-otros');
+  totalEfectivoContado += otros;
+  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
+  const gastos = gastosReporteCaja.map(g => ({ desc: g.desc, monto: g.monto }));
+  const totalGastos = gastos.reduce((s, g) => s + g.monto, 0);
+  const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
+  return {
+    turno: Number(document.getElementById('reporte-caja-turno').value),
+    cajaChica, cajaChicaDesglose, diferenciaCajaChica,
+    efectivo, otros, totalEfectivoContado, tarjeta, gastos, totalGastos,
+    ventaTotal: totalEfectivoContado + tarjeta + totalGastos + diferenciaCajaChica,
+  };
+}
 
-  cont.innerHTML = `
+// Referencia de la app al momento de guardar (no sale en el reporte).
+function reunirSistemaReporteCaja(datos) {
+  const efectivoEsperado = reporteCajaVentasEfectivo - datos.totalGastos;
+  return {
+    efectivoEsperado,
+    diferenciaEfectivo: datos.totalEfectivoContado - efectivoEsperado,
+    tarjetaEsperada: reporteCajaVentasTarjeta,
+    diferenciaTarjeta: datos.tarjeta - reporteCajaVentasTarjeta,
+  };
+}
+
+function htmlReporteCajaDesdeDatos(d, subtitulo) {
+  const filasDenom = d.efectivo.map(l =>
+    `<div class="vp-fila"><span>${formatoMoneda(l.d)} x ${l.cantidad}</span><span>${formatoMoneda(l.d * l.cantidad)}</span></div>`).join('');
+  const filaOtros = d.otros > 0 ? `<div class="vp-fila"><span>Monedas</span><span>${formatoMoneda(d.otros)}</span></div>` : '';
+  const filasGastos = d.gastos.length === 0
+    ? '<div class="vp-fila vp-vacio"><span>(sin gastos)</span><span></span></div>'
+    : d.gastos.map(g => `<div class="vp-fila"><span>${escaparHtmlReporte(g.desc)}</span><span>${formatoMoneda(g.monto)}</span></div>`).join('');
+
+  return `
     <div class="vp-header">
       <div class="vp-negocio">${NEGOCIO_NOMBRE}</div>
       <div class="vp-reporte-titulo">🧾 REPORTE DE CAJA</div>
-      <div class="vp-reporte-sub">${turno}° Turno · ${fechaHoraReporteCajaTexto()}</div>
+      <div class="vp-reporte-sub">${subtitulo}</div>
     </div>
     <div class="vp-cuerpo">
       <div class="vp-seccion">
         <div class="vp-seccion-titulo">💵 Efectivo Entregado</div>
-        <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(cajaChica)}</span></div>
+        <div class="vp-fila vp-fila-referencia"><span>Caja chica</span><span>${formatoMoneda(d.cajaChica)}</span></div>
         ${filasDenom}
         ${filaOtros}
-        <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(totalEfectivoContado)}</span></div>
+        <div class="vp-fila vp-subtotal"><span>Total efectivo</span><span>${formatoMoneda(d.totalEfectivoContado)}</span></div>
       </div>
       <div class="vp-seccion">
-        <div class="vp-fila vp-fila-destacada"><span>💳 Venta con tarjeta</span><span>${formatoMoneda(tarjeta)}</span></div>
+        <div class="vp-fila vp-fila-destacada"><span>💳 Venta con tarjeta</span><span>${formatoMoneda(d.tarjeta)}</span></div>
         <div class="vp-seccion-titulo vp-seccion-titulo-gastos">🧾 Gastos</div>
         ${filasGastos}
-        <div class="vp-fila vp-subtotal"><span>Total gastos</span><span>${formatoMoneda(totalGastos)}</span></div>
+        <div class="vp-fila vp-subtotal"><span>Total gastos</span><span>${formatoMoneda(d.totalGastos)}</span></div>
       </div>
       <div class="vp-final">
-        <span>VENTA ${turno}° TURNO</span>
-        <span>${formatoMoneda(ventaTotal)}</span>
+        <span>VENTA ${d.turno}° TURNO</span>
+        <span>${formatoMoneda(d.ventaTotal)}</span>
       </div>
     </div>
   `;
+}
+
+function renderVistaPreviaReporte() {
+  const datos = reunirDatosReporteCaja();
+  document.getElementById('vista-previa-reporte-caja').innerHTML =
+    htmlReporteCajaDesdeDatos(datos, `${datos.turno}° Turno · ${fechaHoraReporteCajaTexto()}`);
 }
 
 function formatoMonedaTxtReporte(n) {
@@ -2677,59 +2720,68 @@ function imprimirCajaChicaRawBT() {
   enviarARawBT(t);
 }
 
-function imprimirReporteCajaRawBT() {
-  const tarjeta = valorNumericoInput('reporte-caja-tarjeta');
-  const turno = document.getElementById('reporte-caja-turno').value;
-
-  let cajaChica = 0;
-  DENOMINACIONES_CAJA_CHICA.forEach(d => {
-    const cantidad = Number(document.getElementById(`denom-caja-cant-${d}`).value) || 0;
-    cajaChica += cantidad * d;
-  });
-  const diferenciaCajaChica = cajaChica - CAJA_CHICA_ESPERADA;
-
-  let totalEfectivoContado = 0;
-  const lineasDenom = [];
-  DENOMINACIONES_REPORTE.forEach(d => {
-    const cantidad = Number(document.getElementById(`denom-cant-${d}`).value) || 0;
-    if (cantidad > 0) {
-      const subtotal = cantidad * d;
-      totalEfectivoContado += subtotal;
-      lineasDenom.push({ d, cantidad, subtotal });
-    }
-  });
-  const otros = valorNumericoInput('denom-otros');
-  totalEfectivoContado += otros;
-  const totalGastos = gastosReporteCaja.reduce((s, g) => s + g.monto, 0);
-  const ventaTotal = totalEfectivoContado + tarjeta + totalGastos + diferenciaCajaChica;
-
+function textoTicketReporteCaja(d, lineasEncabezado) {
   const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
 
   let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
-  if (reporteCajaEsDeHoy()) {
-    t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`)}\n`;
-  } else {
-    t += `${centrar(`${turno} Turno - ${fechaReporteCajaTexto()}`)}\n`;
-    t += `${centrar(envioReporteCajaTexto())}\n`;
-  }
+  lineasEncabezado.forEach(linea => { t += `${centrar(linea)}\n`; });
   t += separador;
-  t += fila('Caja chica', formatoMonedaTxtReporte(cajaChica));
+  t += fila('Caja chica', formatoMonedaTxtReporte(d.cajaChica));
   t += separador;
   t += `${BOLD_ON}Efectivo Entregado:${BOLD_OFF}\n`;
-  lineasDenom.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.subtotal)); });
-  if (otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(otros));
+  d.efectivo.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.d * l.cantidad)); });
+  if (d.otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(d.otros));
   t += separador;
-  t += `${BOLD_ON}${fila('Total Efectivo', formatoMonedaTxtReporte(totalEfectivoContado))}${BOLD_OFF}`;
-  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(tarjeta))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Total Efectivo', formatoMonedaTxtReporte(d.totalEfectivoContado))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(d.tarjeta))}${BOLD_OFF}`;
   t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
-  if (gastosReporteCaja.length === 0) t += '  (sin gastos)\n';
-  gastosReporteCaja.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
-  t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(totalGastos))}${BOLD_OFF}`;
+  if (d.gastos.length === 0) t += '  (sin gastos)\n';
+  d.gastos.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
+  t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(d.totalGastos))}${BOLD_OFF}`;
   t += separador;
-  t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(ventaTotal))}${BOLD_OFF}`;
+  t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(d.ventaTotal))}${BOLD_OFF}`;
   t += separador;
+  return t;
+}
 
-  enviarARawBT(t);
+// Guarda el reporte en la base al imprimir o compartir. Una misma impresion sin cambios no crea
+// version nueva; si cambio algo, queda como version siguiente y la anterior se conserva.
+async function guardarReporteCajaEnBase(datos) {
+  const estado = document.getElementById('estado-guardado-reporte-caja');
+  const mostrar = (texto, esError) => {
+    if (!estado) return;
+    estado.textContent = texto;
+    estado.classList.toggle('mensaje-error', !!esError);
+    estado.classList.remove('oculto');
+  };
+  if (!borradorTieneDatos(leerBorradorDelFormulario())) return { ok: true, omitido: true };
+  try {
+    const { data, error } = await sb.rpc('guardar_reporte_caja', {
+      p_fecha: fechaReporteCajaIso(),
+      p_turno: datos.turno,
+      p_datos: datos,
+      p_sistema: reunirSistemaReporteCaja(datos),
+      p_usuario: usuarioActualNombre,
+    });
+    if (error) throw error;
+    mostrar(data.nueva
+      ? `✓ Reporte del ${fechaReporteCajaTexto()} guardado (versión ${data.version})`
+      : `✓ Ya estaba guardado sin cambios (versión ${data.version})`, false);
+    return { ok: true, ...data };
+  } catch (err) {
+    console.error('No se pudo guardar el reporte de caja:', err);
+    mostrar('⚠️ No se pudo guardar el reporte en la base (problema de conexión). Se imprimió igual: vuelve a imprimirlo con conexión para guardarlo.', true);
+    return { ok: false };
+  }
+}
+
+async function imprimirReporteCajaRawBT() {
+  const datos = reunirDatosReporteCaja();
+  await guardarReporteCajaEnBase(datos);
+  const encabezado = reporteCajaEsDeHoy()
+    ? [`${datos.turno} Turno - ${fechaReporteCajaTexto()} ${horaReporteCajaTexto()}`]
+    : [`${datos.turno} Turno - ${fechaReporteCajaTexto()}`, envioReporteCajaTexto()];
+  enviarARawBT(textoTicketReporteCaja(datos, encabezado));
 }
 
 async function limpiarConteoReporteCaja() {
@@ -2744,8 +2796,147 @@ async function limpiarConteoReporteCaja() {
   cargarDatosReporteCaja(true);
 }
 
+// ---------- Reportes de caja guardados ----------
+let reportesGuardadosCache = [];
+let reporteGuardadoEnVisor = null;
+
+function fechaIsoATexto(iso) {
+  const [anio, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
+function fechaHoraLocalTexto(isoTimestamp) {
+  const f = new Date(isoTimestamp);
+  return `${f.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' })} ${f.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+}
+
+async function cargarReportesGuardados() {
+  const desdeInput = document.getElementById('rg-desde');
+  const hastaInput = document.getElementById('rg-hasta');
+  if (!hastaInput.value) hastaInput.value = fechaLocalStr(new Date());
+  if (!desdeInput.value) {
+    const hace14 = new Date(); hace14.setDate(hace14.getDate() - 14);
+    desdeInput.value = fechaLocalStr(hace14);
+  }
+  const lista = document.getElementById('lista-reportes-guardados');
+  const filas = await traerTodasLasFilas(() => sb.from('reportes_caja').select('*')
+    .gte('fecha', desdeInput.value).lte('fecha', hastaInput.value)
+    .order('fecha', { ascending: false }).order('turno', { ascending: true }).order('version', { ascending: false }));
+  if (filas === null) {
+    lista.innerHTML = '<p class="texto-vacio">No se pudieron cargar los reportes (problema de conexión).</p>';
+    return;
+  }
+  reportesGuardadosCache = filas;
+  renderListaReportesGuardados();
+}
+
+// Una fila por fecha y turno: la version mas reciente (la primera, por el orden de la consulta).
+function ultimasVersionesReportes() {
+  const vistos = new Map();
+  reportesGuardadosCache.forEach(r => {
+    const clave = `${r.fecha}|${r.turno}`;
+    if (!vistos.has(clave)) vistos.set(clave, { ultimo: r, versiones: 0 });
+    vistos.get(clave).versiones += 1;
+  });
+  return [...vistos.values()];
+}
+
+function renderListaReportesGuardados() {
+  const lista = document.getElementById('lista-reportes-guardados');
+  const grupos = ultimasVersionesReportes();
+  lista.innerHTML = grupos.length === 0
+    ? '<p class="texto-vacio">No hay reportes guardados en ese rango de fechas.</p>'
+    : grupos.map(({ ultimo: r, versiones }) => `
+      <div class="fila-admin">
+        <span class="miniatura">🧾</span>
+        <div class="info-admin">
+          <strong>${fechaIsoATexto(r.fecha)} · ${r.turno}° Turno</strong>
+          <span>Venta ${formatoMoneda(r.datos.ventaTotal)} · versión ${r.version}${versiones > 1 ? ` (de ${versiones})` : ''}</span>
+        </div>
+        <div class="acciones-fila-admin">
+          <button class="btn-editar-admin" onclick="verReporteGuardado('${r.fecha}', ${r.turno}, ${r.version})">👁️ Ver</button>
+        </div>
+      </div>`).join('');
+}
+
+function verReporteGuardado(fecha, turno, version) {
+  const versiones = reportesGuardadosCache.filter(r => r.fecha === fecha && r.turno === turno);
+  const r = versiones.find(x => x.version === version) || versiones[0];
+  if (!r) return;
+  reporteGuardadoEnVisor = r;
+  document.getElementById('visor-reporte-info').textContent =
+    `Versión ${r.version} de ${versiones.length} · guardada el ${fechaHoraLocalTexto(r.impreso_en)} por ${r.impreso_por || 'usuario desconocido'}`;
+  document.getElementById('visor-reporte-versiones').innerHTML = versiones.length < 2 ? '' :
+    [...versiones].sort((a, b) => a.version - b.version).map(x =>
+      `<button type="button" class="chip-version${x.version === r.version ? ' activa' : ''}" onclick="verReporteGuardado('${fecha}', ${turno}, ${x.version})">v${x.version}</button>`).join('');
+  document.getElementById('visor-reporte-contenido').innerHTML =
+    htmlReporteCajaDesdeDatos(r.datos, `${r.turno}° Turno · ${fechaIsoATexto(r.fecha)}`);
+  const visor = document.getElementById('visor-reporte-guardado');
+  visor.classList.remove('oculto');
+  visor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cerrarReporteGuardado() {
+  reporteGuardadoEnVisor = null;
+  document.getElementById('visor-reporte-guardado').classList.add('oculto');
+}
+
+function imprimirReporteGuardado() {
+  const r = reporteGuardadoEnVisor;
+  if (!r) return;
+  enviarARawBT(textoTicketReporteCaja(r.datos, [
+    `${r.turno} Turno - ${fechaIsoATexto(r.fecha)}`,
+    `Copia v${r.version} guardada ${fechaHoraLocalTexto(r.impreso_en)}`,
+  ]));
+}
+
+function compartirReporteGuardadoImagen() {
+  const r = reporteGuardadoEnVisor;
+  if (!r) return;
+  compartirElementoComoImagen(
+    document.getElementById('visor-reporte-contenido'),
+    `reporte-caja-${fechaIsoATexto(r.fecha).replace(/\//g, '-')}-turno${r.turno}-v${r.version}.png`
+  );
+}
+
+function exportarReportesGuardadosCsv() {
+  const grupos = ultimasVersionesReportes().map(g => g.ultimo)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.turno - b.turno);
+  if (grupos.length === 0) { alert('No hay reportes en ese rango de fechas para exportar.'); return; }
+  const texto = valor => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+  const lineas = [[
+    'Fecha', 'Turno', 'Versión', 'Caja chica', 'Dif. caja chica (vs. $200.000)', 'Efectivo contado', 'Venta tarjeta',
+    'Total gastos', 'Venta total', 'Efectivo esperado (app)', 'Dif. efectivo', 'Tarjeta esperada (app)', 'Dif. tarjeta',
+    'Detalle de gastos', 'Guardado por', 'Guardado el',
+  ].join(';')];
+  grupos.forEach(r => {
+    const d = r.datos, s = r.sistema || {};
+    lineas.push([
+      fechaIsoATexto(r.fecha), r.turno, r.version, d.cajaChica, d.diferenciaCajaChica, d.totalEfectivoContado, d.tarjeta,
+      d.totalGastos, d.ventaTotal, s.efectivoEsperado ?? '', s.diferenciaEfectivo ?? '', s.tarjetaEsperada ?? '', s.diferenciaTarjeta ?? '',
+      texto(d.gastos.map(g => `${g.desc}: ${g.monto}`).join(' | ')), texto(r.impreso_por), fechaHoraLocalTexto(r.impreso_en),
+    ].join(';'));
+  });
+  const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(blob);
+  enlace.download = `reportes-caja-${document.getElementById('rg-desde').value}-al-${document.getElementById('rg-hasta').value}.csv`;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(enlace.href), 5000);
+}
+
 async function compartirReporteCajaImagen() {
-  const elemento = document.getElementById('vista-previa-reporte-caja');
+  const guardado = guardarReporteCajaEnBase(reunirDatosReporteCaja());
+  await compartirElementoComoImagen(
+    document.getElementById('vista-previa-reporte-caja'),
+    `reporte-caja-${fechaReporteCajaTexto().replace(/\//g, '-')}.png`
+  );
+  await guardado;
+}
+
+async function compartirElementoComoImagen(elemento, nombreArchivo) {
   if (typeof html2canvas === 'undefined') {
     alert('No se pudo cargar la herramienta para generar la imagen. Revisa tu conexión e intenta de nuevo.');
     return;
@@ -2757,7 +2948,6 @@ async function compartirReporteCajaImagen() {
     if (estabaColapsada) elemento.classList.add('oculto');
     canvas.toBlob(async (blob) => {
       if (!blob) { alert('No se pudo generar la imagen.'); return; }
-      const nombreArchivo = `reporte-caja-${fechaReporteCajaTexto().replace(/\//g, '-')}.png`;
       const archivo = new File([blob], nombreArchivo, { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [archivo] })) {
         try {

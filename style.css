@@ -1472,6 +1472,12 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .metrica-indigo   { --color-metrica: #3f51b5; }
 .metrica-naranja  { --color-metrica: #e67e22; }
 .aviso-fecha-reporte { color: #b9722a; font-weight: 600; margin: 4px 0 10px; }
+.fila-versiones-reporte { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.chip-version {
+  border: 1px solid #d8dcdf; background: #eceff1; color: #4a5663;
+  border-radius: 14px; padding: 4px 12px; font-size: .85rem; cursor: pointer;
+}
+.chip-version.activa { background: #bfe8d9; border-color: #8fd1b9; color: #1d5c46; font-weight: 600; }
 .metrica-cafe     { --color-metrica: #8d6e63; }
 .metrica-ancha    { grid-column: 1 / -1; }
 

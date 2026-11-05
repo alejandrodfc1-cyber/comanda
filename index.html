@@ -728,8 +728,43 @@
         <button type="button" class="btn" onclick="imprimirReporteCajaRawBT()">🖨️ Imprimir (RawBT)</button>
         <button type="button" class="btn btn-turquesa" onclick="compartirReporteCajaImagen()">📱 Compartir imagen</button>
       </div>
+      <p class="mensaje-guardado oculto" id="estado-guardado-reporte-caja"></p>
       <button type="button" class="btn btn-secundario btn-limpiar-conteo" onclick="limpiarConteoReporteCaja()">🧹 Limpiar conteo</button>
       <p class="texto-ayuda">Pone en cero caja chica, efectivo contado y gastos para empezar un conteo nuevo (hazlo después de imprimir o compartir este reporte).</p>
+
+      <h3 class="titulo-form titulo-seccion-nueva titulo-colapsable" onclick="toggleColapso('bloque-reportes-guardados', this); cargarReportesGuardados()">
+        <div class="titulo-fila">
+          <span class="titulo-texto">📚 Reportes guardados</span>
+          <span class="icono-colapso">▾</span>
+        </div>
+      </h3>
+      <div id="bloque-reportes-guardados" class="oculto">
+        <p class="texto-ayuda">Cada vez que imprimes o compartes el reporte, queda guardado. Elige las fechas y abre cualquiera para verlo, reimprimirlo o compartirlo. Si imprimes de nuevo con cambios, se guarda como una versión nueva y la anterior se conserva.</p>
+        <div class="fila-campos-form">
+          <label class="campo-form">Desde
+            <input type="date" id="rg-desde">
+          </label>
+          <label class="campo-form">Hasta
+            <input type="date" id="rg-hasta">
+          </label>
+        </div>
+        <div class="fila-botones-form">
+          <button type="button" class="btn btn-turquesa" onclick="cargarReportesGuardados()">🔍 Buscar</button>
+          <button type="button" class="btn" onclick="exportarReportesGuardadosCsv()">⬇️ Exportar a Excel</button>
+        </div>
+        <div id="lista-reportes-guardados"></div>
+
+        <div id="visor-reporte-guardado" class="oculto">
+          <p class="texto-ayuda" id="visor-reporte-info"></p>
+          <div class="fila-versiones-reporte" id="visor-reporte-versiones"></div>
+          <div id="visor-reporte-contenido" class="vista-previa-reporte-caja"></div>
+          <div class="fila-botones-form">
+            <button type="button" class="btn" onclick="imprimirReporteGuardado()">🖨️ Imprimir copia</button>
+            <button type="button" class="btn btn-turquesa" onclick="compartirReporteGuardadoImagen()">📱 Compartir imagen</button>
+            <button type="button" class="btn btn-secundario" onclick="cerrarReporteGuardado()">Cerrar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <button class="fab-detalle oculto" id="btn-guardar-flotante" onclick="guardarDesdeFlotante()">💾 Guardar</button>
