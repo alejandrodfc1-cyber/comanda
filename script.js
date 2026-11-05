@@ -2720,27 +2720,71 @@ function imprimirCajaChicaRawBT() {
   enviarARawBT(t);
 }
 
+// Ticket fisico: va junto al efectivo, asi que cada total muestra de donde sale y el cierre
+// deja ver la suma completa (incluida la diferencia de caja chica).
 function textoTicketReporteCaja(d, lineasEncabezado) {
-  const { centrar, fila, separador, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
+  const { ANCHO, centrar, fila, BOLD_ON, BOLD_OFF } = crearFormateadorTicket();
+  const dinero = formatoMonedaTxtReporte;
+  const fuerte = '='.repeat(ANCHO) + '\n';
+  const suave = '-'.repeat(ANCHO) + '\n';
+  const titulo = (texto) => `${BOLD_ON}${texto}${BOLD_OFF}\n`;
+  const total = (izq, der) => `${BOLD_ON}${fila(izq, der)}${BOLD_OFF}`;
+  const conSigno = (n) => (n > 0 ? '+' : n < 0 ? '-' : '') + dinero(Math.abs(n));
+  // Descripciones largas (gastos) bajan de linea en vez de pasarse del ancho del papel.
+  const filaLarga = (texto, der) => {
+    const max = ANCHO - 2;
+    const lineas = [];
+    let actual = '';
+    String(texto).split(/\s+/).filter(Boolean).forEach(palabra => {
+      while (palabra.length > max) {
+        if (actual) { lineas.push(actual); actual = ''; }
+        lineas.push(palabra.slice(0, max));
+        palabra = palabra.slice(max);
+      }
+      if (actual && `${actual} ${palabra}`.length > max) { lineas.push(actual); actual = palabra; }
+      else actual = actual ? `${actual} ${palabra}` : palabra;
+    });
+    lineas.push(actual);
+    return lineas.slice(0, -1).map(l => `  ${l}\n`).join('') + fila(`  ${lineas[lineas.length - 1]}`, der);
+  };
 
-  let t = `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
+  let t = fuerte;
+  t += `${BOLD_ON}${centrar(NEGOCIO_NOMBRE)}${BOLD_OFF}\n`;
+  t += `${BOLD_ON}${centrar('REPORTE DE CAJA')}${BOLD_OFF}\n`;
   lineasEncabezado.forEach(linea => { t += `${centrar(linea)}\n`; });
-  t += separador;
-  t += fila('Caja chica', formatoMonedaTxtReporte(d.cajaChica));
-  t += separador;
-  t += `${BOLD_ON}Efectivo Entregado:${BOLD_OFF}\n`;
-  d.efectivo.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, formatoMonedaTxtReporte(l.d * l.cantidad)); });
-  if (d.otros > 0) t += fila('  Monedas', formatoMonedaTxtReporte(d.otros));
-  t += separador;
-  t += `${BOLD_ON}${fila('Total Efectivo', formatoMonedaTxtReporte(d.totalEfectivoContado))}${BOLD_OFF}`;
-  t += `${BOLD_ON}${fila('Venta tarjeta', formatoMonedaTxtReporte(d.tarjeta))}${BOLD_OFF}`;
-  t += `${BOLD_ON}Gastos:${BOLD_OFF}\n`;
+  t += fuerte;
+
+  t += '\n';
+  t += titulo('CAJA CHICA');
+  t += fila('  Caja chica', dinero(d.cajaChica));
+  t += fila(`  Dif. vs ${dinero(CAJA_CHICA_ESPERADA)}`, conSigno(d.diferenciaCajaChica));
+  t += suave;
+
+  t += titulo('EFECTIVO ENTREGADO');
+  d.efectivo.forEach(l => { t += fila(`  $${l.d.toLocaleString('es-CO')} x ${l.cantidad}`, dinero(l.d * l.cantidad)); });
+  if (d.otros > 0) t += fila('  Monedas', dinero(d.otros));
+  if (d.efectivo.length === 0 && d.otros === 0) t += '  (sin efectivo)\n';
+  t += total('TOTAL EFECTIVO', dinero(d.totalEfectivoContado));
+  t += suave;
+
+  t += total('VENTA CON TARJETA', dinero(d.tarjeta));
+  t += suave;
+
+  t += titulo('GASTOS');
   if (d.gastos.length === 0) t += '  (sin gastos)\n';
-  d.gastos.forEach(g => { t += fila(`  ${g.desc}`, formatoMonedaTxtReporte(g.monto)); });
-  t += `${BOLD_ON}${fila('Total gastos', formatoMonedaTxtReporte(d.totalGastos))}${BOLD_OFF}`;
-  t += separador;
-  t += `${BOLD_ON}${fila('TOTAL VENTA', formatoMonedaTxtReporte(d.ventaTotal))}${BOLD_OFF}`;
-  t += separador;
+  d.gastos.forEach(g => { t += filaLarga(g.desc, dinero(g.monto)); });
+  t += total('TOTAL GASTOS', dinero(d.totalGastos));
+  t += '\n';
+
+  t += fuerte;
+  t += titulo('COMO SE CALCULA LA VENTA');
+  t += fila('  Efectivo entregado', dinero(d.totalEfectivoContado));
+  t += fila('  + Venta con tarjeta', dinero(d.tarjeta));
+  t += fila('  + Gastos pagados', dinero(d.totalGastos));
+  if (d.diferenciaCajaChica !== 0) t += fila('  Dif. caja chica', conSigno(d.diferenciaCajaChica));
+  t += suave;
+  t += total(`VENTA ${d.turno}° TURNO`, dinero(d.ventaTotal));
+  t += fuerte;
   return t;
 }
 
