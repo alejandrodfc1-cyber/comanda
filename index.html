@@ -255,6 +255,23 @@
         </div>
       </form>
 
+      <form id="form-cocina-letra" class="form-admin">
+        <h3 class="titulo-form">🍳 Letra del ticket de cocina</h3>
+        <p class="texto-ayuda">Tamaño de la mesa, los productos y las notas en el ticket que sale en cocina. "Grande" es el doble de alto y de ancho. Usa "Imprimir prueba" para ver cómo sale antes de guardar; la prueba dice "NO COCINAR".</p>
+        <label class="campo-form">Tamaño de la letra
+          <select id="config-cocina-letra">
+            <option value="normal">Normal (como antes)</option>
+            <option value="alto">Alto (el doble de alto)</option>
+            <option value="grande">Grande (el doble de alto y de ancho)</option>
+          </select>
+        </label>
+        <div class="fila-botones-form">
+          <button type="submit" class="btn btn-guardar">Guardar</button>
+          <button type="button" class="btn btn-turquesa" onclick="imprimirPruebaCocina()">🖨️ Imprimir prueba</button>
+          <span id="config-cocina-letra-msg" class="mensaje-guardado oculto">✓ Guardado</span>
+        </div>
+      </form>
+
       <div class="form-admin">
         <h3 class="titulo-form">🧹 Mantenimiento de fotos</h3>
         <p class="texto-ayuda">Borra fotos de productos que ya no se usan (por ejemplo, versiones viejas al reemplazar una foto) y reduce el tamaño de las que sí están en uso. Se puede ejecutar las veces que quieras, es seguro.</p>
