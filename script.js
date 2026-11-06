@@ -43,6 +43,31 @@ function aplicarEnvases(datos) {
   if (mesaActivaId) renderGaleriaMenu();
 }
 
+// Mesas donde el cliente no se sienta (la de llevar y "Otros"): siguen en las ventas, pero no
+// cuentan en los promedios de mesa (tiempo, ticket, ranking) ni en la alerta de mesa lenta.
+function mesaFueraDeSalon(mesa) {
+  return !!(mesa?.para_llevar || mesa?.excluir_promedios);
+}
+
+// Boton 🥡 en una mesa normal: agrega 1 unidad del producto de envase que corresponde al producto.
+const ENVASE_PRODUCTO_ID = { completo: 100, sandwich: 106 };
+
+function productoEnvaseDeItem(platoId, mesa) {
+  if (mesa?.para_llevar) return null;
+  const plato = MENU.find(p => p.id === platoId);
+  const idEnvase = plato ? ENVASE_PRODUCTO_ID[plato.tipo_envase] : null;
+  return idEnvase ? (MENU.find(p => p.id === idEnvase) || null) : null;
+}
+
+function agregarEnvaseDeItem(platoId, comensal) {
+  const envase = productoEnvaseDeItem(platoId, mesaActiva());
+  if (!envase) return;
+  const comensalAntes = comensalActivo;
+  comensalActivo = comensal || null;
+  agregarPlato(envase.id);
+  comensalActivo = comensalAntes;
+}
+
 // En una mesa "para llevar" los completos y sandwiches suman el valor del envase al precio.
 function precioEnMesa(plato, mesa) {
   const precio = Number(plato.precio);
@@ -421,7 +446,7 @@ async function cargarMesas() {
 const UMBRAL_TICKET_OLVIDADO_MIN = 7;
 
 function esMesaLenta(mesa, minutosAbierta) {
-  return UMBRAL_MESA_LENTA_MIN > 0 && minutosAbierta !== null && minutosAbierta >= UMBRAL_MESA_LENTA_MIN && totalMesa(mesa) < UMBRAL_MESA_LENTA_TOTAL;
+  return !mesaFueraDeSalon(mesa) && UMBRAL_MESA_LENTA_MIN > 0 && minutosAbierta !== null && minutosAbierta >= UMBRAL_MESA_LENTA_MIN && totalMesa(mesa) < UMBRAL_MESA_LENTA_TOTAL;
 }
 
 function minutosDesde(fechaIso) {
@@ -592,7 +617,7 @@ function crearTarjetaMesa(mesa) {
   const esSoloNumero = /^\d+(-[A-Z])?$/.test(String(etiqueta));
   const claseEtiqueta = (principal?.nombre && !esSoloNumero ? 'numero-mesa etiqueta-texto' : 'numero-mesa') + (/-[A-Z]$/.test(etiqueta) ? ' con-letra' : '');
   const detalleOcupada = rolUsuario === 'mesero' ? 'Ocupada' : formatoMoneda(totalMesa(mesa));
-  const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
+  const minutosAbierta = (!esMeseroVista && ocupada && mesa.abierta_en && !mesaFueraDeSalon(mesa)) ? Math.max(0, minutosDesde(mesa.abierta_en)) : null;
   let lineaTiempo = '';
   if (esMesaLenta(mesa, minutosAbierta)) btn.classList.add('mesa-lenta');
   if (minutosAbierta !== null) {
@@ -1098,7 +1123,7 @@ function actualizarTiempoMesa() {
   const el = document.getElementById('tiempo-mesa');
   const mesa = mesaActiva();
   if (!el) return;
-  if (!mesa?.abierta_en) { el.textContent = ''; el.classList.remove('tiempo-lenta'); return; }
+  if (!mesa?.abierta_en || mesaFueraDeSalon(mesa)) { el.textContent = ''; el.classList.remove('tiempo-lenta'); return; }
   const min = Math.max(0, minutosDesde(mesa.abierta_en));
   el.classList.toggle('tiempo-lenta', esMesaLenta(mesa, min));
   el.textContent = '⏱ ' + (min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`);
@@ -1221,6 +1246,7 @@ function renderPedido() {
         <span class="item-cantidad-num">${item.cantidad}</span>
         <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1, ${c})">+</button>
         <button class="btn-icono" onclick="editarNotaItem(${item.id}, ${c})" title="Nota">📝</button>
+        ${productoEnvaseDeItem(item.id, mesa) ? `<button class="btn-icono" onclick="agregarEnvaseDeItem(${item.id}, ${c})" title="Para llevar: agrega 1 ${escaparHtml(productoEnvaseDeItem(item.id, mesa).nombre)} (${formatoMoneda(productoEnvaseDeItem(item.id, mesa).precio)})">🥡</button>` : ''}
         <button class="btn-icono" onclick="abrirModalMover(${item.id}, ${c})" title="Mover a otro comensal">👤</button>
         <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id}, ${c})" title="Quitar">🗑️</button>
       </div>` : ''}`;
@@ -1897,11 +1923,11 @@ async function cargarMetricas() {
       if (turnoFiltro !== 'ambos') query = query.eq('turno', Number(turnoFiltro));
       return query;
     }),
-    sb.from('mesas').select('id, nombre, para_llevar'),
+    sb.from('mesas').select('id, nombre, para_llevar, excluir_promedios'),
   ]);
   const mapaMesas = Object.fromEntries((mesasData || []).map(m => [m.id, m.nombre || `Mesa ${m.id}`]));
-  const idsParaLlevar = new Set((mesasData || []).filter(m => m.para_llevar).map(m => m.id));
-  renderMetricas(filas || [], mapaMesas, idsParaLlevar);
+  const idsFueraDeSalon = new Set((mesasData || []).filter(mesaFueraDeSalon).map(m => m.id));
+  renderMetricas(filas || [], mapaMesas, idsFueraDeSalon);
 }
 
 function toggleColapso(contenidoId, tituloEl) {
@@ -1910,18 +1936,18 @@ function toggleColapso(contenidoId, tituloEl) {
   tituloEl.classList.toggle('expandido', !colapsado);
 }
 
-// idsParaLlevar: las mesas para llevar siguen contando en todos los totales, pero no en
-// el tiempo promedio por mesa ni en el ranking de mesas.
-function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
+// idsFueraDeSalon: las mesas donde el cliente no se sienta (llevar, "Otros") siguen contando en
+// todos los totales, pero no en el tiempo promedio por mesa, el ticket promedio ni el ranking de mesas.
+function renderMetricas(ventas, mapaMesas, idsFueraDeSalon = new Set()) {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
-  const ventasLlevar = ventas.filter(v => idsParaLlevar.has(v.mesa_id));
+  const ventasLlevar = ventas.filter(v => idsFueraDeSalon.has(v.mesa_id));
   const totalLlevar = ventasLlevar.reduce((s, v) => s + Number(v.total), 0);
   const nSalon = nVentas - ventasLlevar.length;
   const ticketPromedio = nSalon > 0 ? (totalVendido - totalLlevar) / nSalon : 0;
 
   // Mesas abiertas mas de 5 horas se consideran olvidadas (error de uso) y no entran al promedio.
-  const duraciones = ventas.filter(v => !idsParaLlevar.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0 && d <= DURACION_MAXIMA_MESA_MIN);
+  const duraciones = ventas.filter(v => !idsFueraDeSalon.has(v.mesa_id)).map(v => v.duracion_minutos).filter(d => d != null && d >= 0 && d <= DURACION_MAXIMA_MESA_MIN);
   const duracionPromedio = duraciones.length > 0 ? duraciones.reduce((s, d) => s + d, 0) / duraciones.length : null;
 
   const mapaProductos = Object.fromEntries(MENU.map(p => [p.id, p]));
@@ -1935,7 +1961,7 @@ function renderMetricas(ventas, mapaMesas, idsParaLlevar = new Set()) {
 
   ventas.forEach(v => {
     const etiquetaMesa = mapaMesas[v.mesa_id] || `Mesa ${v.mesa_id}`;
-    if (!idsParaLlevar.has(v.mesa_id)) {
+    if (!idsFueraDeSalon.has(v.mesa_id)) {
       if (!tallyMesas[v.mesa_id]) tallyMesas[v.mesa_id] = { etiqueta: etiquetaMesa, veces: 0, monto: 0 };
       tallyMesas[v.mesa_id].veces += 1;
       tallyMesas[v.mesa_id].monto += Number(v.total);
@@ -3167,6 +3193,8 @@ function editarMesa(id) {
   mesaEditandoId = id;
   document.getElementById('nueva-mesa-nombre').value = mesa.nombre || '';
   document.getElementById('nueva-mesa-llevar').checked = !!mesa.para_llevar;
+  document.getElementById('nueva-mesa-sin-promedios').checked = !!mesa.excluir_promedios;
+  actualizarCasillasMesaFueraDeSalon();
   document.getElementById('titulo-form-mesa').textContent = `Editando: ${mesa.nombre || `Mesa ${mesa.id}`}`;
   document.getElementById('btn-guardar-mesa').textContent = '💾 Guardar cambios';
   document.getElementById('btn-cancelar-mesa').classList.remove('oculto');
@@ -3174,10 +3202,20 @@ function editarMesa(id) {
   document.getElementById('nueva-mesa-nombre').focus();
 }
 
+// Una mesa que cobra envase (para llevar) siempre queda fuera de los promedios.
+function actualizarCasillasMesaFueraDeSalon() {
+  const llevar = document.getElementById('nueva-mesa-llevar').checked;
+  const sinPromedios = document.getElementById('nueva-mesa-sin-promedios');
+  if (llevar) sinPromedios.checked = true;
+  sinPromedios.disabled = llevar;
+}
+
 function cancelarEdicionMesa() {
   mesaEditandoId = null;
   document.getElementById('nueva-mesa-nombre').value = '';
   document.getElementById('nueva-mesa-llevar').checked = false;
+  document.getElementById('nueva-mesa-sin-promedios').checked = false;
+  actualizarCasillasMesaFueraDeSalon();
   document.getElementById('titulo-form-mesa').textContent = 'Nueva mesa';
   document.getElementById('btn-guardar-mesa').textContent = '+ Agregar mesa';
   document.getElementById('btn-cancelar-mesa').classList.add('oculto');
@@ -3188,12 +3226,13 @@ document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) 
   const nombreInput = document.getElementById('nueva-mesa-nombre');
   const nombre = nombreInput.value.trim() || null;
   const paraLlevar = document.getElementById('nueva-mesa-llevar').checked;
+  const sinPromedios = paraLlevar || document.getElementById('nueva-mesa-sin-promedios').checked;
 
   if (mesaEditandoId) {
-    await sb.from('mesas').update({ nombre, para_llevar: paraLlevar }).eq('id', mesaEditandoId);
+    await sb.from('mesas').update({ nombre, para_llevar: paraLlevar, excluir_promedios: sinPromedios }).eq('id', mesaEditandoId);
   } else {
     const siguienteOrden = Math.max(0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
-    await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden, para_llevar: paraLlevar });
+    await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden, para_llevar: paraLlevar, excluir_promedios: sinPromedios });
   }
   cancelarEdicionMesa();
   cargarMesas();

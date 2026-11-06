@@ -315,8 +315,12 @@
           <input type="text" id="nueva-mesa-nombre" placeholder="Opcional: temporada, cliente...">
         </label>
         <label class="campo-checkbox-form">
-          <input type="checkbox" id="nueva-mesa-llevar">
-          🥡 Mesa para llevar (cobra envase y no cuenta en los promedios de mesa)
+          <input type="checkbox" id="nueva-mesa-llevar" onchange="actualizarCasillasMesaFueraDeSalon()">
+          🥡 Mesa para llevar (cobra el envase en cada completo o sándwich)
+        </label>
+        <label class="campo-checkbox-form">
+          <input type="checkbox" id="nueva-mesa-sin-promedios">
+          🚶 El cliente no se sienta: no cuenta en los promedios de mesa (tiempo, ticket, ranking) ni en la alerta de mesa lenta. Sus ventas siguen en todos los totales.
         </label>
         <div class="fila-botones-form">
           <button type="submit" class="btn" id="btn-guardar-mesa">+ Agregar mesa</button>
@@ -602,7 +606,7 @@
             <div class="metrica-info">
               <span class="metrica-valor" id="metrica-llevar">—</span>
               <span class="metrica-etiqueta" id="metrica-llevar-detalle"></span>
-              <span class="metrica-etiqueta">Para llevar</span>
+              <span class="metrica-etiqueta">Para llevar y Otros (no se sientan)</span>
             </div>
           </div>
         </div>
