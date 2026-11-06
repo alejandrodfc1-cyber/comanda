@@ -665,6 +665,13 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .item-detalle { color: #2e7d32; font-size: .8rem; }
 .item-nota { color: #b26a00; font-size: .78rem; font-style: italic; }
 .item-acciones { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.item-envase { flex-basis: 100%; width: 100%; display: flex; }
+.btn-envase-item {
+  width: 100%; padding: 9px 12px; cursor: pointer;
+  background: #bfe8d9; border: 1px solid #8fd1b9; border-radius: 8px;
+  color: #1d5c46; font-weight: 600; font-size: .9rem;
+}
+.btn-envase-item:active { background: #a8dcc8; }
 .item-cantidad-num { min-width: 18px; text-align: center; font-weight: 700; }
 .item-pedido .btn-icono {
   width: 28px; height: 28px;

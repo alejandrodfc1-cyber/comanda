@@ -1246,10 +1246,15 @@ function renderPedido() {
         <span class="item-cantidad-num">${item.cantidad}</span>
         <button class="btn-icono" onclick="cambiarCantidad(${item.id}, 1, ${c})">+</button>
         <button class="btn-icono" onclick="editarNotaItem(${item.id}, ${c})" title="Nota">📝</button>
-        ${productoEnvaseDeItem(item.id, mesa) ? `<button class="btn-icono" onclick="agregarEnvaseDeItem(${item.id}, ${c})" title="Para llevar: agrega 1 ${escaparHtml(productoEnvaseDeItem(item.id, mesa).nombre)} (${formatoMoneda(productoEnvaseDeItem(item.id, mesa).precio)})">🥡</button>` : ''}
         <button class="btn-icono" onclick="abrirModalMover(${item.id}, ${c})" title="Mover a otro comensal">👤</button>
         <button class="btn-icono btn-eliminar" onclick="eliminarDelPedido(${item.id}, ${c})" title="Quitar">🗑️</button>
-      </div>` : ''}`;
+      </div>
+      ${(() => {
+        const envase = productoEnvaseDeItem(item.id, mesa);
+        return envase
+          ? `<div class="item-envase" onclick="event.stopPropagation()"><button type="button" class="btn-envase-item" onclick="agregarEnvaseDeItem(${item.id}, ${c})" title="Agrega 1 ${escaparHtml(envase.nombre)}">🥡 Para llevar: agregar envase +${formatoMoneda(envase.precio)}</button></div>`
+          : '';
+      })()}` : ''}`;
     cont.appendChild(el);
   };
   const dibujarGrupo = (titulo, items) => {
