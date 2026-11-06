@@ -1835,7 +1835,7 @@ function mostrarSeccionDashboard(seccion) {
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
-  if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); renderMeserosAdmin(); }
+  if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); renderMeserosAdmin(); actualizarVersionApp(); }
   if (seccion === 'reporte-caja') iniciarReporteCaja();
 }
 
@@ -4383,6 +4383,43 @@ document.getElementById('form-nueva-nota-rapida').addEventListener('submit', asy
   await cargarNotasRapidas();
   renderNotasRapidasAdmin();
 });
+
+// ---------- Version de la app ----------
+// El codigo de version son los primeros 7 caracteres del SHA-1 de cada archivo tal como lo sirve
+// el sitio (el mismo que da `git show HEAD:archivo | sha1sum`), asi se puede comparar con el repo.
+const ARCHIVOS_VERSION_APP = { pantalla: 'index.html', codigo: 'script.js', estilos: 'style.css' };
+let versionAppAlCargar = null;
+
+async function leerVersionApp() {
+  if (!window.crypto?.subtle) return null;
+  const entradas = await Promise.all(Object.entries(ARCHIVOS_VERSION_APP).map(async ([clave, archivo]) => {
+    const respuesta = await fetch(archivo, { cache: 'no-store' });
+    if (!respuesta.ok) throw new Error(`${archivo}: ${respuesta.status}`);
+    const digest = await crypto.subtle.digest('SHA-1', await respuesta.arrayBuffer());
+    return [clave, [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 7)];
+  }));
+  return Object.fromEntries(entradas);
+}
+
+async function actualizarVersionApp() {
+  const texto = document.getElementById('version-app-texto');
+  if (!texto) return;
+  try {
+    const actual = await leerVersionApp();
+    if (!actual) { texto.textContent = 'No disponible en esta conexión (requiere conexión segura).'; return; }
+    if (!versionAppAlCargar) versionAppAlCargar = actual;
+    texto.textContent = `Versión ${versionAppAlCargar.codigo} (pantalla ${versionAppAlCargar.pantalla} · estilos ${versionAppAlCargar.estilos})`;
+    const hayNueva = Object.keys(actual).some(k => actual[k] !== versionAppAlCargar[k]);
+    document.getElementById('version-app-aviso').classList.toggle('oculto', !hayNueva);
+    document.getElementById('btn-actualizar-app').classList.toggle('oculto', !hayNueva);
+    if (hayNueva) texto.textContent += ` — disponible: ${actual.codigo}`;
+  } catch (err) {
+    console.error('No se pudo leer la versión de la app:', err);
+    texto.textContent = 'No se pudo leer la versión (sin conexión).';
+  }
+}
+
+setTimeout(() => leerVersionApp().then(v => { if (v && !versionAppAlCargar) versionAppAlCargar = v; }).catch(() => {}), 3000);
 
 let meseroEditandoNumero = null;
 
