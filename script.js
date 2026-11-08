@@ -92,10 +92,9 @@ function aplicarUmbralesMesaLenta(datos) {
 
 async function cargarConfiguracion() {
   const { data } = await sb.from('configuracion').select('clave, valor')
-    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono', 'mesa_lenta_min', 'mesa_lenta_total', 'envase_completo', 'envase_sandwich', 'cocina_letra']);
+    .in('clave', ['telefono', 'turno_activo', 'nombre_negocio', 'direccion_negocio', 'nombre_app', 'nombre_icono', 'mesa_lenta_min', 'mesa_lenta_total', 'envase_completo', 'envase_sandwich']);
   aplicarUmbralesMesaLenta(data || []);
   aplicarEnvases(data || []);
-  aplicarCocinaLetra(data || []);
   negocioTelefono = data?.find(d => d.clave === 'telefono')?.valor || '';
   turnoActivo = data?.find(d => d.clave === 'turno_activo')?.valor || '1';
   NEGOCIO_NOMBRE = data?.find(d => d.clave === 'nombre_negocio')?.valor || NEGOCIO_NOMBRE;
@@ -236,7 +235,6 @@ sb
     const fila = payload.new;
     if (fila?.clave === 'mesa_lenta_min' || fila?.clave === 'mesa_lenta_total') aplicarUmbralesMesaLenta([fila]);
     if (fila?.clave === 'envase_completo' || fila?.clave === 'envase_sandwich') aplicarEnvases([fila]);
-    if (fila?.clave === 'cocina_letra') aplicarCocinaLetra([fila]);
   })
   .subscribe();
 
@@ -1531,111 +1529,6 @@ function itemsPendientesCocina(mesa) {
     .filter(item => item.cantidad > 0);
 }
 
-// ---------- Ticket de cocina: tamaño de letra ----------
-// normal = como siempre; alto = letra al doble de alto (32 columnas); grande = al doble de alto y
-// de ancho (16 columnas). Se usa el comando ESC ! del ticket (ESC/POS), igual de estandar que la
-// negrita que ya usa la app.
-const COCINA_COLUMNAS = { normal: 32, alto: 32, grande: 16 };
-const COCINA_ESC_TAMANO = { alto: '\x1B\x21\x18', grande: '\x1B\x21\x38' };
-const COCINA_ESC_RESET = '\x1B\x21\x00';
-let TAMANO_LETRA_COCINA = 'grande';
-
-// Parte el texto en lineas de a lo mas `columnas` caracteres sin cortar palabras (salvo que una
-// palabra sola no quepa); las lineas siguientes a la primera llevan `sangria`.
-function envolverLinea(texto, columnas, sangria = '') {
-  const lineas = [];
-  let actual = '';
-  const ancho = () => columnas - (lineas.length === 0 ? 0 : sangria.length);
-  const empujar = () => { lineas.push((lineas.length === 0 ? '' : sangria) + actual); actual = ''; };
-  String(texto).split(/\s+/).filter(Boolean).forEach(palabra => {
-    if (actual && `${actual} ${palabra}`.length > ancho()) empujar();
-    while (palabra.length > ancho()) {
-      if (actual) empujar();
-      const corte = ancho();
-      actual = palabra.slice(0, corte);
-      empujar();
-      palabra = palabra.slice(corte);
-    }
-    actual = actual ? `${actual} ${palabra}` : palabra;
-  });
-  if (actual) empujar();
-  return lineas;
-}
-
-function aplicarCocinaLetra(datos) {
-  const valor = datos.find(d => d.clave === 'cocina_letra')?.valor;
-  if (COCINA_COLUMNAS[valor]) TAMANO_LETRA_COCINA = valor;
-  const select = document.getElementById('config-cocina-letra');
-  if (select && document.activeElement !== select) select.value = TAMANO_LETRA_COCINA;
-}
-
-document.getElementById('form-cocina-letra')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const valor = document.getElementById('config-cocina-letra').value;
-  const mensaje = document.getElementById('config-cocina-letra-msg');
-  const { error } = await sb.from('configuracion').upsert({ clave: 'cocina_letra', valor }, { onConflict: 'clave' });
-  mensaje.textContent = error ? '✕ No se pudo guardar: ' + error.message : '✓ Guardado';
-  mensaje.classList.toggle('mensaje-error', !!error);
-  mensaje.classList.remove('oculto');
-  if (error) { console.error(error); return; }
-  aplicarCocinaLetra([{ clave: 'cocina_letra', valor }]);
-  setTimeout(() => mensaje.classList.add('oculto'), 2500);
-});
-
-// Imprime un ticket de ejemplo con el tamaño elegido (sin guardarlo), para verlo antes de usarlo.
-function imprimirPruebaCocina() {
-  const tamano = document.getElementById('config-cocina-letra').value;
-  enviarARawBT(textoComandaCocina({
-    titulo: 'PRUEBA - NO COCINAR', etiqueta: '5', hora: '14:35:10', mesero: 'Mesero N° 3 · Camila',
-    items: [
-      { cantidad: 2, nombre: 'Completo italiano' },
-      { cantidad: 1, nombre: 'Churrasco Palta/porotos ver.', nota: 'sin cebolla, bien cocido' },
-      { cantidad: 3, nombre: 'Barros Luco' },
-    ],
-  }, tamano));
-}
-
-function textoComandaCocina({ titulo: tituloFijo, esActualizacion, etiqueta, hora, mesero, items }, tamano = TAMANO_LETRA_COCINA) {
-  const ANCHO = 32;
-  const centrar = (linea, ancho = ANCHO) => ' '.repeat(Math.max(0, Math.floor((ancho - linea.length) / 2))) + linea;
-  const separador = '-'.repeat(ANCHO) + '\n';
-  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
-  const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
-  const titulo = tituloFijo || (esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA');
-
-  let t = `${BOLD_ON}${centrar(titulo)}${BOLD_OFF}\n`;
-  t += separador;
-
-  if (!COCINA_ESC_TAMANO[tamano]) {
-    t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
-    t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
-    if (mesero) t += `${FUENTE_B}${centrar(mesero)}${FUENTE_A}\n`;
-    t += separador;
-    items.forEach(item => {
-      t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
-      if (item.nota) t += `   » ${item.nota}\n`;
-    });
-    t += separador;
-    return t;
-  }
-
-  // Alto / Grande: mesa, producto y nota salen en letra grande; hora y mesero en tamaño normal
-  // y negrita (antes salian en la letra chica).
-  const columnas = COCINA_COLUMNAS[tamano];
-  const grande = (texto) => `${COCINA_ESC_TAMANO[tamano]}${texto}${COCINA_ESC_RESET}\n`;
-  envolverLinea(`MESA ${etiqueta}`, columnas).forEach(l => { t += grande(centrar(l, columnas)); });
-  t += `${BOLD_ON}${centrar(hora)}${BOLD_OFF}\n`;
-  if (mesero) envolverLinea(mesero, ANCHO).forEach(l => { t += `${BOLD_ON}${centrar(l)}${BOLD_OFF}\n`; });
-  t += separador;
-  items.forEach(item => {
-    envolverLinea(`${item.cantidad}x ${item.nombre}`, columnas, '   ').forEach(l => { t += grande(l); });
-    if (item.nota) envolverLinea(`» ${item.nota}`, columnas, '  ').forEach(l => { t += grande(l); });
-    t += '\n';
-  });
-  t += separador;
-  return t;
-}
-
 async function imprimirComandaCocina() {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -1657,12 +1550,29 @@ async function imprimirComandaCocina() {
   const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const etiqueta = nombreMesaVisible(mesa);
 
-  const nombreMeseroComanda = mesa.mesero_numero ? nombreMesero(mesa.mesero_numero) : null;
-  const t = textoComandaCocina({
-    esActualizacion, etiqueta, hora,
-    mesero: mesa.mesero_numero ? `Mesero N° ${mesa.mesero_numero}${nombreMeseroComanda ? ' · ' + nombreMeseroComanda : ''}` : null,
-    items: itemsCocina,
+  const ANCHO = 32;
+  const centrar = (linea) => {
+    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
+    return ' '.repeat(relleno) + linea;
+  };
+  const separador = '-'.repeat(ANCHO) + '\n';
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
+
+  let t = `${BOLD_ON}${centrar(esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA')}${BOLD_OFF}\n`;
+  t += separador;
+  t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
+  t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
+  if (mesa.mesero_numero) {
+    const nombreMeseroComanda = nombreMesero(mesa.mesero_numero);
+    t += `${FUENTE_B}${centrar(`Mesero N° ${mesa.mesero_numero}${nombreMeseroComanda ? ' · ' + nombreMeseroComanda : ''}`)}${FUENTE_A}\n`;
+  }
+  t += separador;
+  itemsCocina.forEach(item => {
+    t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
+    if (item.nota) t += `   » ${item.nota}\n`;
   });
+  t += separador;
 
   const nuevoEstado = { ...yaEnviado };
   cantidadesCocinaPorProducto(mesa).forEach(item => { nuevoEstado[item.id] = item.cantidad; });
@@ -1671,7 +1581,8 @@ async function imprimirComandaCocina() {
   const { error } = await sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
   if (error) console.error('No se pudo guardar el estado de comanda enviada a cocina:', error);
 
-  enviarARawBT(t);
+  const textoCodificado = encodeURI(t);
+  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
 
 let reciboActual = null;
