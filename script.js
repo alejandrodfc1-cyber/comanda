@@ -1529,6 +1529,89 @@ function itemsPendientesCocina(mesa) {
     .filter(item => item.cantidad > 0);
 }
 
+// ---------- Ticket de cocina: formato ----------
+// Solo usa negrita y letra normal (lo unico que acepta la impresora). Para que se lea mejor:
+// productos y notas en MAYUSCULAS (se ven mas altas), negrita en todo, hora y mesero en letra
+// normal, la mesa con las letras separadas y una linea en blanco entre productos.
+
+// Mayusculas sin tildes (algunas impresoras no tienen las mayusculas acentuadas); la Ñ se conserva.
+function mayusculasTicket(texto) {
+  return String(texto).replace(/ñ/gi, '\u0001').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\u0001/g, 'Ñ');
+}
+
+// Parte el texto en lineas de a lo mas `ancho` caracteres sin cortar palabras (salvo una palabra
+// sola mas larga que la linea).
+function envolverLinea(texto, ancho) {
+  const lineas = [];
+  let actual = '';
+  String(texto).split(/\s+/).filter(Boolean).forEach(palabra => {
+    if (actual && `${actual} ${palabra}`.length > ancho) { lineas.push(actual); actual = ''; }
+    while (palabra.length > ancho) {
+      if (actual) { lineas.push(actual); actual = ''; }
+      lineas.push(palabra.slice(0, ancho));
+      palabra = palabra.slice(ancho);
+    }
+    actual = actual ? `${actual} ${palabra}` : palabra;
+  });
+  if (actual) lineas.push(actual);
+  return lineas;
+}
+
+function textoComandaCocina({ titulo: tituloFijo, esActualizacion, etiqueta, hora, mesero, items }) {
+  const ANCHO = 32;
+  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
+  const centrar = (linea) => ' '.repeat(Math.max(0, Math.floor((ANCHO - linea.length) / 2))) + linea;
+  const negrita = (linea) => `${BOLD_ON}${linea}${BOLD_OFF}\n`;
+  const fuerte = '='.repeat(ANCHO) + '\n';
+  const titulo = tituloFijo || (esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA');
+
+  const mesaTexto = mayusculasTicket(`MESA ${etiqueta}`);
+  const mesaEspaciada = mesaTexto.split(' ').map(p => p.split('').join(' ')).join('   ');
+
+  let t = fuerte + negrita(centrar(titulo)) + fuerte;
+  if (mesaEspaciada.length <= ANCHO) t += negrita(centrar(mesaEspaciada));
+  else envolverLinea(mesaTexto, ANCHO).forEach(l => { t += negrita(centrar(l)); });
+  const meseroTexto = mesero ? `MESERO ${mesero.numero}${mesero.nombre ? ' · ' + mayusculasTicket(mesero.nombre) : ''}` : '';
+  const horaYMesero = meseroTexto ? `${hora} · ${meseroTexto}` : hora;
+  if (horaYMesero.length <= ANCHO) {
+    t += negrita(centrar(horaYMesero));
+  } else {
+    t += negrita(centrar(hora));
+    envolverLinea(meseroTexto, ANCHO).forEach(l => { t += negrita(centrar(l)); });
+  }
+  t += fuerte;
+
+  items.forEach(item => {
+    t += '\n';
+    const sangria = ' '.repeat(`${item.cantidad} x `.length);
+    envolverLinea(mayusculasTicket(item.nombre), ANCHO - sangria.length).forEach((l, i) => {
+      t += negrita(i === 0 ? `${item.cantidad} x ${l}` : `${sangria}${l}`);
+    });
+    if (item.nota) {
+      // Se reserva lugar para el prefijo ("  >> ") y el cierre (" <<") en cada linea.
+      const lineas = envolverLinea(mayusculasTicket(item.nota), ANCHO - 8);
+      lineas.forEach((l, i) => {
+        const cierre = i === lineas.length - 1 ? ' <<' : '';
+        t += negrita(`${i === 0 ? '  >> ' : '     '}${l}${cierre}`);
+      });
+    }
+  });
+  t += '\n' + fuerte;
+  return t;
+}
+
+// Imprime un ticket de ejemplo para ver el formato; dice "NO COCINAR".
+function imprimirPruebaCocina() {
+  enviarARawBT(textoComandaCocina({
+    titulo: 'PRUEBA - NO COCINAR', etiqueta: '5', hora: '14:35:10', mesero: { numero: 3, nombre: 'Camila' },
+    items: [
+      { cantidad: 2, nombre: 'Completo' },
+      { cantidad: 1, nombre: 'Churrasco Palta/porotos ver.', nota: 'sin cebolla, bien cocido' },
+      { cantidad: 3, nombre: 'Barros Luco' },
+    ],
+  }));
+}
+
 async function imprimirComandaCocina() {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -1547,32 +1630,14 @@ async function imprimirComandaCocina() {
     return;
   }
   const ahora = new Date();
-  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   const etiqueta = nombreMesaVisible(mesa);
-
-  const ANCHO = 32;
-  const centrar = (linea) => {
-    const relleno = Math.max(0, Math.floor((ANCHO - linea.length) / 2));
-    return ' '.repeat(relleno) + linea;
-  };
-  const separador = '-'.repeat(ANCHO) + '\n';
-  const BOLD_ON = '\x1B\x45\x01', BOLD_OFF = '\x1B\x45\x00';
-  const FUENTE_B = '\x1B\x4D\x01', FUENTE_A = '\x1B\x4D\x00';
-
-  let t = `${BOLD_ON}${centrar(esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA')}${BOLD_OFF}\n`;
-  t += separador;
-  t += `${BOLD_ON}${centrar(`MESA: ${etiqueta}`)}${BOLD_OFF}\n`;
-  t += `${FUENTE_B}${centrar(hora)}${FUENTE_A}\n`;
-  if (mesa.mesero_numero) {
-    const nombreMeseroComanda = nombreMesero(mesa.mesero_numero);
-    t += `${FUENTE_B}${centrar(`Mesero N° ${mesa.mesero_numero}${nombreMeseroComanda ? ' · ' + nombreMeseroComanda : ''}`)}${FUENTE_A}\n`;
-  }
-  t += separador;
-  itemsCocina.forEach(item => {
-    t += `${BOLD_ON}${item.cantidad}x  ${item.nombre}${BOLD_OFF}\n`;
-    if (item.nota) t += `   » ${item.nota}\n`;
+  const nombreMeseroComanda = mesa.mesero_numero ? nombreMesero(mesa.mesero_numero) : null;
+  const t = textoComandaCocina({
+    esActualizacion, etiqueta, hora,
+    mesero: mesa.mesero_numero ? { numero: mesa.mesero_numero, nombre: nombreMeseroComanda } : null,
+    items: itemsCocina,
   });
-  t += separador;
 
   const nuevoEstado = { ...yaEnviado };
   cantidadesCocinaPorProducto(mesa).forEach(item => { nuevoEstado[item.id] = item.cantidad; });
@@ -1581,8 +1646,7 @@ async function imprimirComandaCocina() {
   const { error } = await sb.from('mesas').update({ comanda_cocina_enviada: nuevoEstado }).eq('id', mesa.id);
   if (error) console.error('No se pudo guardar el estado de comanda enviada a cocina:', error);
 
-  const textoCodificado = encodeURI(t);
-  window.location.href = `intent:${textoCodificado}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+  enviarARawBT(t);
 }
 
 let reciboActual = null;
