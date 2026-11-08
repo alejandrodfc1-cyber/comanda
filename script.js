@@ -1040,6 +1040,7 @@ function agregarPlato(platoId) {
   const plato = MENU.find(p => p.id === platoId);
   const precio = precioEnMesa(plato, mesa);
   const comensal = comensalActivo;
+  ajustarEnviadoCocina(mesa);
   const item = lineaPedido(mesa, platoId, comensal);
   if (mesa.pedido.length === 0) mesa.abierta_en = new Date().toISOString();
   if (item) item.cantidad++;
@@ -1070,6 +1071,7 @@ function cambiarCantidad(platoId, delta, comensal = 0) {
   item.cantidad += delta;
   if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i !== item);
   else if (delta > 0) limpiarSolicitudCuentaPorCambioPedido(mesa);
+  ajustarEnviadoCocina(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('cambiar_cantidad_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: platoId, p_delta: delta, p_comensal: comensal || null,
@@ -1197,6 +1199,7 @@ async function eliminarDelPedido(platoId, comensal = 0) {
   if (!item) return;
   if (!(await confirmarApp(`¿Quitar "${item.nombre}" del pedido?`))) return;
   mesa.pedido = mesa.pedido.filter(i => i !== item);
+  ajustarEnviadoCocina(mesa);
   renderPedido();
   sincronizarItemPedido(() => sb.rpc('quitar_item_pedido', {
     p_mesa_id: mesa.id, p_item_id: platoId, p_comensal: comensal || null,
@@ -1521,6 +1524,26 @@ function cantidadesCocinaPorProducto(mesa) {
     porProducto.set(item.id, acc);
   });
   return [...porProducto.values()].map(({ notas, ...item }) => ({ ...item, nota: notas.join(' / ') || undefined }));
+}
+
+// "Ya enviado a cocina" nunca puede ser mayor que lo que hay en el pedido. Si se baja una cantidad,
+// se quita un producto o la mesa quedo vacia con un registro viejo, se recorta: asi, cuando vuelvan
+// a pedir ese producto, "Enviar a cocina" aparece de nuevo en vez de creerse que ya estaba enviado.
+function ajustarEnviadoCocina(mesa) {
+  const yaEnviado = mesa.comanda_cocina_enviada || {};
+  if (Object.keys(yaEnviado).length === 0) return;
+  const actuales = new Map(cantidadesCocinaPorProducto(mesa).map(item => [String(item.id), item.cantidad]));
+  const ajustado = {};
+  let cambio = false;
+  Object.entries(yaEnviado).forEach(([id, enviado]) => {
+    const tope = Math.min(enviado, actuales.get(id) || 0);
+    if (tope > 0) ajustado[id] = tope;
+    if (tope !== enviado) cambio = true;
+  });
+  if (!cambio) return;
+  mesa.comanda_cocina_enviada = ajustado;
+  sb.from('mesas').update({ comanda_cocina_enviada: ajustado }).eq('id', mesa.id)
+    .then(({ error }) => { if (error) console.error('No se pudo ajustar lo enviado a cocina:', error); });
 }
 
 function itemsPendientesCocina(mesa) {
