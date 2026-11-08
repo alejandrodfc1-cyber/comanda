@@ -1313,6 +1313,8 @@ function renderPedido() {
   // "Enviar a cocina" solo depende de si hay algo pendiente -- si piden la
   // cuenta y despues agregan un producto mas, tiene que poder enviarse igual.
   document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !hayPendienteCocina);
+  // Reimprimir: solo cuando ya se envio todo y hay algo de cocina; no para meseros (evita duplicados).
+  document.getElementById('btn-reimprimir-cocina')?.classList.toggle('oculto', esMesero || hayPendienteCocina || cantidadesCocinaPorProducto(mesa).length === 0);
   document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !sinCierreEnCurso || hayPendienteCocina);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
@@ -1612,6 +1614,28 @@ function imprimirPruebaCocina() {
   }));
 }
 
+function encabezadoComanda(mesa) {
+  return {
+    etiqueta: nombreMesaVisible(mesa),
+    hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+    mesero: mesa.mesero_numero ? { numero: mesa.mesero_numero, nombre: nombreMesero(mesa.mesero_numero) } : null,
+  };
+}
+
+// Vuelve a imprimir todo el pedido de cocina (impresora sin papel, ticket perdido...). No toca
+// lo que ya se marco como enviado.
+async function reimprimirComandaCocina() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const items = cantidadesCocinaPorProducto(mesa);
+  if (items.length === 0) {
+    alert('La mesa no tiene productos de cocina para reimprimir.');
+    return;
+  }
+  if (!(await confirmarApp('¿Reimprimir a cocina todo el pedido de esta mesa? El ticket sale con la leyenda REIMPRESION.'))) return;
+  enviarARawBT(textoComandaCocina({ titulo: 'REIMPRESION DE COMANDA', ...encabezadoComanda(mesa), items }));
+}
+
 async function imprimirComandaCocina() {
   const mesa = mesaActiva();
   if (!mesa) return;
@@ -1629,15 +1653,7 @@ async function imprimirComandaCocina() {
       : 'Ningún producto de este pedido se prepara en cocina (por ejemplo, son solo bebidas embotelladas).');
     return;
   }
-  const ahora = new Date();
-  const hora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const etiqueta = nombreMesaVisible(mesa);
-  const nombreMeseroComanda = mesa.mesero_numero ? nombreMesero(mesa.mesero_numero) : null;
-  const t = textoComandaCocina({
-    esActualizacion, etiqueta, hora,
-    mesero: mesa.mesero_numero ? { numero: mesa.mesero_numero, nombre: nombreMeseroComanda } : null,
-    items: itemsCocina,
-  });
+  const t = textoComandaCocina({ esActualizacion, ...encabezadoComanda(mesa), items: itemsCocina });
 
   const nuevoEstado = { ...yaEnviado };
   cantidadesCocinaPorProducto(mesa).forEach(item => { nuevoEstado[item.id] = item.cantidad; });
@@ -1652,10 +1668,11 @@ async function imprimirComandaCocina() {
 let reciboActual = null;
 
 // En el recibo, el mismo producto repartido entre comensales se muestra en una sola linea.
+// Las notas ("sin aji") son solo para cocina: no se muestran al cliente ni separan lineas.
 function agruparItemsRecibo(items) {
   const agrupados = [];
   items.forEach(item => {
-    const igual = agrupados.find(a => a.id === item.id && a.precio === item.precio && (a.nota || '') === (item.nota || ''));
+    const igual = agrupados.find(a => a.id === item.id && a.precio === item.precio);
     if (igual) igual.cantidad += item.cantidad;
     else agrupados.push({ ...item });
   });
@@ -1669,7 +1686,7 @@ function renderRecibo({ pedido, numeroRecibo, etiquetaMesa, fecha, hora, total, 
 
   const filasItems = pedido.map(item => `
     <div class="recibo-fila">
-      <span>${item.nombre}${item.nota ? `<br><small>📝 ${item.nota}</small>` : ''}</span>
+      <span>${item.nombre}</span>
       <span>${item.cantidad} x ${formatoMoneda(item.precio)}</span>
     </div>`).join('');
 
@@ -1802,7 +1819,6 @@ function imprimirConRawBT() {
       : item.nombre;
     const cantidadPrecio = `${item.cantidad} x ${item.precio.toLocaleString('es-CO')}`;
     t += fila(nombreCorto, cantidadPrecio);
-    if (item.nota) t += `${FUENTE_B}  » ${item.nota}${FUENTE_A}\n`;
   });
   t += separador;
   const MEDIO_ESPACIO = '\x1B\x4A\x0C';
