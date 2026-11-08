@@ -1356,7 +1356,10 @@ function mostrarPanelMetodoPago() {
   document.getElementById('titulo-metodo-pago').textContent = comensalActivo !== null
     ? `¿Cómo pagó ${nombreCortoComensal(mesa, comensalActivo)}?`
     : '¿Cómo pagó?';
-  document.getElementById('panel-metodo-pago').classList.remove('oculto');
+  const panel = document.getElementById('panel-metodo-pago');
+  panel.classList.remove('oculto');
+  // Con pedidos largos el panel queda bajo la pantalla: se baja solo hasta mostrar las formas de pago.
+  panel.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
 
 async function cobrarComensal(mesa, n, metodoPago) {
