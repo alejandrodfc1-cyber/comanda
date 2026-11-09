@@ -1593,7 +1593,8 @@ function textoComandaCocina({ titulo: tituloFijo, esActualizacion, etiqueta, hor
   const fuerte = '='.repeat(ANCHO) + '\n';
   const titulo = tituloFijo || (esActualizacion ? 'ACTUALIZACION DE PEDIDO' : 'COMANDA DE COCINA');
 
-  const mesaTexto = mayusculasTicket(`MESA ${etiqueta}`);
+  // La etiqueta ya viene completa ("Mesa 9", "Mesa 3-B", "Llevar", "Terraza 1"): no se le antepone "MESA".
+  const mesaTexto = mayusculasTicket(etiqueta);
   const mesaEspaciada = mesaTexto.split(' ').map(p => p.split('').join(' ')).join('   ');
 
   let t = fuerte + negrita(centrar(titulo)) + fuerte;
@@ -1631,7 +1632,7 @@ function textoComandaCocina({ titulo: tituloFijo, esActualizacion, etiqueta, hor
 // Imprime un ticket de ejemplo para ver el formato; dice "NO COCINAR".
 function imprimirPruebaCocina() {
   enviarARawBT(textoComandaCocina({
-    titulo: 'PRUEBA - NO COCINAR', etiqueta: '5', hora: '14:35:10', mesero: { numero: 3, nombre: 'Camila' },
+    titulo: 'PRUEBA - NO COCINAR', etiqueta: 'Mesa 5', hora: '14:35:10', mesero: { numero: 3, nombre: 'Camila' },
     items: [
       { cantidad: 2, nombre: 'Completo' },
       { cantidad: 1, nombre: 'Churrasco Palta/porotos ver.', nota: 'sin cebolla, bien cocido' },
