@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hoja para caja</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+  /* Una hoja A4 para caja: cobro normal, dividir la cuenta y otro cliente en la misma mesa.
+     Los botones dibujados copian los colores y textos de la app. */
+  :root {
+    --bg: #f6f4f0; --hoja: #ffffff; --tinta: #1d2a36; --suave: #5b6772; --linea: #d9d5cd;
+    --acento: #c2410c; --naranja: #e67e22; --turquesa: #16a085; --verde: #27ae60; --rojo: #c0392b;
+    --aviso-bg: #fff4e5; --aviso-borde: #f0b26a; --panel: #f2f7f5;
+    --fuente-titulo: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --fuente-texto: "Barlow", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181e; --hoja: #1a222a; --tinta: #eef1f4; --suave: #a3afba; --linea: #33414d;
+      --acento: #ff8a4c; --aviso-bg: #2d2217; --aviso-borde: #8a5a2b; --panel: #1f2b2d; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181e; --hoja: #1a222a; --tinta: #eef1f4; --suave: #a3afba; --linea: #33414d;
+    --acento: #ff8a4c; --aviso-bg: #2d2217; --aviso-borde: #8a5a2b; --panel: #1f2b2d; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--tinta); font-family: var(--fuente-texto); font-size: 15.5px; line-height: 1.42;
+    padding-block: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .hoja { max-width: 860px; margin: 0 auto; background: var(--hoja); border: 1px solid var(--linea); padding: 30px 34px 26px; display: flex; flex-direction: column; gap: 20px; }
+  header { display: flex; flex-direction: column; gap: 4px; border-bottom: 3px solid var(--acento); padding-bottom: 12px; }
+  .local { font-family: var(--fuente-titulo); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--acento); font-size: 1rem; }
+  h1 { font-family: var(--fuente-titulo); font-weight: 700; font-size: clamp(2rem, 7vw, 2.7rem); line-height: 1.02; margin: 0; text-wrap: balance; }
+  .sub { color: var(--suave); margin: 4px 0 0; }
+
+  .bloque { display: flex; flex-direction: column; gap: 10px; }
+  h2 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.5rem; line-height: 1.1; margin: 0; text-wrap: balance; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  h2 small { font-family: var(--fuente-texto); font-weight: 500; font-size: .9rem; color: var(--suave); }
+  .pasos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; margin: 0; padding: 0; list-style: none; }
+  .paso { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+  .num { font-family: var(--fuente-titulo); font-weight: 700; font-size: 2.4rem; line-height: .9; color: var(--acento); grid-row: span 2; text-align: center; }
+  .paso h3 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.2rem; line-height: 1.1; margin: 0; }
+  .paso p { margin: 0; }
+  .muted { color: var(--suave); font-size: .9rem; }
+  .btn { display: inline-block; font-weight: 600; font-size: .88rem; color: #fff; border-radius: 8px; padding: 4px 10px; white-space: nowrap; margin: 3px 3px 0 0; }
+  .btn.naranja { background: var(--naranja); } .btn.turquesa { background: var(--turquesa); } .btn.verde { background: var(--verde); } .btn.rojo { background: var(--rojo); }
+  .chip { display: inline-block; border: 1.5px solid var(--turquesa); color: var(--turquesa); border-radius: 999px; padding: 1px 9px; font-weight: 700; font-size: .85rem; margin: 0 2px; }
+  .enlace { color: var(--suave); text-decoration: underline; font-weight: 600; font-size: .9rem; }
+
+  .panel { background: var(--panel); border: 1px solid var(--linea); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .dos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .opcion { border: 1px solid var(--linea); background: var(--hoja); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .opcion h3 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.15rem; margin: 0; line-height: 1.1; }
+  .opcion p { margin: 0; }
+  .dos-bloques { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .caja { border: 1px solid var(--linea); padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
+  .caja.aviso { background: var(--aviso-bg); border-color: var(--aviso-borde); }
+  .caja h3 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.15rem; letter-spacing: .03em; text-transform: uppercase; margin: 0; }
+  .caja ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 3px; }
+  .caja li::marker { color: var(--acento); }
+  footer { color: var(--suave); font-size: .9rem; border-top: 1px solid var(--linea); padding-top: 10px; }
+
+  @media (max-width: 680px) {
+    .hoja { padding: 20px 16px; gap: 18px; }
+    .pasos, .dos, .dos-bloques { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media print {
+    @page { size: A4; margin: 9mm; }
+    :root { --bg: #fff; --hoja: #fff; }
+    body { padding: 0; font-size: 13.2px; }
+    .hoja { border: none; max-width: none; padding: 0; gap: 13px; }
+    .panel, .caja, .opcion { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<main class="hoja">
+  <header>
+    <span class="local">La Españita · Caja</span>
+    <h1>Cómo cobrar en Comanda</h1>
+    <p class="sub">Cobro normal, cuenta dividida y otro cliente en la misma mesa.</p>
+  </header>
+
+  <section class="bloque">
+    <h2>1 · Cobro normal <small>una sola persona o un solo pago</small></h2>
+    <ol class="pasos">
+      <li class="paso"><span class="num">1</span><h3>Abre la mesa</h3><p>Toca la mesa y revisa el pedido. Para dar la cuenta: <span class="btn turquesa">🖨️ Imprimir ticket</span></p></li>
+      <li class="paso"><span class="num">2</span><h3>Toca Cobrar</h3><p><span class="btn rojo">💰 Cobrar</span> La pantalla baja sola hasta las formas de pago.</p></li>
+      <li class="paso"><span class="num">3</span><h3>Elige cómo pagó</h3><p>💵 Efectivo, 💳 Tarjeta o 📱 Transferencia, y confirma. La mesa se cierra.</p></li>
+    </ol>
+  </section>
+
+  <section class="bloque">
+    <h2>2 · Dividir la cuenta <small>cuando piden pagar separado, al momento de cobrar</small></h2>
+    <div class="panel">
+      <div class="paso" style="grid-template-columns: 38px minmax(0,1fr);">
+        <span class="num">1</span>
+        <h3>Toca “👥 Dividir cuenta” y elige cuántos son</h3>
+        <p>Es el enlace chico de abajo. Elige entre <b>2 y 6 personas</b>. La pantalla te muestra al tiro cuánto sería cada uno.</p>
+      </div>
+      <div class="dos">
+        <div class="opcion">
+          <h3>⚖️ Partes iguales</h3>
+          <p class="muted">Comieron lo mismo.</p>
+          <p>La app reparte los productos sola. Si un plato no se puede partir, alguien queda con un poco más: ajusta con el 👤 de la línea.</p>
+        </div>
+        <div class="opcion">
+          <h3>🧾 Cada uno lo suyo</h3>
+          <p class="muted">Pidieron cosas distintas.</p>
+          <p>Bajo cada producto toca el número de quien lo consumió: <span class="chip">1</span><span class="chip">2</span><span class="chip">3</span>. <b>Un toque = una unidad.</b> Arriba dice “faltan N”; cuando dice <b>✓ Todo asignado</b>, listo.</p>
+        </div>
+      </div>
+      <div class="paso" style="grid-template-columns: 38px minmax(0,1fr);">
+        <span class="num">2</span>
+        <h3>Cobra a cada persona</h3>
+        <p>Toca su nombre arriba (muestra cuánto lleva) y el botón dirá <span class="btn rojo">💰 Cobrar a Comensal 2</span> Elige cómo pagó. <b>Cada uno puede pagar distinto.</b> Al cobrar al último, la mesa se cierra sola. También puedes imprimir el ticket de cada persona.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="dos-bloques">
+    <section class="bloque">
+      <h2>3 · Otro cliente <small>no vienen juntos</small></h2>
+      <div class="caja">
+        <p style="margin:0">Toca <span class="enlace">🪑 Otro cliente</span> (abajo). Se abre una cuenta nueva, por ejemplo <b>3-B</b>, con su propia tarjeta en la grilla. Se cobra y se cierra por separado.</p>
+      </div>
+      <h2 style="margin-top:6px">4 · Cocina</h2>
+      <div class="caja">
+        <ul>
+          <li><span class="btn naranja">🍳 Enviar a cocina</span> manda solo lo nuevo.</li>
+          <li>Si el ticket no salió: <span class="enlace">🔁 Reimprimir cocina</span> (enlace chico de abajo; aparece cuando ya se envió todo).</li>
+        </ul>
+      </div>
+    </section>
+    <section class="bloque">
+      <h2>Ojo antes de cobrar</h2>
+      <div class="caja aviso">
+        <ul>
+          <li><b>Mira el nombre del botón.</b> “Cobrar a Comensal 2” cobra solo a esa persona.</li>
+          <li><b>“Cobrar toda la mesa”</b> cobra a todos juntos y cierra la mesa. La app te avisa antes de confirmar: lee el aviso.</li>
+          <li>Si sale “problema de conexión”, el pedido <b>no se pierde</b>: vuelve a tocar Cobrar.</li>
+          <li>El valor por persona de la vista previa es <b>sin propina</b>.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <footer>Dudas o algo que no se entienda: anótalo para revisarlo juntos.</footer>
+</main>
+</body>
+</html>
