@@ -721,17 +721,119 @@ async function agregarComensal() {
   return siguiente;
 }
 
-async function separarCuentas() {
+// ---------- Dividir la cuenta ----------
+// Se abre desde "Dividir cuenta": se elige entre cuantas personas y como. "Partes iguales" reparte
+// solo los productos (comieron lo mismo); "Cada uno lo suyo" crea a las personas y se asigna con un
+// toque por unidad desde la cuenta general.
+const MAX_PERSONAS_DIVIDIR = 6;
+let dividirN = 2;
+
+function abrirModalDividir() {
   const mesa = mesaActiva();
   if (!mesa) return;
-  const lista = comensalesDeMesa(mesa);
-  if (lista.length === 0) lista.push({ n: 1, nombre: null }, { n: 2, nombre: null });
-  comensalActivo = lista[0].n;
+  if (mesa.pedido.length === 0) { alert('La mesa no tiene productos para dividir.'); return; }
+  dividirN = 2;
+  renderModalDividir();
+  document.getElementById('modal-dividir').classList.remove('oculto');
+}
+
+function cerrarModalDividir() {
+  document.getElementById('modal-dividir').classList.add('oculto');
+}
+
+function elegirCantidadDividir(n) {
+  dividirN = n;
+  renderModalDividir();
+}
+
+function renderModalDividir() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const cont = document.getElementById('dividir-cantidades');
+  cont.innerHTML = '';
+  for (let n = 2; n <= MAX_PERSONAS_DIVIDIR; n++) {
+    cont.innerHTML += `<button type="button" class="chip-comensal ${n === dividirN ? 'activa' : ''}" onclick="elegirCantidadDividir(${n})">${n}</button>`;
+  }
+  const ocultarMontos = rolUsuario === 'mesero' && !mesa.total_visible_mesero;
+  const total = totalMesa(mesa);
+  document.getElementById('dividir-preview').textContent = ocultarMontos
+    ? ''
+    : `Total ${formatoMoneda(total)} ÷ ${dividirN} = ${formatoMoneda(Math.round(total / dividirN))} cada uno (sin propina)`;
+}
+
+// Reparte cada producto entre n personas. Las unidades que no se dividen exacto (3 entre 2, por
+// ejemplo) se dan una a una, de la mas cara a la mas barata, a quien lleve menos hasta ese momento.
+function repartirEnPartesIguales(pedido, n) {
+  const resultado = [];
+  const totales = new Array(n + 1).fill(0);
+  const sobrantes = [];
+  const agregar = (item, persona, cantidad) => {
+    if (cantidad <= 0) return;
+    const existente = resultado.find(l => l.id === item.id && l.comensal === persona);
+    if (existente) existente.cantidad += cantidad;
+    else resultado.push({ ...item, cantidad, comensal: persona });
+    totales[persona] += item.precio * cantidad;
+  };
+  pedido.forEach(item => {
+    const base = Math.floor(item.cantidad / n);
+    for (let p = 1; p <= n; p++) agregar(item, p, base);
+    for (let i = 0; i < item.cantidad % n; i++) sobrantes.push(item);
+  });
+  sobrantes.sort((a, b) => b.precio - a.precio).forEach(item => {
+    let persona = 1;
+    for (let p = 2; p <= n; p++) if (totales[p] < totales[persona]) persona = p;
+    agregar(item, persona, 1);
+  });
+  return resultado;
+}
+
+function listaDePersonas(n) {
+  return Array.from({ length: n }, (_, i) => ({ n: i + 1, nombre: null }));
+}
+
+async function dividirPartesIguales() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const n = dividirN;
+  cerrarModalDividir();
+  if (comensalesDeMesa(mesa).length > 0) return;
+  const lista = listaDePersonas(n);
+  mesa.pedido = repartirEnPartesIguales(mesa.pedido, n);
+  mesa.comensales = lista;
+  comensalActivo = null;
+  itemExpandidoId = null;
+  renderPedido();
+  const { error } = await sb.from('mesas').update({ pedido: mesa.pedido, comensales: lista }).eq('id', mesa.id);
+  if (error) {
+    console.error(error);
+    await cargarMesas();
+    renderPedido();
+    alert('No se pudo dividir la cuenta (problema de conexión). Se restauró la mesa: revísala y vuelve a intentar.');
+  }
+}
+
+async function dividirCadaUnoLoSuyo() {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  const n = dividirN;
+  cerrarModalDividir();
+  if (comensalesDeMesa(mesa).length > 0) return;
+  comensalActivo = null;
+  itemExpandidoId = null;
+  const lista = listaDePersonas(n);
+  mesa.comensales = lista;
   renderPedido();
   await guardarComensales(mesa, lista);
 }
 
-function renderBarraComensales(mesa) {
+// Un toque en el numero de una persona le da 1 unidad de ese producto desde la cuenta general.
+function asignarUnidad(platoId, persona) {
+  const mesa = mesaActiva();
+  if (!mesa) return;
+  moverUnidades(mesa, platoId, 0, persona, 1);
+}
+
+function renderBarraComensales(mesa, ocultarMontos = false) {
   const barra = document.getElementById('barra-comensales');
   const lista = comensalesDeMesa(mesa);
   if (comensalActivo !== null && !lista.some(c => c.n === comensalActivo)) comensalActivo = null;
@@ -742,7 +844,11 @@ function renderBarraComensales(mesa) {
   const chip = (n, texto, extraClase = '') => `<button type="button" class="chip-comensal ${extraClase} ${comensalActivo === n ? 'activa' : ''}" onclick="seleccionarComensal(${n})">${texto}</button>`;
   barra.innerHTML = `<div class="fila-chips-comensales">
     ${chip(null, '🍽️ Mesa', 'chip-mesa')}
-    ${lista.map(c => chip(c.n, `👤 ${escaparHtml(c.nombre || String(c.n))}`)).join('')}
+    ${lista.map(c => {
+      const items = itemsDeComensal(mesa, c.n);
+      const total = !ocultarMontos && items.length > 0 ? ` <span class="chip-total">${formatoMoneda(totalDeItems(items))}</span>` : '';
+      return chip(c.n, `👤 ${escaparHtml(c.nombre ? c.nombre.slice(0, 9) : String(c.n))}${total}`);
+    }).join('')}
     <button type="button" class="chip-comensal chip-agregar" onclick="agregarComensal()" title="Agregar comensal">＋</button>
   </div>
   <div class="ayuda-comensal">${comensalActivo === null
@@ -853,6 +959,14 @@ async function moverItemA(destino) {
     hacia = await agregarComensal();
     comensalActivo = actual;
   }
+  moverUnidades(mesa, id, origen, hacia, cantidad);
+}
+
+// Pasa `cantidad` unidades de un producto de una cuenta (origen) a otra (hacia; 0 = cuenta general).
+function moverUnidades(mesa, id, origen, hacia, cantidad) {
+  const item = lineaPedido(mesa, id, origen);
+  if (!item) return;
+  cantidad = Math.min(cantidad, item.cantidad);
   item.cantidad -= cantidad;
   if (item.cantidad <= 0) mesa.pedido = mesa.pedido.filter(i => i !== item);
   const enDestino = lineaPedido(mesa, id, hacia);
@@ -1211,7 +1325,7 @@ function renderPedido() {
   if (!mesa) return;
   const esMesero = rolUsuario === 'mesero';
   const ocultarMontos = esMesero && !mesa.total_visible_mesero;
-  renderBarraComensales(mesa);
+  renderBarraComensales(mesa, ocultarMontos);
   const comensales = comensalesDeMesa(mesa);
   const hayComensales = comensales.length > 0;
   document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesa);
@@ -1219,7 +1333,7 @@ function renderPedido() {
   if (mesa.pedido.length > 0) {
     const siguiente = nombreSiguienteSubMesa(mesa);
     accionesMesa.push(`<button type="button" class="btn-sub-mesa" onclick="crearSubMesa()" title="Otro cliente se sienta en esta mesa: abre la ${escaparHtml(siguiente)} con su propia cuenta">🪑 Otro cliente · ${escaparHtml(siguiente.replace(/^Mesa /, ''))}</button>`);
-    if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()" title="Dividir la cuenta de esta mesa por persona">👥 Dividir cuenta</button>`);
+    if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="abrirModalDividir()" title="Dividir la cuenta de esta mesa entre varias personas">👥 Dividir cuenta</button>`);
     // Reimprimir es poco frecuente: enlace chico (no boton grande); solo cuando ya se envio todo y hay algo de cocina.
     if (!esMesero && itemsPendientesCocina(mesa).length === 0 && cantidadesCocinaPorProducto(mesa).length > 0) {
       accionesMesa.push(`<button type="button" class="btn-reimprimir-cocina" onclick="reimprimirComandaCocina()" title="Vuelve a imprimir todo el pedido de cocina">🔁 Reimprimir cocina</button>`);
@@ -1240,6 +1354,10 @@ function renderPedido() {
     const detalleTexto = ocultarMontos
       ? `Cantidad: ${item.cantidad}`
       : `${item.cantidad} x ${formatoMoneda(item.precio)}  Subtotal: ${formatoMoneda(subtotal)}`;
+    // Con la cuenta dividida, cada producto sin asignar trae un boton por persona: 1 toque = 1 unidad.
+    const asignarHtml = (c === 0 && hayComensales && comensalActivo === null)
+      ? `<div class="asignar-rapido" onclick="event.stopPropagation()"><span>Dar 1 a:</span>${comensales.map(p => `<button type="button" class="btn-asignar" onclick="asignarUnidad(${item.id}, ${p.n})" title="Dar 1 a ${escaparHtml(etiquetaComensal(mesa, p.n))}">${escaparHtml(p.nombre ? p.nombre.slice(0, 6) : String(p.n))}</button>`).join('')}</div>`
+      : '';
     el.innerHTML = `
       <span class="item-icono">${iconoItemHtml}</span>
       <div class="item-info">
@@ -1261,7 +1379,7 @@ function renderPedido() {
         return envase
           ? `<div class="item-envase" onclick="event.stopPropagation()"><button type="button" class="btn-envase-item" onclick="agregarEnvaseDeItem(${item.id}, ${c})" title="Agrega 1 ${escaparHtml(envase.nombre)}">🥡 Para llevar: agregar envase +${formatoMoneda(envase.precio)}</button></div>`
           : '';
-      })()}` : ''}`;
+      })()}` : ''}${asignarHtml}`;
     cont.appendChild(el);
   };
   const dibujarGrupo = (titulo, items) => {
@@ -1279,7 +1397,9 @@ function renderPedido() {
     items.forEach(dibujarItem);
   } else if (hayComensales) {
     const generales = itemsDeComensal(mesa, 0);
-    if (generales.length) dibujarGrupo('🍽️ Sin asignar (cuenta general)', generales);
+    const faltan = generales.reduce((s, i) => s + i.cantidad, 0);
+    if (generales.length) dibujarGrupo(`🍽️ Sin asignar · faltan ${faltan}`, generales);
+    else cont.insertAdjacentHTML('beforeend', '<div class="aviso-todo-asignado">✓ Todo asignado. Toca el nombre de cada persona, arriba, para cobrarle.</div>');
     comensales.forEach(c => {
       const items = itemsDeComensal(mesa, c.n);
       if (items.length) dibujarGrupo(`👤 ${escaparHtml(etiquetaComensal(mesa, c.n))}`, items);
@@ -1310,7 +1430,7 @@ function renderPedido() {
   document.getElementById('btn-cobrar').classList.toggle('oculto', esMesero);
   document.getElementById('btn-cobrar').textContent = comensalActivo !== null
     ? `💰 Cobrar a ${nombreCortoComensal(mesa, comensalActivo)}`
-    : '💰 Cobrar';
+    : (hayComensales ? '💰 Cobrar toda la mesa' : '💰 Cobrar');
   document.getElementById('btn-imprimir-ticket').classList.toggle('oculto', esMesero);
   document.getElementById('btn-imprimir-ticket').textContent = comensalActivo !== null
     ? `🖨️ Imprimir ticket de ${nombreCortoComensal(mesa, comensalActivo)}`
@@ -1357,7 +1477,7 @@ function mostrarPanelMetodoPago() {
   }
   document.getElementById('titulo-metodo-pago').textContent = comensalActivo !== null
     ? `¿Cómo pagó ${nombreCortoComensal(mesa, comensalActivo)}?`
-    : '¿Cómo pagó?';
+    : (comensalesDeMesa(mesa).length > 0 ? '¿Cómo pagó toda la mesa?' : '¿Cómo pagó?');
   const panel = document.getElementById('panel-metodo-pago');
   panel.classList.remove('oculto');
   // Con pedidos largos el panel queda bajo la pantalla: se baja solo hasta mostrar las formas de pago.
@@ -1463,7 +1583,9 @@ async function cerrarMesa(metodoPago) {
 
   const etiqueta = nombreMesaVisible(mesa);
   const etiquetaMetodo = ETIQUETAS_METODO_PAGO[metodoPago] || 'un método sin especificar';
-  const avisoComensales = comensalesDeMesa(mesa).length > 0 ? ' Incluye a todos los comensales.' : '';
+  const avisoComensales = comensalesDeMesa(mesa).length > 0
+    ? '\n⚠️ Esto cobra a TODOS los comensales juntos. Si quieres cobrar a una sola persona, cancela y toca su nombre arriba.\n'
+    : '';
   if (!(await confirmarApp(`¿Cobrar ${etiqueta} completa por ${formatoMoneda(totalMesa(mesa))} en ${etiquetaMetodo}?${avisoComensales} Esta acción cierra la mesa.`))) return;
 
   ocultarPanelMetodoPago();

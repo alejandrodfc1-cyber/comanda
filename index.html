@@ -836,6 +836,23 @@
   </div>
 </div>
 
+<!-- Modal: dividir la cuenta entre varias personas -->
+<div id="modal-dividir" class="modal oculto">
+  <div class="modal-caja">
+    <div class="modal-header">
+      <h3 class="titulo-form">👥 Dividir la cuenta</h3>
+      <button class="btn-cerrar" onclick="cerrarModalDividir()">✕</button>
+    </div>
+    <p class="texto-ayuda">¿Entre cuántas personas?</p>
+    <div class="dividir-cantidades" id="dividir-cantidades"></div>
+    <div class="dividir-preview" id="dividir-preview"></div>
+    <div class="mover-destinos">
+      <button type="button" class="btn btn-turquesa" onclick="dividirPartesIguales()">⚖️ Partes iguales<small>Comieron lo mismo: la app reparte los productos</small></button>
+      <button type="button" class="btn" onclick="dividirCadaUnoLoSuyo()">🧾 Cada uno lo suyo<small>Tú asignas cada producto a quien lo consumió</small></button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: renombrar o quitar un comensal -->
 <div id="modal-comensal" class="modal oculto">
   <div class="modal-caja">

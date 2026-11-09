@@ -769,7 +769,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  max-width: 150px;
+  max-width: 190px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -815,6 +815,25 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 }
 .mover-destinos { display: flex; flex-direction: column; gap: 8px; }
 .mover-destinos .btn { width: 100%; text-align: left; }
+.mover-destinos .btn small { display: block; margin-top: 2px; font-size: .78rem; font-weight: 400; opacity: .92; }
+
+/* Dividir la cuenta: elegir personas y asignar con un toque */
+.dividir-cantidades { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.dividir-cantidades .chip-comensal { padding: 10px 18px; font-size: 1.05rem; }
+.dividir-preview { min-height: 1.3em; margin-bottom: 12px; font-size: .9rem; font-weight: 600; color: #0e7a63; }
+.chip-total { margin-left: 3px; font-weight: 600; opacity: .9; }
+.asignar-rapido { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 2px; }
+.asignar-rapido > span { font-size: .75rem; color: #7a8a8b; }
+.btn-asignar {
+  min-width: 46px; height: 38px; padding: 0 12px; cursor: pointer;
+  border: 1.5px solid #16a085; background: #f0faf7; color: #0e7a63;
+  border-radius: 999px; font-size: .95rem; font-weight: 700;
+}
+.btn-asignar:active { background: #16a085; color: #fff; }
+.aviso-todo-asignado {
+  margin-bottom: 8px; padding: 9px 12px; border-radius: 8px;
+  background: #eafaf1; color: #1e8449; font-size: .85rem; font-weight: 600; text-align: center;
+}
 #btn-quitar-comensal:disabled { opacity: .45; cursor: not-allowed; }
 
 .acciones-modal {
