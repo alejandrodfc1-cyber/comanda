@@ -725,7 +725,8 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .fila-acciones-mesa:empty { display: none; }
 .fila-acciones-mesa:not(:empty) + .acciones-modal { margin-top: 6px; padding-top: 0; }
 .fila-acciones-mesa .btn-sub-mesa,
-.fila-acciones-mesa .btn-separar-cuentas {
+.fila-acciones-mesa .btn-separar-cuentas,
+.fila-acciones-mesa .btn-reimprimir-cocina {
   border: none;
   background: none;
   padding: 4px 2px;

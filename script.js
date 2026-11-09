@@ -1220,6 +1220,10 @@ function renderPedido() {
     const siguiente = nombreSiguienteSubMesa(mesa);
     accionesMesa.push(`<button type="button" class="btn-sub-mesa" onclick="crearSubMesa()" title="Otro cliente se sienta en esta mesa: abre la ${escaparHtml(siguiente)} con su propia cuenta">🪑 Otro cliente · ${escaparHtml(siguiente.replace(/^Mesa /, ''))}</button>`);
     if (!hayComensales) accionesMesa.push(`<button type="button" class="btn-separar-cuentas" onclick="separarCuentas()" title="Dividir la cuenta de esta mesa por persona">👥 Dividir cuenta</button>`);
+    // Reimprimir es poco frecuente: enlace chico (no boton grande); solo cuando ya se envio todo y hay algo de cocina.
+    if (!esMesero && itemsPendientesCocina(mesa).length === 0 && cantidadesCocinaPorProducto(mesa).length > 0) {
+      accionesMesa.push(`<button type="button" class="btn-reimprimir-cocina" onclick="reimprimirComandaCocina()" title="Vuelve a imprimir todo el pedido de cocina">🔁 Reimprimir cocina</button>`);
+    }
   }
   document.getElementById('fila-acciones-mesa').innerHTML = accionesMesa.join('');
   const cont = document.getElementById('lista-pedido');
@@ -1316,8 +1320,6 @@ function renderPedido() {
   // "Enviar a cocina" solo depende de si hay algo pendiente -- si piden la
   // cuenta y despues agregan un producto mas, tiene que poder enviarse igual.
   document.getElementById('btn-comanda-cocina').classList.toggle('oculto', !hayPendienteCocina);
-  // Reimprimir: solo cuando ya se envio todo y hay algo de cocina; no para meseros (evita duplicados).
-  document.getElementById('btn-reimprimir-cocina')?.classList.toggle('oculto', esMesero || hayPendienteCocina || cantidadesCocinaPorProducto(mesa).length === 0);
   document.getElementById('btn-pedir-cuenta').classList.toggle('oculto', !esMesero || !sinCierreEnCurso || hayPendienteCocina);
   document.getElementById('aviso-cuenta-solicitada').classList.toggle('oculto', !esMesero || !mesa.cuenta_solicitada);
   document.getElementById('aviso-cuenta-para-caja').classList.toggle('oculto', esMesero || !mesa.cuenta_solicitada);
