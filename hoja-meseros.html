@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hoja para meseros</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+  /* Una hoja A4 para pegar en la pared del local: pasos numerados porque tomar un pedido es una secuencia real.
+     Los botones dibujados copian los colores y textos de la app para que se reconozcan al tocarlos. */
+  :root {
+    --bg: #f6f4f0;
+    --hoja: #ffffff;
+    --tinta: #1d2a36;
+    --suave: #5b6772;
+    --linea: #d9d5cd;
+    --acento: #c2410c;
+    --naranja: #e67e22;
+    --turquesa: #16a085;
+    --verde: #27ae60;
+    --aviso-bg: #fff4e5;
+    --aviso-borde: #f0b26a;
+    --fuente-titulo: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --fuente-texto: "Barlow", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181e; --hoja: #1a222a; --tinta: #eef1f4; --suave: #a3afba; --linea: #33414d;
+      --acento: #ff8a4c; --aviso-bg: #2d2217; --aviso-borde: #8a5a2b; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181e; --hoja: #1a222a; --tinta: #eef1f4; --suave: #a3afba; --linea: #33414d;
+    --acento: #ff8a4c; --aviso-bg: #2d2217; --aviso-borde: #8a5a2b; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--tinta); font-family: var(--fuente-texto); font-size: 16px; line-height: 1.45;
+    padding-block: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .hoja {
+    max-width: 820px; margin: 0 auto; background: var(--hoja); border: 1px solid var(--linea);
+    padding: 34px 38px 30px; display: flex; flex-direction: column; gap: 26px;
+  }
+  header { display: flex; flex-direction: column; gap: 4px; border-bottom: 3px solid var(--acento); padding-bottom: 14px; }
+  .local { font-family: var(--fuente-titulo); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--acento); font-size: 1rem; }
+  h1 { font-family: var(--fuente-titulo); font-weight: 700; font-size: clamp(2rem, 7vw, 3rem); line-height: 1.02; margin: 0; text-wrap: balance; }
+  .sub { color: var(--suave); margin: 4px 0 0; font-size: 1.02rem; }
+
+  .pasos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; margin: 0; padding: 0; list-style: none; }
+  .paso { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 14px; align-items: start; }
+  .num {
+    font-family: var(--fuente-titulo); font-weight: 700; font-size: 3.2rem; line-height: .85; color: var(--acento);
+    grid-row: span 3; text-align: center;
+  }
+  .paso h2 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.45rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+  .paso p { margin: 0; color: var(--tinta); }
+  .paso .muted { color: var(--suave); font-size: .93rem; }
+  .btn {
+    display: inline-block; font-family: var(--fuente-texto); font-weight: 600; font-size: .92rem; color: #fff; border-radius: 8px;
+    padding: 5px 11px; white-space: nowrap; margin-top: 4px;
+  }
+  .btn.naranja { background: var(--naranja); }
+  .btn.turquesa { background: var(--turquesa); }
+  .btn.verde { background: var(--verde); }
+  .btn.gris { background: #7f8c8d; }
+
+  .recuadros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .caja { border: 1px solid var(--linea); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .caja.aviso { background: var(--aviso-bg); border-color: var(--aviso-borde); }
+  .caja h3 { font-family: var(--fuente-titulo); font-weight: 700; font-size: 1.25rem; letter-spacing: .03em; text-transform: uppercase; margin: 0; }
+  .caja ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+  .caja li::marker { color: var(--acento); }
+  footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--suave); font-size: .92rem; border-top: 1px solid var(--linea); padding-top: 12px; }
+
+  @media (max-width: 640px) {
+    .hoja { padding: 22px 18px 20px; gap: 22px; }
+    .pasos, .recuadros { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    :root { --bg: #fff; --hoja: #fff; }
+    body { padding: 0; font-size: 14.5px; }
+    .hoja { border: none; max-width: none; padding: 0; gap: 18px; }
+    .pasos { gap: 16px 26px; }
+  }
+</style>
+
+</head>
+<body>
+<main class="hoja">
+  <header>
+    <span class="local">La Españita</span>
+    <h1>Cómo tomar un pedido en Comanda</h1>
+    <p class="sub">Seis pasos, siempre los mismos. Si algo no sale, avisa a caja.</p>
+  </header>
+
+  <ol class="pasos">
+    <li class="paso">
+      <span class="num">1</span>
+      <h2>Entra con tu correo</h2>
+      <p>Abre la app y escribe tu correo y contraseña.</p>
+      <p class="muted">Si aparece la casilla <b>N°</b>, escribe tu número de mesero. Así tus ventas quedan a tu nombre.</p>
+    </li>
+    <li class="paso">
+      <span class="num">2</span>
+      <h2>Toca tu mesa</h2>
+      <p>En la grilla, toca el número de la mesa. Las ocupadas dicen <b>Ocupada</b>.</p>
+      <p class="muted">Llevar es la mesa para pedidos que se van en envase.</p>
+    </li>
+    <li class="paso">
+      <span class="num">3</span>
+      <h2>Agrega los productos</h2>
+      <p>Toca cada producto: <b>un toque suma uno</b>. Para ver lo que llevas toca:</p>
+      <p><span class="btn verde">🧾 Ver pedido</span></p>
+    </li>
+    <li class="paso">
+      <span class="num">4</span>
+      <h2>Notas y cambios</h2>
+      <p>Toca la línea del producto. Ahí puedes <b>sumar o restar</b>, borrar con 🗑️ y poner una nota con 📝.</p>
+      <p class="muted">Ejemplo de nota: “sin ají”, “bien cocido”. La nota solo la ve cocina.</p>
+    </li>
+    <li class="paso">
+      <span class="num">5</span>
+      <h2>Mándalo a cocina</h2>
+      <p>Cuando el pedido esté listo, toca el botón naranja y el ticket sale en cocina.</p>
+      <p><span class="btn naranja">🍳 Enviar a cocina</span></p>
+      <p class="muted">Si después agregas más, el naranja vuelve y solo se imprime lo nuevo.</p>
+    </li>
+    <li class="paso">
+      <span class="num">6</span>
+      <h2>Pide la cuenta</h2>
+      <p>Cuando el cliente la pida, toca este botón y caja va con la cuenta:</p>
+      <p><span class="btn turquesa">🔔 Pedir cuenta a caja/admin</span></p>
+      <p class="muted">Aparece cuando ya enviaste todo a cocina.</p>
+    </li>
+  </ol>
+
+  <div class="recuadros">
+    <section class="caja">
+      <h3>Si te equivocas</h3>
+      <ul>
+        <li>Producto de más: toca la línea y resta con <b>−</b> o borra con 🗑️.</li>
+        <li>No salió el ticket en cocina: avisa a caja. Ellos pueden reimprimirlo.</li>
+      </ul>
+    </section>
+    <section class="caja aviso">
+      <h3>Tres cosas para acordarte</h3>
+      <ul>
+        <li>No tocas “Enviar a cocina” dos veces: ya lo sabe la app.</li>
+        <li>Los precios y totales los ve caja. Tú ves solo cantidades.</li>
+        <li>Un pedido que no entra en la app no sale en cocina.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>
+    <span>Dudas: pregunta en caja.</span>
+  </footer>
+</main>
+</body>
+</html>
