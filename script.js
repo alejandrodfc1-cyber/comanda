@@ -2445,6 +2445,9 @@ async function cargarComparativas() {
 
   const hoy = sumaEntre(hoyIni, null);
   const mismoDiaPasado = sumaEntre(mismoDiaPasadoIni, mismoDiaPasadoAhora);
+  // Meta del dia: lo que cerro el mismo dia de la semana pasada completo (no solo hasta esta hora).
+  const mismoDiaPasadoFin = new Date(mismoDiaPasadoIni); mismoDiaPasadoFin.setDate(mismoDiaPasadoFin.getDate() + 1);
+  const metaDia = sumaEntre(mismoDiaPasadoIni, mismoDiaPasadoFin);
   const semanaActual = sumaEntre(semanaActualIni, hoyIni);
   const semanaAnterior = sumaEntre(semanaAnteriorIni, semanaActualIni);
   const mesActual = sumaEntre(mesActualIni, null);
@@ -2456,7 +2459,7 @@ async function cargarComparativas() {
   const horaAhora = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   renderComparativas([
-    { titulo: `${nombreDia} pasado vs. Hoy (hasta las ${horaAhora})`, anteriorLabel: `${nombreDia} pasado`, anterior: mismoDiaPasado, actualLabel: 'Hoy', actual: hoy },
+    { titulo: `${nombreDia} pasado vs. Hoy (hasta las ${horaAhora})`, anteriorLabel: `${nombreDia} pasado`, anterior: mismoDiaPasado, actualLabel: 'Hoy', actual: hoy, meta: metaDia, metaTexto: `el ${nombreDia} pasado cerró en` },
     { titulo: 'Últimos 7 días vs. los 7 anteriores (hasta ayer)', anteriorLabel: '7 previos', anterior: semanaAnterior, actualLabel: 'Últ. 7 días', actual: semanaActual },
     { titulo: `${nombreMes(mesAnteriorIni)} vs. ${nombreMes(mesActualIni)} (mismos días)`, anteriorLabel: nombreMes(mesAnteriorIni), anterior: mesAnterior, actualLabel: nombreMes(mesActualIni), actual: mesActual },
   ]);
@@ -3313,6 +3316,14 @@ function renderComparativas(filas) {
     const max = Math.max(f.anterior, f.actual, 1);
     const pctAnterior = (f.anterior / max * 100).toFixed(1);
     const pctActual = (f.actual / max * 100).toFixed(1);
+    let metaHtml = '';
+    if (f.meta > 0) {
+      const lograda = f.actual >= f.meta;
+      const avance = Math.floor(f.actual / f.meta * 100);
+      metaHtml = `<div class="comparativa-meta ${lograda ? 'lograda' : ''}">🎯 Meta: ${f.metaTexto} <b>${formatoMoneda(Math.round(f.meta))}</b> · ${lograda
+        ? `✅ ¡superada por ${formatoMoneda(Math.round(f.actual - f.meta))}!`
+        : `hoy lleva <b>${avance}%</b> · faltan ${formatoMoneda(Math.round(f.meta - f.actual))}`}</div>`;
+    }
     return `
       <div class="comparativa-fila" style="--color-comp:${COMPARATIVA_COLORES[i % 3]}">
         <div class="comparativa-cabecera">
@@ -3329,6 +3340,7 @@ function renderComparativas(filas) {
           <div class="comparativa-barra-pista"><div class="comparativa-barra-relleno" data-ancho="${pctActual}" style="width:0%"></div></div>
           <span class="comparativa-barra-valor">${formatoMoneda(Math.round(f.actual))}</span>
         </div>
+        ${metaHtml}
       </div>`;
   }).join('');
   requestAnimationFrame(() => requestAnimationFrame(() => {
