@@ -4088,6 +4088,7 @@ function editarProducto(id) {
   actualizarMargenProducto();
   actualizarCalculadoraPrecio();
   const previewWrap = document.getElementById('preview-foto-producto-wrap');
+  document.getElementById('aviso-foto-producto').classList.add('oculto');
   if (p.foto_url) {
     document.getElementById('preview-foto-producto').src = p.foto_url;
     previewWrap.classList.remove('oculto');
@@ -4107,6 +4108,7 @@ function cancelarEdicionProducto() {
   document.getElementById('btn-guardar-producto').textContent = '+ Agregar producto';
   document.getElementById('btn-cancelar-producto').classList.add('oculto');
   document.getElementById('preview-foto-producto-wrap').classList.add('oculto');
+  document.getElementById('aviso-foto-producto').classList.add('oculto');
   document.getElementById('margen-producto-info').classList.add('oculto');
   document.getElementById('nuevo-producto-modo-stock').value = 'ninguno';
   actualizarModoStockProducto();
@@ -4176,13 +4178,29 @@ document.getElementById('btn-usar-precio-sugerido').addEventListener('click', fu
   actualizarMargenProducto();
 });
 
-// Encuentra el grupo de pixeles "contenido" conectados entre si mas grande dentro
-// de la mascara, y devuelve su recuadro. Usa una pila en vez de recursion para
-// no desbordar el stack con fotos grandes.
-function componenteMasGrande(mascara, w, h) {
+// ---------- Fotos de productos: ajuste automatico ----------
+// Nombre de archivo seguro para guardar en el almacenamiento: sin tildes, espacios ni parentesis, y sin
+// los prefijos numericos que se van acumulando cada vez que una foto se vuelve a subir.
+function nombreArchivoSeguro(nombreOriginal) {
+  let nombre = String(nombreOriginal);
+  try { nombre = decodeURIComponent(nombre); } catch { /* el nombre no venia codificado */ }
+  const ext = ((nombre.match(/\.([^.]+)$/) || [])[1] || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const base = nombre.replace(/\.[^.]+$/, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/^(\d{10,}-)+/, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'foto';
+  return `${base}.${ext}`;
+}
+
+// Avisos de la ultima foto ajustada (producto cortado en el borde, foto muy chica...).
+let avisosFotoProducto = [];
+
+// Lista los grupos de pixeles "contenido" conectados entre si (con su tamano y recuadro). Usa una pila
+// en vez de recursion para no desbordar el stack con fotos grandes.
+function componentesDeMascara(mascara, w, h) {
   const visitado = new Uint8Array(w * h);
-  let mejorTam = 0;
-  let mejor = null;
+  const componentes = [];
   const pila = [];
   for (let inicio = 0; inicio < mascara.length; inicio++) {
     if (!mascara[inicio] || visitado[inicio]) continue;
@@ -4203,28 +4221,65 @@ function componenteMasGrande(mascara, w, h) {
       if (y > 0 && mascara[idx - w] && !visitado[idx - w]) { visitado[idx - w] = 1; pila.push(idx - w); }
       if (y < h - 1 && mascara[idx + w] && !visitado[idx + w]) { visitado[idx + w] = 1; pila.push(idx + w); }
     }
-    if (tam > mejorTam) { mejorTam = tam; mejor = { minX, maxX, minY, maxY }; }
+    componentes.push({ minX, maxX, minY, maxY, tam });
   }
-  return mejor;
+  return componentes;
 }
 
-// Recorta la foto al contenido real (ignorando fondo blanco/transparente) y la centra
-// en un lienzo de proporcion 1.25 con relleno parejo, para que todas las fotos del
-// menu se vean con el mismo tamano relativo sin importar el encuadre original.
+// Recuadro del producto: el grupo mas grande, mas los grupos chicos pegados a el (por ejemplo una tapa
+// separada del cuello por un brillo). Los grupos chicos y lejanos (marcas de agua, insignias) se ignoran.
+function recuadroDelProducto(componentes) {
+  if (componentes.length === 0) return null;
+  const principal = componentes.reduce((a, b) => (b.tam > a.tam ? b : a));
+  const holgura = Math.max(principal.maxX - principal.minX, principal.maxY - principal.minY) * 0.08;
+  let { minX, maxX, minY, maxY } = principal;
+  componentes.forEach(c => {
+    if (c === principal || c.tam < principal.tam * 0.01) return;
+    const dx = Math.max(0, c.minX - principal.maxX, principal.minX - c.maxX);
+    const dy = Math.max(0, c.minY - principal.maxY, principal.minY - c.maxY);
+    if (Math.max(dx, dy) > holgura) return;
+    minX = Math.min(minX, c.minX); maxX = Math.max(maxX, c.maxX);
+    minY = Math.min(minY, c.minY); maxY = Math.max(maxY, c.maxY);
+  });
+  return { minX, maxX, minY, maxY };
+}
+
+// Color del fondo: mediana de los pixeles del borde de la foto (mas confiable que mirar una sola esquina).
+function colorDeFondo(data, w, h) {
+  const rs = [], gs = [], bs = [];
+  const paso = Math.max(1, Math.floor((w + h) / 200));
+  const muestrear = (x, y) => { const i = (y * w + x) * 4; rs.push(data[i]); gs.push(data[i + 1]); bs.push(data[i + 2]); };
+  for (let x = 0; x < w; x += paso) { muestrear(x, 0); muestrear(x, h - 1); }
+  for (let y = 0; y < h; y += paso) { muestrear(0, y); muestrear(w - 1, y); }
+  const mediana = (a) => a.sort((p, q) => p - q)[a.length >> 1];
+  return [mediana(rs), mediana(gs), mediana(bs)];
+}
+
+// Recorta la foto al contenido real (ignorando fondo blanco/transparente), deja el fondo en blanco puro y
+// la centra en un lienzo de proporcion 1.25 con relleno parejo, para que todas las fotos del menu se vean
+// con el mismo tamano relativo sin importar el encuadre original. Deja avisos en `avisosFotoProducto`.
 async function ajustarFotoProducto(archivo) {
+  avisosFotoProducto = [];
   try {
-    const bitmap = await createImageBitmap(archivo);
-    const w = bitmap.width, h = bitmap.height;
+    let bitmap;
+    try { bitmap = await createImageBitmap(archivo, { imageOrientation: 'from-image' }); }
+    catch { bitmap = await createImageBitmap(archivo); }
+
+    // Se analiza a un maximo de 2000 px: las fotos de celular son enormes y no hace falta tanto detalle
+    // para encontrar el producto (y asi no se gasta tanta memoria).
+    const MAX_ANALISIS = 2000;
+    const k = Math.min(1, MAX_ANALISIS / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * k)), h = Math.max(1, Math.round(bitmap.height * k));
     const srcCanvas = document.createElement('canvas');
     srcCanvas.width = w; srcCanvas.height = h;
-    const srcCtx = srcCanvas.getContext('2d');
-    srcCtx.drawImage(bitmap, 0, 0);
+    const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+    srcCtx.drawImage(bitmap, 0, 0, w, h);
     const { data } = srcCtx.getImageData(0, 0, w, h);
 
     const esquinas = [0, (w - 1) * 4, (h - 1) * w * 4, ((h - 1) * w + (w - 1)) * 4];
     const alphaProm = esquinas.reduce((s, i) => s + data[i + 3], 0) / 4;
     const esTransparente = alphaProm < 200;
-    const refR = data[0], refG = data[1], refB = data[2];
+    const [refR, refG, refB] = colorDeFondo(data, w, h);
 
     const umbralAlpha = 20;
     const umbralColor = 22;
@@ -4239,15 +4294,44 @@ async function ajustarFotoProducto(archivo) {
       }
     }
 
-    // Se queda solo con el grupo de pixeles conectados mas grande, para ignorar
-    // elementos sueltos y chicos (marcas de agua, insignias, manchas) que no son
-    // el producto en si.
-    const bbox = componenteMasGrande(mascara, w, h);
-    if (!bbox) return archivo;
-    const { minX, maxX, minY, maxY } = bbox;
+    const bbox = recuadroDelProducto(componentesDeMascara(mascara, w, h));
+    if (!bbox) {
+      avisosFotoProducto.push('No se detectó ningún producto en la foto (¿es toda del mismo color?). Se sube sin recortar.');
+      return await limitarResolucionImagen(archivo, 1000);
+    }
 
+    // Avisos: producto pegado al borde de la foto (puede estar cortado) y foto de poca resolucion.
+    const bordes = [];
+    if (bbox.minY <= 1) bordes.push('arriba');
+    if (bbox.maxY >= h - 2) bordes.push('abajo');
+    if (bbox.minX <= 1) bordes.push('a la izquierda');
+    if (bbox.maxX >= w - 2) bordes.push('a la derecha');
+    if (bordes.length) avisosFotoProducto.push(`El producto toca el borde de la foto (${bordes.join(', ')}): puede estar cortado. Mira la vista previa; si le falta una parte, usa una foto completa.`);
+    if (Math.max(bbox.maxX - bbox.minX + 1, bbox.maxY - bbox.minY + 1) / k < 300) avisosFotoProducto.push('La foto es de baja resolución: el producto se verá borroso. Si puedes, usa una más grande.');
+
+    // Pequeño margen de seguridad para no cortar bordes suaves ni sombras.
+    const margen = Math.round(Math.max(bbox.maxX - bbox.minX, bbox.maxY - bbox.minY) * 0.02);
+    const minX = Math.max(0, bbox.minX - margen), maxX = Math.min(w - 1, bbox.maxX + margen);
+    const minY = Math.max(0, bbox.minY - margen), maxY = Math.min(h - 1, bbox.maxY + margen);
     const bboxW = maxX - minX + 1;
     const bboxH = maxY - minY + 1;
+
+    if (!esTransparente) {
+      // El fondo parecido al detectado pasa a blanco puro (el mismo de las tarjetas del menu), de forma
+      // gradual en los bordes. Asi no queda un rectangulo de otro tono alrededor del producto.
+      const region = srcCtx.getImageData(minX, minY, bboxW, bboxH);
+      const d = region.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const dif = Math.abs(d[i] - refR) + Math.abs(d[i + 1] - refG) + Math.abs(d[i + 2] - refB);
+        if (dif >= umbralColor) continue;
+        const t = Math.max(0, (dif - 8) / (umbralColor - 8)); // 0 = fondo puro (blanco), 1 = ya es producto
+        d[i] = 255 - (255 - d[i]) * t;
+        d[i + 1] = 255 - (255 - d[i + 1]) * t;
+        d[i + 2] = 255 - (255 - d[i + 2]) * t;
+      }
+      srcCtx.putImageData(region, minX, minY);
+    }
+
     const RATIO_OBJETIVO = 1.25;
     const RELLENO_MIN = 0.86; // el producto ocupa como maximo ~86% de cada lado, dejando margen
     // Calcula el lienzo final segun el lado que necesite mas espacio (alto o ancho),
@@ -4267,12 +4351,7 @@ async function ajustarFotoProducto(archivo) {
     outCanvas.width = finalWSalida; outCanvas.height = finalHSalida;
     const outCtx = outCanvas.getContext('2d');
     if (!esTransparente) {
-      // Si el fondo detectado se aleja bastante del blanco puro, se usa blanco puro
-      // igual (el mismo que el fondo de las tarjetas del menu), para que todas las
-      // fotos se vean sobre el mismo tono en vez de cada una con su propio matiz.
-      const desvioDeBlanco = Math.abs(refR - 255) + Math.abs(refG - 255) + Math.abs(refB - 255);
-      const colorRelleno = desvioDeBlanco < 30 ? [refR, refG, refB] : [255, 255, 255];
-      outCtx.fillStyle = `rgb(${colorRelleno[0]},${colorRelleno[1]},${colorRelleno[2]})`;
+      outCtx.fillStyle = '#ffffff';
       outCtx.fillRect(0, 0, finalWSalida, finalHSalida);
     }
     const destW = Math.round(bboxW * escala);
@@ -4284,11 +4363,12 @@ async function ajustarFotoProducto(archivo) {
     const tipoSalida = esTransparente ? 'image/png' : 'image/jpeg';
     const blob = await new Promise(res => outCanvas.toBlob(res, tipoSalida, 0.85));
     if (!blob) return archivo;
-    const nombreBase = archivo.name.replace(/\.[^.]+$/, '');
+    const nombreBase = nombreArchivoSeguro(archivo.name).replace(/\.[^.]+$/, '');
     return new File([blob], `${nombreBase}.${esTransparente ? 'png' : 'jpg'}`, { type: tipoSalida });
   } catch (err) {
-    console.error('No se pudo ajustar la foto automaticamente, se sube tal cual:', err);
-    return archivo;
+    console.error('No se pudo ajustar la foto automaticamente:', err);
+    avisosFotoProducto.push('No se pudo ajustar la foto automáticamente: se sube sin recortar (solo reducida si es muy grande).');
+    return await limitarResolucionImagen(archivo, 1000);
   }
 }
 
@@ -4365,13 +4445,19 @@ document.getElementById('btn-limpiar-fotos').addEventListener('click', async () 
         const archivoOriginal = new File([blobOriginal], ruta.split('/').pop(), { type: blobOriginal.type });
         const reducido = await limitarResolucionImagen(archivoOriginal, 1000);
         if (!reducido || reducido.size >= blobOriginal.size) continue;
-        const nuevaRuta = `${Date.now()}-${archivoOriginal.name}`;
-        const { error: errorSubida } = await sb.storage.from('productos').upload(nuevaRuta, reducido);
+        const nuevaRuta = `${Date.now()}-${nombreArchivoSeguro(archivoOriginal.name)}`;
+        const { error: errorSubida } = await sb.storage.from('productos').upload(nuevaRuta, reducido, {
+          cacheControl: '31536000', contentType: reducido.type || undefined,
+        });
         if (errorSubida) continue;
         const nuevaUrl = sb.storage.from('productos').getPublicUrl(nuevaRuta).data.publicUrl;
         const { error: errorUpdate } = await sb.from('productos').update({ foto_url: nuevaUrl }).eq('id', p.id);
         if (errorUpdate) { sb.storage.from('productos').remove([nuevaRuta]); continue; }
-        await sb.storage.from('productos').remove([ruta]);
+        p.foto_url = nuevaUrl;
+        // El archivo viejo se borra solo si ningun otro producto lo sigue usando.
+        if (!productosConFoto.some(q => q.id !== p.id && rutaStorageProducto(q.foto_url) === ruta)) {
+          await sb.storage.from('productos').remove([ruta]);
+        }
         fotosOptimizadas++;
         pesoAntes += blobOriginal.size;
         pesoDespues += reducido.size;
@@ -4413,11 +4499,18 @@ let archivoFotoAjustado = null;
 document.getElementById('nuevo-producto-foto').addEventListener('change', async (e) => {
   const archivo = e.target.files[0];
   archivoFotoAjustado = null;
+  const aviso = document.getElementById('aviso-foto-producto');
+  aviso.classList.add('oculto');
+  aviso.innerHTML = '';
   if (!archivo) return;
   const previewWrap = document.getElementById('preview-foto-producto-wrap');
+  aviso.textContent = 'Ajustando la foto…';
+  aviso.classList.remove('oculto');
   archivoFotoAjustado = await ajustarFotoProducto(archivo);
   document.getElementById('preview-foto-producto').src = URL.createObjectURL(archivoFotoAjustado);
   previewWrap.classList.remove('oculto');
+  aviso.innerHTML = avisosFotoProducto.map(t => `<div>⚠️ ${escaparHtml(t)}</div>`).join('');
+  aviso.classList.toggle('oculto', avisosFotoProducto.length === 0);
 });
 
 document.getElementById('form-nuevo-producto').addEventListener('submit', async (e) => {
@@ -4444,16 +4537,23 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   }
 
   let fotoUrl = productoEditandoId ? productoEditandoFotoUrl : null;
+  let rutaFotoNueva = null;
+  let rutaFotoAnterior = null;
   if (archivoFoto) {
-    const fotoUrlAnterior = fotoUrl;
     const archivoParaSubir = archivoFotoAjustado || archivoFoto;
-    const ruta = `${Date.now()}-${archivoParaSubir.name}`;
-    const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoParaSubir);
-    if (!errorSubida) {
-      fotoUrl = sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
-      const rutaAnterior = rutaStorageProducto(fotoUrlAnterior);
-      if (rutaAnterior) sb.storage.from('productos').remove([rutaAnterior]);
+    const ruta = `${Date.now()}-${nombreArchivoSeguro(archivoParaSubir.name)}`;
+    // El nombre es unico (lleva la hora de subida), asi que la foto nunca cambia: se puede guardar un año.
+    const { error: errorSubida } = await sb.storage.from('productos').upload(ruta, archivoParaSubir, {
+      cacheControl: '31536000', contentType: archivoParaSubir.type || undefined,
+    });
+    if (errorSubida) {
+      console.error('No se pudo subir la foto:', errorSubida);
+      alert('No se pudo subir la foto (problema de conexión o archivo no válido). El producto NO se guardó: revisa y vuelve a intentar.');
+      return;
     }
+    rutaFotoNueva = ruta;
+    rutaFotoAnterior = rutaStorageProducto(fotoUrl);
+    fotoUrl = sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
   }
 
   const datos = {
@@ -4461,6 +4561,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
     tipo_envase: document.getElementById('nuevo-producto-envase').value || null,
     controla_stock: controlaStock, insumo_id: insumoId, consumo_insumo: consumoInsumo,
   };
+  let errorGuardar = null;
   if (productoEditandoId) {
     const original = productosAdminCache.find(p => p.id === productoEditandoId);
     const cambioDeCategoria = original && String(original.categoria_id) !== String(categoriaId);
@@ -4468,11 +4569,22 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
       const enNuevaCategoria = productosAdminCache.filter(p => String(p.categoria_id) === String(categoriaId));
       datos.orden_categoria = Math.max(0, ...enNuevaCategoria.map(p => p.orden_categoria ?? 0)) + 1;
     }
-    await sb.from('productos').update(datos).eq('id', productoEditandoId);
+    ({ error: errorGuardar } = await sb.from('productos').update(datos).eq('id', productoEditandoId));
   } else {
     const enMismaCategoria = productosAdminCache.filter(p => String(p.categoria_id) === String(categoriaId));
     datos.orden_categoria = Math.max(0, ...enMismaCategoria.map(p => p.orden_categoria ?? 0)) + 1;
-    await sb.from('productos').insert(datos);
+    ({ error: errorGuardar } = await sb.from('productos').insert(datos));
+  }
+  if (errorGuardar) {
+    console.error('No se pudo guardar el producto:', errorGuardar);
+    if (rutaFotoNueva) sb.storage.from('productos').remove([rutaFotoNueva]);
+    alert('No se pudo guardar el producto (problema de conexión). Revisa y vuelve a intentar.');
+    return;
+  }
+  // La foto anterior se borra recien cuando el producto ya quedo guardado con la nueva, y solo si ningun
+  // otro producto la usa.
+  if (rutaFotoAnterior && !productosAdminCache.some(p => p.id !== productoEditandoId && rutaStorageProducto(p.foto_url) === rutaFotoAnterior)) {
+    sb.storage.from('productos').remove([rutaFotoAnterior]);
   }
 
   cancelarEdicionProducto();
