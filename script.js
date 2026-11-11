@@ -3537,7 +3537,11 @@ function rutaStorageProducto(url) {
   if (!url) return null;
   const marcador = '/object/public/productos/';
   const i = url.indexOf(marcador);
-  return i === -1 ? null : url.slice(i + marcador.length);
+  if (i === -1) return null;
+  const ruta = url.slice(i + marcador.length);
+  // La URL trae el nombre codificado ("Lomito%20nuevo.jpg") pero el archivo se guarda con el nombre
+  // real ("Lomito nuevo.jpg"): hay que decodificar para que coincidan.
+  try { return decodeURIComponent(ruta); } catch { return ruta; }
 }
 
 async function eliminarProducto(id) {
@@ -4314,10 +4318,9 @@ async function limitarResolucionImagen(archivo, maxLado) {
 document.getElementById('btn-limpiar-fotos').addEventListener('click', async () => {
   const btn = document.getElementById('btn-limpiar-fotos');
   const resultado = document.getElementById('resultado-limpieza-fotos');
-  if (!(await confirmarApp('Esto va a borrar fotos de productos que ya no se usan y a reducir el tamaño de las que sí. Puede tardar unos minutos si hay muchas fotos. ¿Continuar?'))) return;
 
   btn.disabled = true;
-  btn.textContent = 'Procesando...';
+  btn.textContent = 'Revisando...';
   resultado.classList.add('oculto', 'mensaje-error');
 
   try {
@@ -4329,6 +4332,20 @@ document.getElementById('btn-limpiar-fotos').addEventListener('click', async () 
     const rutasEnUso = new Set(productosConFoto.map(p => rutaStorageProducto(p.foto_url)).filter(Boolean));
     const huerfanos = (archivos || []).map(a => a.name).filter(nombre => !rutasEnUso.has(nombre));
 
+    // Seguro: borrar fotos no se puede deshacer, asi que primero se muestra que se va a borrar y,
+    // si la lista es sospechosamente grande, no se borra nada.
+    if (huerfanos.length > Math.max(5, (archivos || []).length * 0.4)) {
+      resultado.textContent = `No se borró nada: la limpieza iba a borrar ${huerfanos.length} de ${archivos.length} archivos, y eso es demasiado para ser solo fotos sin uso. Avísale a quien mantiene la app.`;
+      resultado.classList.remove('oculto');
+      resultado.classList.add('mensaje-error');
+      return;
+    }
+    const detalle = huerfanos.length
+      ? `Se van a borrar ${huerfanos.length} foto(s) que ningún producto usa (no se puede deshacer):\n\n` + huerfanos.slice(0, 8).map(n => `• ${n.replace(/^\d+-/, '')}`).join('\n') + (huerfanos.length > 8 ? `\n… y ${huerfanos.length - 8} más` : '')
+      : 'No hay fotos sin uso para borrar.';
+    if (!(await confirmarApp(`${detalle}\n\nAdemás se reducirá el tamaño de las fotos grandes que sí se usan. Puede tardar unos minutos. ¿Continuar?`))) return;
+
+    btn.textContent = 'Procesando...';
     let huerfanosEliminados = 0;
     if (huerfanos.length > 0) {
       const { error: errorBorrar } = await sb.storage.from('productos').remove(huerfanos);
@@ -4375,6 +4392,16 @@ document.getElementById('btn-limpiar-fotos').addEventListener('click', async () 
     btn.textContent = 'Limpiar y optimizar fotos';
   }
 });
+
+// Si la foto de un producto no carga (archivo borrado o sin conexion), se muestra el icono en su lugar
+// en vez de un cuadro vacio.
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !String(img.src).includes('/object/public/productos/')) return;
+  const icono = document.createElement('span');
+  icono.textContent = '🍽️';
+  img.replaceWith(icono);
+}, true);
 
 function poblarSelectCategorias() {
   const select = document.getElementById('nuevo-producto-categoria');
