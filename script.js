@@ -1622,12 +1622,18 @@ async function cerrarMesa(metodoPago) {
     mesa.ticket_impreso_en = null;
     mesa.mesero_numero = null;
     mesa.comensales = [];
-    await sb.from('mesas').update({ cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null, mesero_numero: null, comensales: [] }).eq('id', mesa.id);
-    const mesaLimpiada = await guardarPedido(mesa);
-    if (!mesaLimpiada) {
-      alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
-    }
+    // La venta ya quedo registrada: la mesa se cierra en pantalla de inmediato y se limpia en la base en
+    // segundo plano, con una sola llamada (antes eran dos seguidas y la pantalla esperaba a las dos, lo que
+    // con datos moviles se notaba lento).
+    const avisarFalloLimpieza = () => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
+    Promise.resolve(sb.from('mesas').update({
+      cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null,
+      mesero_numero: null, comensales: [], pedido: [], abierta_en: null,
+    }).eq('id', mesa.id)).then(({ error }) => {
+      if (error) { console.error('No se pudo limpiar la mesa:', error); avisarFalloLimpieza(); }
+    }).catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
 
+    renderMesas();
     cerrarModalMenu();
   } catch (err) {
     alert('No se pudo registrar el cobro por un problema de conexión. El pedido no se perdió: vuelve a intentar "Cobrar".');
