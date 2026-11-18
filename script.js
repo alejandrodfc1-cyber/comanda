@@ -607,20 +607,6 @@ function vaciarMesaLocal(mesa) {
   mesa.comensales = [];
 }
 
-// Igual que hace la base: si la mesa principal quedo libre y tiene UNA sola sub-mesa, esa pasa a ser la
-// principal y la grilla vuelve a mostrar un solo recuadro. Con 2 o mas sub-mesas no se toca nada.
-function promoverSubMesaLocal(principal) {
-  const subs = subMesasDe(principal.id);
-  if (principal.pedido.length > 0 || subs.length !== 1) return;
-  const sub = subs[0];
-  Object.assign(principal, {
-    pedido: sub.pedido, comensales: sub.comensales, comanda_cocina_enviada: sub.comanda_cocina_enviada,
-    abierta_en: sub.abierta_en, mesero_numero: sub.mesero_numero, cuenta_solicitada: sub.cuenta_solicitada,
-    total_visible_mesero: sub.total_visible_mesero, ticket_impreso_en: sub.ticket_impreso_en,
-  });
-  mesas = mesas.filter(m => m.id !== sub.id);
-}
-
 async function eliminarSubMesaVacia(mesaId) {
   const { error } = await sb.rpc('eliminar_sub_mesa_vacia', { p_mesa_id: mesaId });
   if (error) console.error('No se pudo borrar la sub-mesa vacía:', error);
@@ -637,6 +623,12 @@ function renderMesas() {
   principales.forEach(p => {
     const subs = subMesasDe(p.id).sort((a, b) => a.sub_letra.localeCompare(b.sub_letra));
     if (!subs.length) { grid.appendChild(crearTarjetaMesa(p)); return; }
+    // Mesa principal libre y UNA sola sub-mesa con pedido (ej. se cobro la 1-A y sigue la 1-B): se ve un solo
+    // recuadro, a tamano normal y con su nombre ("Mesa 1-B"). Los datos no se mueven de una mesa a otra.
+    if (p.pedido.length === 0 && subs.length === 1) {
+      grid.appendChild(crearTarjetaMesa(subs[0].pedido.length > 0 ? subs[0] : p));
+      return;
+    }
     const celda = document.createElement('div');
     celda.className = 'mesa-dividida';
     [p, ...subs].forEach(m => {
@@ -1556,21 +1548,11 @@ async function cobrarComensal(mesa, n, metodoPago) {
     comensalActivo = null;
     itemExpandidoId = null;
     if (data.mesa_cerrada) {
-      const eraPrincipal = !mesa.mesa_padre_id;
-      if (eraPrincipal) {
-        // La base ya la dejo vacia: se refleja igual en pantalla y, si le queda UNA sola sub-mesa, esa
-        // pasa a ser la principal (un solo recuadro en la grilla).
-        vaciarMesaLocal(mesa);
-        promoverSubMesaLocal(mesa);
-      } else {
-        mesas = mesas.filter(m => m.id !== mesa.id);
-      }
+      // La base ya la cerro (una sub-mesa se borra; una principal se vacia): se refleja igual en pantalla.
+      if (mesa.mesa_padre_id) mesas = mesas.filter(m => m.id !== mesa.id);
+      else vaciarMesaLocal(mesa);
       renderMesas();
       cerrarModalMenu();
-      if (eraPrincipal) {
-        const { error: errorPromover } = await sb.rpc('promover_sub_mesa_unica', { p_mesa_id: mesa.id });
-        if (errorPromover) console.error('No se pudo pasar la sub-mesa a principal:', errorPromover);
-      }
       cargarMesas();
     } else {
       await cargarMesas();
@@ -1686,8 +1668,7 @@ async function cerrarMesa(metodoPago) {
     // con datos moviles se notaba lento).
     const avisarFalloLimpieza = () => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
     const esSubMesa = !!mesa.mesa_padre_id;
-    // Una sola llamada a la base cierra la mesa: una sub-mesa (1-B...) se borra; una principal se vacia y, si le
-    // queda UNA sola sub-mesa, esa pasa a ser la principal. Todo junto y en orden, sin carreras entre pasos.
+    // Una sola llamada a la base cierra la mesa: una sub-mesa (1-B...) se borra; una principal se vacia.
     (async () => {
       const { error } = await sb.rpc('cerrar_mesa_cobrada', { p_mesa_id: mesa.id });
       if (error) throw error;
@@ -1696,7 +1677,6 @@ async function cerrarMesa(metodoPago) {
 
     // En pantalla se ve igual de inmediato.
     if (esSubMesa) mesas = mesas.filter(m => m.id !== mesa.id);
-    else promoverSubMesaLocal(mesa);
     renderMesas();
     cerrarModalMenu();
   } catch (err) {
