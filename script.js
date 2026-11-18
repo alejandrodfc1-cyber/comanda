@@ -1055,6 +1055,7 @@ function abrirModalMenu(mesaId) {
   mesaActivaId = mesaId;
   itemExpandidoId = null;
   comensalActivo = null;
+  ocultarPanelMetodoPago();   // al abrir una mesa, nunca queda un cuadro de pago a medias de la anterior
   categoriaActiva = categoriaInicial(mesaAbierta);
   vistaModal = mesaAbierta.pedido.length > 0 ? 'detalle' : 'menu';
   document.getElementById('titulo-mesa').textContent = nombreMesaVisible(mesaAbierta);
@@ -1517,6 +1518,9 @@ function mostrarPanelMetodoPago() {
     : (comensalesDeMesa(mesa).length > 0 ? '¿Cómo pagó toda la mesa?' : '¿Cómo pagó?');
   const panel = document.getElementById('panel-metodo-pago');
   panel.classList.remove('oculto');
+  // Mientras se espera el tipo de pago, el boton Cobrar se esconde (no se puede tocar de nuevo por error)
+  // y el cuadro de pago late para llamar la atencion.
+  document.getElementById('vista-detalle-mesa').classList.add('esperando-pago');
   // Con pedidos largos el panel queda bajo la pantalla: se baja solo hasta mostrar las formas de pago.
   panel.scrollIntoView({ behavior: 'smooth', block: 'end' });
 }
@@ -1566,6 +1570,7 @@ async function cobrarComensal(mesa, n, metodoPago) {
 
 function ocultarPanelMetodoPago() {
   document.getElementById('panel-metodo-pago').classList.add('oculto');
+  document.getElementById('vista-detalle-mesa').classList.remove('esperando-pago');
 }
 
 const ETIQUETAS_METODO_PAGO = { efectivo: 'efectivo', tarjeta: 'tarjeta', transferencia: 'transferencia' };
