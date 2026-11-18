@@ -420,11 +420,19 @@ async function revisarCuentaActiva() {
 
 setInterval(revisarCuentaActiva, INTERVALO_REVISION_CUENTA_MS);
 
+// Cada carga lleva un numero: si una respuesta vieja llega despues de una mas nueva (pasa con varias
+// cargas seguidas, por ejemplo las que dispara el tiempo real), se descarta en vez de pisar la lista.
+let secuenciaCargaMesas = 0;
+let ultimaCargaMesasAplicada = 0;
+
 async function cargarMesas() {
+  const llamada = ++secuenciaCargaMesas;
   const mesaAntes = mesaActivaId ? mesaActiva() : null;
   const teniaPedidoAntes = !!mesaAntes && mesaAntes.pedido.length > 0;
   const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden');
   if (error) { console.error(error); return; }
+  if (llamada < ultimaCargaMesasAplicada) return;
+  ultimaCargaMesasAplicada = llamada;
   mesas = ordenarConSubMesas(data);
   if (mesaActivaId && !mesaActiva()) {
     cerrarModalMenu();
@@ -569,7 +577,16 @@ async function crearSubMesa() {
       alert('No se pudo abrir la sub-mesa (problema de conexión). Intenta de nuevo.');
       return;
     }
-    await cargarMesas();
+    // La sub-mesa ya existe en la base; se espera a verla en la lista antes de abrirla (si una carga
+    // anterior se cruzo, se vuelve a pedir en vez de quedarse sin abrir nada).
+    for (let intento = 0; intento < 3 && !mesas.some(m => m.id === data.id); intento++) {
+      await cargarMesas();
+      if (!mesas.some(m => m.id === data.id)) await new Promise(r => setTimeout(r, 500));
+    }
+    if (!mesas.some(m => m.id === data.id)) {
+      alert('La sub-mesa se creó, pero todavía no se puede mostrar. Vuelve a la grilla y ábrela desde ahí.');
+      return;
+    }
     abrirModalMenu(data.id);
   } finally {
     creandoSubMesa = false;
@@ -1626,13 +1643,21 @@ async function cerrarMesa(metodoPago) {
     // segundo plano, con una sola llamada (antes eran dos seguidas y la pantalla esperaba a las dos, lo que
     // con datos moviles se notaba lento).
     const avisarFalloLimpieza = () => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
-    Promise.resolve(sb.from('mesas').update({
-      cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null,
-      mesero_numero: null, comensales: [], pedido: [], abierta_en: null,
-    }).eq('id', mesa.id)).then(({ error }) => {
-      if (error) { console.error('No se pudo limpiar la mesa:', error); avisarFalloLimpieza(); }
-    }).catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
+    const esSubMesa = !!mesa.mesa_padre_id;
+    const limpiarMesa = async () => {
+      const { error } = await sb.from('mesas').update({
+        cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null,
+        mesero_numero: null, comensales: [], pedido: [], abierta_en: null,
+      }).eq('id', mesa.id);
+      if (error) throw error;
+      // Una sub-mesa (1-B...) recien cobrada se borra DESPUES de vaciarla en la base: el borrado solo
+      // funciona si ya esta vacia. Si se pide antes, la sub-mesa quedaba como un recuadro de mas.
+      if (esSubMesa) await eliminarSubMesaVacia(mesa.id);
+    };
+    limpiarMesa().catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
 
+    // En pantalla la sub-mesa desaparece de inmediato (asi tampoco intenta borrarse antes de tiempo).
+    if (esSubMesa) mesas = mesas.filter(m => m.id !== mesa.id);
     renderMesas();
     cerrarModalMenu();
   } catch (err) {
