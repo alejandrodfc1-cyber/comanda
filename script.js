@@ -429,7 +429,9 @@ async function cargarMesas() {
   const llamada = ++secuenciaCargaMesas;
   const mesaAntes = mesaActivaId ? mesaActiva() : null;
   const teniaPedidoAntes = !!mesaAntes && mesaAntes.pedido.length > 0;
-  const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden');
+  // Se ordena tambien por id: si dos mesas tuvieran el mismo orden, sin esto la base las entrega en un orden
+  // que cambia cada vez que se actualiza una, y las mesas se intercambiaban de lugar en la grilla.
+  const { data, error } = await sb.from('mesas').select('*').eq('visible', true).order('orden').order('id');
   if (error) { console.error(error); return; }
   if (llamada < ultimaCargaMesasAplicada) return;
   ultimaCargaMesasAplicada = llamada;
@@ -552,7 +554,8 @@ function nombreSiguienteSubMesa(mesa) {
 }
 
 function ordenarConSubMesas(lista) {
-  const principales = lista.filter(m => !m.mesa_padre_id);
+  // Orden fijo aunque dos mesas tengan el mismo "orden": desempata por id, asi nunca se intercambian de lugar.
+  const principales = lista.filter(m => !m.mesa_padre_id).sort((a, b) => ((a.orden ?? 0) - (b.orden ?? 0)) || (a.id - b.id));
   const resultado = [];
   principales.forEach(p => {
     resultado.push(p);
@@ -591,6 +594,31 @@ async function crearSubMesa() {
   } finally {
     creandoSubMesa = false;
   }
+}
+
+function vaciarMesaLocal(mesa) {
+  mesa.pedido = [];
+  mesa.abierta_en = null;
+  mesa.cuenta_solicitada = false;
+  mesa.total_visible_mesero = false;
+  mesa.comanda_cocina_enviada = {};
+  mesa.ticket_impreso_en = null;
+  mesa.mesero_numero = null;
+  mesa.comensales = [];
+}
+
+// Igual que hace la base: si la mesa principal quedo libre y tiene UNA sola sub-mesa, esa pasa a ser la
+// principal y la grilla vuelve a mostrar un solo recuadro. Con 2 o mas sub-mesas no se toca nada.
+function promoverSubMesaLocal(principal) {
+  const subs = subMesasDe(principal.id);
+  if (principal.pedido.length > 0 || subs.length !== 1) return;
+  const sub = subs[0];
+  Object.assign(principal, {
+    pedido: sub.pedido, comensales: sub.comensales, comanda_cocina_enviada: sub.comanda_cocina_enviada,
+    abierta_en: sub.abierta_en, mesero_numero: sub.mesero_numero, cuenta_solicitada: sub.cuenta_solicitada,
+    total_visible_mesero: sub.total_visible_mesero, ticket_impreso_en: sub.ticket_impreso_en,
+  });
+  mesas = mesas.filter(m => m.id !== sub.id);
 }
 
 async function eliminarSubMesaVacia(mesaId) {
@@ -1528,7 +1556,21 @@ async function cobrarComensal(mesa, n, metodoPago) {
     comensalActivo = null;
     itemExpandidoId = null;
     if (data.mesa_cerrada) {
+      const eraPrincipal = !mesa.mesa_padre_id;
+      if (eraPrincipal) {
+        // La base ya la dejo vacia: se refleja igual en pantalla y, si le queda UNA sola sub-mesa, esa
+        // pasa a ser la principal (un solo recuadro en la grilla).
+        vaciarMesaLocal(mesa);
+        promoverSubMesaLocal(mesa);
+      } else {
+        mesas = mesas.filter(m => m.id !== mesa.id);
+      }
+      renderMesas();
       cerrarModalMenu();
+      if (eraPrincipal) {
+        const { error: errorPromover } = await sb.rpc('promover_sub_mesa_unica', { p_mesa_id: mesa.id });
+        if (errorPromover) console.error('No se pudo pasar la sub-mesa a principal:', errorPromover);
+      }
       cargarMesas();
     } else {
       await cargarMesas();
@@ -1644,20 +1686,17 @@ async function cerrarMesa(metodoPago) {
     // con datos moviles se notaba lento).
     const avisarFalloLimpieza = () => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
     const esSubMesa = !!mesa.mesa_padre_id;
-    const limpiarMesa = async () => {
-      const { error } = await sb.from('mesas').update({
-        cuenta_solicitada: false, total_visible_mesero: false, comanda_cocina_enviada: {}, ticket_impreso_en: null,
-        mesero_numero: null, comensales: [], pedido: [], abierta_en: null,
-      }).eq('id', mesa.id);
+    // Una sola llamada a la base cierra la mesa: una sub-mesa (1-B...) se borra; una principal se vacia y, si le
+    // queda UNA sola sub-mesa, esa pasa a ser la principal. Todo junto y en orden, sin carreras entre pasos.
+    (async () => {
+      const { error } = await sb.rpc('cerrar_mesa_cobrada', { p_mesa_id: mesa.id });
       if (error) throw error;
-      // Una sub-mesa (1-B...) recien cobrada se borra DESPUES de vaciarla en la base: el borrado solo
-      // funciona si ya esta vacia. Si se pide antes, la sub-mesa quedaba como un recuadro de mas.
-      if (esSubMesa) await eliminarSubMesaVacia(mesa.id);
-    };
-    limpiarMesa().catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
+      cargarMesas();
+    })().catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
 
-    // En pantalla la sub-mesa desaparece de inmediato (asi tampoco intenta borrarse antes de tiempo).
+    // En pantalla se ve igual de inmediato.
     if (esSubMesa) mesas = mesas.filter(m => m.id !== mesa.id);
+    else promoverSubMesaLocal(mesa);
     renderMesas();
     cerrarModalMenu();
   } catch (err) {
@@ -3379,7 +3418,7 @@ let mesasAdminCache = [];
 let mesaEditandoId = null;
 
 async function cargarMesasAdmin() {
-  const { data } = await sb.from('mesas').select('*').is('mesa_padre_id', null).order('orden');
+  const { data } = await sb.from('mesas').select('*').is('mesa_padre_id', null).order('orden').order('id');
   mesasAdminCache = data || [];
   renderMesasAdmin();
 }
@@ -3510,7 +3549,10 @@ document.getElementById('form-nueva-mesa').addEventListener('submit', async (e) 
   if (mesaEditandoId) {
     await sb.from('mesas').update({ nombre, para_llevar: paraLlevar, excluir_promedios: sinPromedios }).eq('id', mesaEditandoId);
   } else {
-    const siguienteOrden = Math.max(0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
+    // El orden siguiente se pide a la base (no a la lista en pantalla): si se crean dos mesas seguidas, la lista
+    // aun no tiene la primera y las dos quedaban con el mismo orden.
+    const { data: ultima } = await sb.from('mesas').select('orden').order('orden', { ascending: false, nullsFirst: false }).limit(1);
+    const siguienteOrden = Math.max(0, ultima?.[0]?.orden ?? 0, ...mesasAdminCache.map(m => m.orden ?? 0)) + 1;
     await sb.from('mesas').insert({ nombre, pedido: [], orden: siguienteOrden, para_llevar: paraLlevar, excluir_promedios: sinPromedios });
   }
   cancelarEdicionMesa();
