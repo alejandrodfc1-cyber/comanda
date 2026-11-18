@@ -1,1 +1,4 @@
 node_modules/
+
+# Documentos privados (llevan datos del negocio y de cuentas): nunca se suben a GitHub
+Resumen/
