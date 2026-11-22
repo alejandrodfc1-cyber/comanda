@@ -1925,5 +1925,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   body.imprimiendo-precios { background: #fff; }
   body.imprimiendo-precios > *:not(#hoja-precios-impresion) { display: none !important; }
   body.imprimiendo-precios #hoja-precios-impresion { display: block; }
+  /* la regla del recibo (body * { visibility:hidden }) tambien escondia estas hojas */
+  body.imprimiendo-precios #hoja-precios-impresion, body.imprimiendo-precios #hoja-precios-impresion * { visibility: visible; }
   body.imprimiendo-precios, body.imprimiendo-precios * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
