@@ -21,6 +21,19 @@ function confirmarApp(mensaje, opciones = {}) {
   });
 }
 
+// Texto corto con la causa real de un error de la base o de la red, para mostrarlo en los avisos
+// (antes todos decian "problema de conexion", aunque la causa fuera otra).
+function causaError(err) {
+  if (!err) return 'el servidor no devolvió datos';
+  const msg = String(err.message || err);
+  if (navigator.onLine === false || /failed to fetch|networkerror|load failed|network request failed|err_network/i.test(msg)) return 'sin conexión a internet';
+  if (/jwt expired|invalid jwt/i.test(msg)) return 'la sesión venció: cierra sesión y vuelve a entrar';
+  if (err.code === '42501' || /permission denied|row-level security/i.test(msg)) return 'sin permiso para esta acción';
+  let t = msg;
+  if (err.code && !msg.includes(err.code)) t += ` [${err.code}]`;
+  return t.length > 160 ? `${t.slice(0, 157)}…` : t;
+}
+
 let NEGOCIO_NOMBRE = 'La Españita';
 let NEGOCIO_DIRECCION = 'Av. Francia 512 - Valparaíso';
 let NOMBRE_APP = 'La Españita';
@@ -579,7 +592,7 @@ async function crearSubMesa() {
     const { data, error } = await sb.rpc('crear_sub_mesa', { p_mesa_id: mesa.id });
     if (error || !data) {
       console.error(error);
-      alert('No se pudo abrir la sub-mesa (problema de conexión). Intenta de nuevo.');
+      alert('No se pudo abrir la sub-mesa (' + causaError(error) + '). Intenta de nuevo.');
       return;
     }
     // La sub-mesa ya existe en la base; se espera a verla en la lista antes de abrirla (si una carga
@@ -733,7 +746,7 @@ async function guardarComensales(mesa, lista) {
   const { error } = await sb.from('mesas').update({ comensales: lista }).eq('id', mesa.id);
   if (error) {
     console.error(error);
-    alert('No se pudo guardar el cambio de comensales (problema de conexión). Vuelve a intentarlo.');
+    alert('No se pudo guardar el cambio de comensales (' + causaError(error) + '). Vuelve a intentarlo.');
   }
 }
 
@@ -847,7 +860,7 @@ async function dividirPartesIguales() {
     console.error(error);
     await cargarMesas();
     renderPedido();
-    alert('No se pudo dividir la cuenta (problema de conexión). Se restauró la mesa: revísala y vuelve a intentar.');
+    alert('No se pudo dividir la cuenta (' + causaError(error) + '). Se restauró la mesa: revísala y vuelve a intentar.');
   }
 }
 
@@ -1498,7 +1511,7 @@ async function guardarMeseroNumero(valor) {
   const { error } = await sb.from('mesas').update({ mesero_numero: mesa.mesero_numero }).eq('id', mesa.id);
   if (error) {
     console.error(error);
-    alert('No se pudo guardar el número de mesero (problema de conexión). Vuelve a ingresarlo.');
+    alert('No se pudo guardar el número de mesero (' + causaError(error) + '). Vuelve a ingresarlo.');
   }
 }
 
@@ -1547,7 +1560,7 @@ async function cobrarComensal(mesa, n, metodoPago) {
     });
     if (error || !data) {
       console.error(error);
-      alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
+      alert('No se pudo registrar el cobro (' + causaError(error) + '). El pedido no se perdió: vuelve a intentar "Cobrar".');
       return;
     }
     reproducirSonidoCobro(metodoPago);
@@ -1652,7 +1665,7 @@ async function cerrarMesa(metodoPago) {
     }).select().single();
 
     if (error || !venta) {
-      alert('No se pudo registrar el cobro (problema de conexión). El pedido no se perdió: vuelve a intentar "Cobrar".');
+      alert('No se pudo registrar el cobro (' + causaError(error) + '). El pedido no se perdió: vuelve a intentar "Cobrar".');
       return;
     }
 
@@ -1672,21 +1685,21 @@ async function cerrarMesa(metodoPago) {
     // La venta ya quedo registrada: la mesa se cierra en pantalla de inmediato y se limpia en la base en
     // segundo plano, con una sola llamada (antes eran dos seguidas y la pantalla esperaba a las dos, lo que
     // con datos moviles se notaba lento).
-    const avisarFalloLimpieza = () => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (problema de conexión). Ciérrala manualmente para no cobrarla dos veces.');
+    const avisarFalloLimpieza = (err) => alert('El cobro ya quedó registrado, pero no se pudo limpiar la mesa (' + causaError(err) + '). Ciérrala manualmente para no cobrarla dos veces.');
     const esSubMesa = !!mesa.mesa_padre_id;
     // Una sola llamada a la base cierra la mesa: una sub-mesa (1-B...) se borra; una principal se vacia.
     (async () => {
       const { error } = await sb.rpc('cerrar_mesa_cobrada', { p_mesa_id: mesa.id });
       if (error) throw error;
       cargarMesas();
-    })().catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(); });
+    })().catch((err) => { console.error('No se pudo limpiar la mesa:', err); avisarFalloLimpieza(err); });
 
     // En pantalla se ve igual de inmediato.
     if (esSubMesa) mesas = mesas.filter(m => m.id !== mesa.id);
     renderMesas();
     cerrarModalMenu();
   } catch (err) {
-    alert('No se pudo registrar el cobro por un problema de conexión. El pedido no se perdió: vuelve a intentar "Cobrar".');
+    alert('No se pudo registrar el cobro (' + causaError(err) + '). El pedido no se perdió: vuelve a intentar "Cobrar".');
   } finally {
     cobroEnProceso = false;
     if (btnCobrar) { btnCobrar.disabled = false; btnCobrar.textContent = '💰 Cobrar'; }
@@ -2918,7 +2931,7 @@ async function cargarDatosReporteCaja(silencioso = false) {
     .gte('creado_en', inicioDiaReporte).lt('creado_en', inicioDiaSiguiente).eq('turno', turno);
   if (error) {
     console.error(error);
-    if (!silencioso) alert('No se pudieron cargar las ventas del turno (problema de conexión). Puedes escribirlas a mano.');
+    if (!silencioso) alert('No se pudieron cargar las ventas del turno (' + causaError(error) + '). Puedes escribirlas a mano.');
     return;
   }
   const ventas = data || [];
@@ -3321,7 +3334,7 @@ async function guardarReporteCajaEnBase(datos) {
     return { ok: true, ...data };
   } catch (err) {
     console.error('No se pudo guardar el reporte de caja:', err);
-    mostrar('⚠️ No se pudo guardar el reporte en la base (problema de conexión). Se imprimió igual: vuelve a imprimirlo con conexión para guardarlo.', true);
+    mostrar('⚠️ No se pudo guardar el reporte en la base (' + causaError(err) + '). Se imprimió igual: vuelve a imprimirlo con conexión para guardarlo.', true);
     return { ok: false };
   }
 }
@@ -3644,7 +3657,7 @@ async function eliminarMesa(id) {
       return;
     }
   } catch (err) {
-    alert(`No se pudo eliminar "${etiquetaMesa(mesa)}" por un problema de conexión. Revisa tu internet/WiFi e intenta de nuevo.`);
+    alert(`No se pudo eliminar "${etiquetaMesa(mesa)}" (${causaError(err)}). Revisa tu internet/WiFi e intenta de nuevo.`);
   } finally {
     await cargarMesasAdmin();
     cargarMesas();
@@ -3835,7 +3848,7 @@ async function rotarEnvaseProducto(id) {
   const { error } = await sb.from('productos').update({ tipo_envase: nuevo }).eq('id', id);
   if (error) {
     console.error(error);
-    alert('No se pudo cambiar el envase (problema de conexión).');
+    alert('No se pudo cambiar el envase (' + causaError(error) + ').');
     return;
   }
   p.tipo_envase = nuevo;
@@ -4785,7 +4798,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
     });
     if (errorSubida) {
       console.error('No se pudo subir la foto:', errorSubida);
-      alert('No se pudo subir la foto (problema de conexión o archivo no válido). El producto NO se guardó: revisa y vuelve a intentar.');
+      alert('No se pudo subir la foto (' + causaError(errorSubida) + '). El producto NO se guardó: revisa y vuelve a intentar.');
       return;
     }
     rutaFotoNueva = ruta;
@@ -4815,7 +4828,7 @@ document.getElementById('form-nuevo-producto').addEventListener('submit', async 
   if (errorGuardar) {
     console.error('No se pudo guardar el producto:', errorGuardar);
     if (rutaFotoNueva) sb.storage.from('productos').remove([rutaFotoNueva]);
-    alert('No se pudo guardar el producto (problema de conexión). Revisa y vuelve a intentar.');
+    alert('No se pudo guardar el producto (' + causaError(errorGuardar) + '). Revisa y vuelve a intentar.');
     return;
   }
   // La foto anterior se borra recien cuando el producto ya quedo guardado con la nueva, y solo si ningun
@@ -5095,7 +5108,7 @@ document.getElementById('form-mesero').addEventListener('submit', async (e) => {
     }
     ({ error } = await sb.from('meseros').insert({ numero, nombre }));
   }
-  if (error) { console.error(error); alert('No se pudo guardar el mesero (problema de conexión).'); return; }
+  if (error) { console.error(error); alert('No se pudo guardar el mesero (' + causaError(error) + ').'); return; }
   cancelarEdicionMesero();
   await cargarMeseros();
 });
@@ -5262,7 +5275,7 @@ async function moverTop20(id, direccion) {
 // Antes de cambiar nada, la base guarda el orden actual para poder volver atras.
 async function ordenarTop20PorVentas() {
   const { data: ranking, error } = await sb.rpc('ranking_top20_por_ventas', { p_dias: 30 });
-  if (error) { alert('No se pudo calcular el ranking (problema de conexión). No se cambió nada.'); return; }
+  if (error) { alert('No se pudo calcular el ranking (' + causaError(error) + '). No se cambió nada.'); return; }
   if (!ranking || ranking.length === 0) { alert('Todavía no hay ventas de los últimos 30 días para armar el ranking.'); return; }
   const enLista = top20AdminCache.filter(p => p.top20).length;
   if (!(await confirmarApp(`Se ordenarán los ${enLista} productos de tu Top20 por unidades vendidas en los últimos 30 días (el más vendido primero).\n\nTu orden actual queda guardado: podrás volver a él con «Volver a un orden anterior».`, { textoAceptar: 'Ordenar' }))) return;
@@ -5272,7 +5285,7 @@ async function ordenarTop20PorVentas() {
     agregar = await confirmarApp(`Estos productos están entre los 20 más vendidos y no están en tu Top20:\n\n${faltan.map(r => `• ${r.nombre} (${r.vendidos})`).join('\n')}\n\n¿Los agrego también?`, { textoAceptar: 'Sí, agregarlos', textoCancelar: 'No, solo ordenar' });
   }
   const { error: errOrden } = await sb.rpc('ordenar_top20_por_ventas', { p_dias: 30, p_agregar: agregar });
-  if (errOrden) { alert('No se pudo ordenar el Top20 (problema de conexión). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
+  if (errOrden) { alert('No se pudo ordenar el Top20 (' + causaError(errOrden) + '). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
   await cargarTop20Admin();
   cargarCategoriasYProductos();
   document.getElementById('lista-respaldos-top20').classList.add('oculto');
@@ -5282,7 +5295,7 @@ async function mostrarRespaldosTop20() {
   const cont = document.getElementById('lista-respaldos-top20');
   if (!cont.classList.contains('oculto')) { cont.classList.add('oculto'); return; }
   const { data, error } = await sb.from('respaldos_top20').select('id, creado_en, motivo, fijo, orden').order('creado_en', { ascending: false });
-  if (error) { alert('No se pudieron leer los órdenes guardados (problema de conexión).'); return; }
+  if (error) { alert('No se pudieron leer los órdenes guardados (' + causaError(error) + ').'); return; }
   cont.innerHTML = (data && data.length)
     ? data.map(r => {
         const fecha = new Date(r.creado_en).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -5295,7 +5308,7 @@ async function mostrarRespaldosTop20() {
 async function restaurarTop20(id) {
   if (!(await confirmarApp('El Top20 volverá a quedar exactamente como estaba en ese momento (productos y posiciones). El orden de ahora también se guarda, así que puedes deshacerlo.', { textoAceptar: 'Volver a este' }))) return;
   const { error } = await sb.rpc('restaurar_top20', { p_respaldo_id: id });
-  if (error) { alert('No se pudo restaurar el orden (problema de conexión). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
+  if (error) { alert('No se pudo restaurar el orden (' + causaError(error) + '). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
   await cargarTop20Admin();
   cargarCategoriasYProductos();
   document.getElementById('lista-respaldos-top20').classList.add('oculto');
