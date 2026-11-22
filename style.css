@@ -1888,3 +1888,42 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   #vista-detalle-mesa .btn-metodo-pago { font-size: .77rem; }
   #vista-detalle-mesa .btn-cancelar-metodo-pago { font-size: .87rem; }
 }
+
+/* ---------- Lista de precios (pantalla) ---------- */
+.panel-admin-menu.estilo-color .color-precios .icono-admin-glifo { background: linear-gradient(150deg, #bfe8a3, #6cc24a); --sombra-glifo: rgba(108,194,74,.3); }
+.precios-barra { display: flex; gap: 8px; align-items: center; }
+.precios-barra .campo-busqueda { margin: 10px 0; flex: 1; min-width: 0; }
+.precios-barra .btn { white-space: nowrap; width: auto; margin: 0; }
+.precios-chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; -webkit-overflow-scrolling: touch; }
+.chip-precio { flex: 0 0 auto; border: 2px solid var(--color-chip, #555); background: #fff; color: var(--color-chip, #333); border-radius: 999px; padding: 6px 12px; font-size: .88rem; font-weight: 600; cursor: pointer; }
+.chip-precio small { opacity: .75; font-weight: 400; }
+.chip-precio.activa { background: var(--color-chip, #333); color: #fff; }
+.cat-precios { margin-bottom: 14px; }
+.cabecera-precios { position: sticky; top: var(--alto-fijo, 0px); z-index: 3; color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 7px 10px; display: flex; justify-content: space-between; align-items: baseline; border-radius: 4px; }
+.cabecera-precios span { font-size: .78rem; font-weight: 400; opacity: .9; letter-spacing: 0; }
+.fila-precio { display: flex; align-items: baseline; gap: 4px; padding: 9px 10px; border-bottom: 1px solid #e4e4e4; }
+.fila-precio.z { background: #f3f3f3; }
+.fila-precio .np { font-size: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.fila-precio .pt { flex: 1 1 12px; min-width: 12px; border-bottom: 2px dotted #aaa; transform: translateY(-3px); }
+.fila-precio .vp { font-size: 1.2rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Lista de precios (hojas A4 al imprimir) ---------- */
+#hoja-precios-impresion { display: none; page: precios; font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, Helvetica, sans-serif; color: #1a1a1a; }
+.hp-hoja { width: 86mm; height: 285mm; overflow: hidden; break-after: page; page-break-after: always; }
+.hp-hoja:last-child { break-after: auto; page-break-after: auto; }
+.hp-hoja h1 { margin: 0 0 2mm; font-size: 15pt; line-height: 1; text-transform: uppercase; letter-spacing: .04em; display: flex; justify-content: space-between; align-items: baseline; }
+.hp-hoja h1 small { font-size: 7.5pt; font-weight: 400; letter-spacing: 0; text-transform: none; color: #555; }
+.hp-cat { color: #fff; font-size: 12pt; line-height: 1; padding: 1.4mm 2mm; margin-top: 2.5mm; text-transform: uppercase; letter-spacing: .05em; display: flex; justify-content: space-between; align-items: baseline; }
+.hp-cat span { font-size: 8pt; font-weight: 400; letter-spacing: 0; opacity: .9; }
+.hp-fila { box-sizing: border-box; display: flex; align-items: center; gap: 1mm; height: var(--hp-fila, 5mm); padding: 0 2mm; border-bottom: .15mm solid #d4d4d4; overflow: hidden; }
+.hp-fila.z { background: #efefef; }
+.hp-fila .n { font-size: var(--hp-pt, 10pt); line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.hp-fila .pt { flex: 1 1 2mm; min-width: 2mm; border-bottom: .4mm dotted #777; transform: translateY(.6mm); }
+.hp-fila .v { font-size: var(--hp-pt-precio, 12pt); line-height: 1; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+@page precios { size: A4 portrait; margin: 6mm; }
+@media print {
+  body.imprimiendo-precios { background: #fff; }
+  body.imprimiendo-precios > *:not(#hoja-precios-impresion) { display: none !important; }
+  body.imprimiendo-precios #hoja-precios-impresion { display: block; }
+  body.imprimiendo-precios, body.imprimiendo-precios * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

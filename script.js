@@ -320,6 +320,7 @@ async function cargarCategoriasYProductos() {
     .slice(0, 20);
 
   if (mesaActivaId) { renderListaMenu(); renderGaleriaMenu(); }
+  if (seccionActivaDashboard === 'precios') renderListaPrecios();
 }
 
 sb
@@ -2079,6 +2080,7 @@ let seccionActivaDashboard = 'mesas';
 const TITULOS_SECCION_ADMIN = {
   metricas: '📊 Reportes',
   'reporte-caja': '🧾 Reporte de Caja',
+  precios: '💲 Lista de precios',
   top20: '🏆 Top 20',
   productos: '🍔 Productos',
   insumos: '📦 Insumos',
@@ -2096,7 +2098,7 @@ function mostrarMenuAdmin() {
   document.getElementById('filtros-reportes-fila').classList.add('oculto');
   const bloquePeriodo = document.getElementById('bloque-periodo');
   bloquePeriodo.classList.add('oculto');
-  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja'].forEach(s => {
+  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja', 'precios'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.add('oculto');
   });
   document.getElementById('btn-guardar-flotante').classList.add('oculto');
@@ -2108,7 +2110,7 @@ function mostrarSeccionDashboard(seccion) {
   document.getElementById('panel-admin-menu').classList.add('oculto');
   document.getElementById('barra-volver-menu').classList.remove('oculto');
   document.getElementById('titulo-seccion-activa').textContent = TITULOS_SECCION_ADMIN[seccion] || '';
-  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja'].forEach(s => {
+  ['mesas', 'productos', 'insumos', 'categorias', 'top20', 'orden', 'metricas', 'config', 'usuarios', 'reporte-caja', 'precios'].forEach(s => {
     document.getElementById(`seccion-admin-${s}`).classList.toggle('oculto', s !== seccion);
   });
   document.querySelector('#modal-dashboard .modal-caja').scrollTop = 0;
@@ -2116,13 +2118,117 @@ function mostrarSeccionDashboard(seccion) {
   const bloquePeriodo = document.getElementById('bloque-periodo');
   bloquePeriodo.classList.toggle('oculto', seccion !== 'metricas' && bloquePeriodo.classList.contains('bloque-periodo-fijo'));
   const fab = document.getElementById('btn-guardar-flotante');
-  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios' || seccion === 'insumos' || seccion === 'reporte-caja');
+  fab.classList.toggle('oculto', seccion === 'categorias' || seccion === 'top20' || seccion === 'orden' || seccion === 'metricas' || seccion === 'config' || seccion === 'mesas' || seccion === 'usuarios' || seccion === 'insumos' || seccion === 'reporte-caja' || seccion === 'precios');
   if (seccion === 'top20') cargarTop20Admin();
   if (seccion === 'orden') cargarOrdenAdmin();
   if (seccion === 'metricas') { cargarMetricas(); cargarComparativas(); }
   if (seccion === 'usuarios') cargarUsuariosAdmin();
   if (seccion === 'config') { renderNotasRapidasAdmin(); renderGastosRapidosAdmin(); renderMeserosAdmin(); actualizarVersionApp(); }
   if (seccion === 'reporte-caja') iniciarReporteCaja();
+  if (seccion === 'precios') {
+    categoriaPreciosActiva = -1;
+    document.getElementById('buscar-precio').value = '';
+    renderListaPrecios();
+  }
+}
+
+// ---------- Lista de precios ----------
+// Se arma sola con MENU y CATEGORIAS, que la app ya mantiene al dia en vivo cuando cambia un producto o un precio:
+// por eso siempre muestra los precios actuales y no hay nada que actualizar a mano.
+const COLORES_PRECIOS = ['#9c1c2e', '#b45309', '#6b21a8', '#0f766e', '#1d4ed8', '#be185d', '#4d7c0f', '#7c2d12'];
+let categoriaPreciosActiva = -1;   // -1 = todas
+
+function categoriasConPrecios() {
+  return CATEGORIAS.filter(c => c !== 'Top20')
+    .map((nombre, i) => ({
+      nombre,
+      color: COLORES_PRECIOS[i % COLORES_PRECIOS.length],
+      items: MENU.filter(p => p.categoria === nombre).map(p => ({ nombre: p.nombre, precio: Number(p.precio) || 0 })),
+    }))
+    .filter(c => c.items.length > 0);
+}
+
+function elegirCategoriaPrecios(i) {
+  categoriaPreciosActiva = i;
+  renderListaPrecios();
+}
+
+function renderListaPrecios() {
+  const cont = document.getElementById('lista-precios');
+  if (!cont) return;
+  const cats = categoriasConPrecios();
+  if (categoriaPreciosActiva >= cats.length) categoriaPreciosActiva = -1;
+  const q = normalizarTexto(document.getElementById('buscar-precio').value.trim());
+  document.getElementById('chips-precios').innerHTML =
+    `<button type="button" class="chip-precio ${categoriaPreciosActiva === -1 ? 'activa' : ''}" onclick="elegirCategoriaPrecios(-1)">Todas</button>` +
+    cats.map((c, i) => `<button type="button" class="chip-precio ${categoriaPreciosActiva === i ? 'activa' : ''}" style="--color-chip:${c.color}" onclick="elegirCategoriaPrecios(${i})">${escaparHtml(c.nombre)} <small>${c.items.length}</small></button>`).join('');
+  // Las cabeceras de categoria quedan pegadas bajo la barra fija de Administracion al deslizar.
+  const barraFija = document.querySelector('#modal-dashboard .dashboard-fijo');
+  cont.style.setProperty('--alto-fijo', `${barraFija ? barraFija.offsetHeight : 0}px`);
+  const html = cats.map((c, i) => {
+    if (categoriaPreciosActiva !== -1 && categoriaPreciosActiva !== i) return '';
+    const items = q ? c.items.filter(p => normalizarTexto(p.nombre).includes(q)) : c.items;
+    if (items.length === 0) return '';
+    return `<div class="cat-precios"><div class="cabecera-precios" style="background:${c.color}">${escaparHtml(c.nombre)}<span>${items.length}</span></div>` +
+      items.map((p, n) => `<div class="fila-precio ${n % 2 ? 'z' : ''}"><span class="np">${escaparHtml(p.nombre)}</span><span class="pt"></span><span class="vp">${formatoMoneda(p.precio)}</span></div>`).join('') +
+      '</div>';
+  }).join('');
+  cont.innerHTML = html || '<p class="texto-vacio">No hay productos que coincidan.</p>';
+}
+
+// Reparte las categorias en 2 hojas, cortando entre categorias donde mas se parezcan las alturas
+// (con una sola categoria, la parte por la mitad).
+function repartirCategoriasEnHojas(cats) {
+  if (cats.length === 0) return [];
+  if (cats.length === 1) {
+    const it = cats[0].items;
+    const mitad = Math.ceil(it.length / 2);
+    return [[{ ...cats[0], items: it.slice(0, mitad) }], [{ ...cats[0], nombre: `${cats[0].nombre} (sigue)`, items: it.slice(mitad) }]];
+  }
+  const peso = c => c.items.length + 1.6;
+  const total = cats.reduce((s, c) => s + peso(c), 0);
+  let mejor = 1, mejorDif = Infinity, acum = 0;
+  for (let k = 1; k < cats.length; k++) {
+    acum += peso(cats[k - 1]);
+    const dif = Math.abs(total - 2 * acum);
+    if (dif < mejorDif) { mejorDif = dif; mejor = k; }
+  }
+  return [cats.slice(0, mejor), cats.slice(mejor)];
+}
+
+// Altura de fila y tamano de letra: los mayores con los que la hoja mas llena cabe completa en el alto del A4.
+function dimensionesHojaPrecios(hojas) {
+  const ALTO_UTIL_MM = 285 - 13;      // A4 menos margenes, titulo y un poco de holgura
+  const ALTO_BANDA_MM = 8.5;          // franja de categoria con su espacio
+  let fila = 6.2;
+  hojas.forEach(h => {
+    const filas = h.reduce((s, c) => s + c.items.length, 0);
+    fila = Math.min(fila, (ALTO_UTIL_MM - h.length * ALTO_BANDA_MM) / filas);
+  });
+  fila = Math.max(3.6, fila);
+  return { fila, pt: Math.min(12, fila * 2.0), ptPrecio: Math.min(14.5, fila * 2.45) };
+}
+
+function imprimirListaPrecios() {
+  const cats = categoriasConPrecios();
+  if (cats.length === 0) { alert('No hay productos para imprimir.'); return; }
+  const hojas = repartirCategoriasEnHojas(cats);
+  const d = dimensionesHojaPrecios(hojas);
+  const fecha = new Date().toLocaleDateString('es-CL');
+  const area = document.getElementById('hoja-precios-impresion');
+  area.style.setProperty('--hp-fila', `${d.fila.toFixed(2)}mm`);
+  area.style.setProperty('--hp-pt', `${d.pt.toFixed(1)}pt`);
+  area.style.setProperty('--hp-pt-precio', `${d.ptPrecio.toFixed(1)}pt`);
+  area.innerHTML = hojas.map(h =>
+    `<section class="hp-hoja"><h1>Lista de precios<small>${escaparHtml(NEGOCIO_NOMBRE)} · ${fecha}</small></h1>` +
+    h.map(c => `<div class="hp-cat" style="background:${c.color}">${escaparHtml(c.nombre)}<span>${c.items.length}</span></div>` +
+      c.items.map((p, n) => `<div class="hp-fila ${n % 2 ? 'z' : ''}"><span class="n">${escaparHtml(p.nombre)}</span><span class="pt"></span><span class="v">${formatoMoneda(p.precio)}</span></div>`).join('')
+    ).join('') + '</section>'
+  ).join('');
+  document.body.classList.add('imprimiendo-precios');
+  const limpiar = () => { document.body.classList.remove('imprimiendo-precios'); window.removeEventListener('afterprint', limpiar); };
+  window.addEventListener('afterprint', limpiar);
+  window.print();
 }
 
 function guardarDesdeFlotante() {

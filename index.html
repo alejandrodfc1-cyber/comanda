@@ -131,6 +131,10 @@
           <span class="icono-admin-glifo"><span class="icono-admin-glifo-emoji">🧾</span></span>
           <span class="icono-admin-menu-label">Reporte de Caja</span>
         </button>
+        <button class="icono-admin-menu color-precios" id="icono-admin-precios" onclick="mostrarSeccionDashboard('precios')">
+          <span class="icono-admin-glifo"><span class="icono-admin-glifo-emoji">💲</span></span>
+          <span class="icono-admin-menu-label">Precios</span>
+        </button>
         <button class="icono-admin-menu color-top20" id="icono-admin-top20" onclick="mostrarSeccionDashboard('top20')">
           <span class="icono-admin-glifo"><span class="icono-admin-glifo-emoji">🏆</span></span>
           <span class="icono-admin-menu-label">Top 20</span>
@@ -675,6 +679,16 @@
       </div>
     </div>
 
+    <div id="seccion-admin-precios" class="oculto">
+      <div class="precios-barra">
+        <input type="search" id="buscar-precio" class="campo-busqueda" placeholder="🔍 Buscar producto…" autocomplete="off" oninput="renderListaPrecios()">
+        <button type="button" class="btn btn-turquesa" onclick="imprimirListaPrecios()">🖨️ Imprimir</button>
+      </div>
+      <div class="precios-chips" id="chips-precios"></div>
+      <div id="lista-precios"></div>
+      <p class="texto-ayuda">Se arma sola con los precios de Productos, así que siempre están al día. El orden es el de «Orden Menú». «Imprimir» saca 2 hojas A4, una tira angosta en cada una, para pegar en caja.</p>
+    </div>
+
     <div id="seccion-admin-reporte-caja" class="oculto">
       <label class="campo-form">Turno
         <select id="reporte-caja-turno" onchange="cambiarTurnoDelBorrador(this.value)">
@@ -880,6 +894,9 @@
     </div>
   </div>
 </div>
+
+<!-- Hojas de la lista de precios: solo existen al imprimir -->
+<div id="hoja-precios-impresion" aria-hidden="true"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
