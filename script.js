@@ -2128,6 +2128,7 @@ function mostrarSeccionDashboard(seccion) {
   if (seccion === 'precios') {
     categoriaPreciosActiva = -1;
     document.getElementById('buscar-precio').value = '';
+    document.getElementById('papel-precios').value = papelPreciosElegido();
     renderListaPrecios();
   }
 }
@@ -2176,46 +2177,106 @@ function renderListaPrecios() {
   cont.innerHTML = html || '<p class="texto-vacio">No hay productos que coincidan.</p>';
 }
 
-// Reparte las categorias en 2 hojas, cortando entre categorias donde mas se parezcan las alturas
-// (con una sola categoria, la parte por la mitad).
-function repartirCategoriasEnHojas(cats) {
-  if (cats.length === 0) return [];
-  if (cats.length === 1) {
-    const it = cats[0].items;
-    const mitad = Math.ceil(it.length / 2);
-    return [[{ ...cats[0], items: it.slice(0, mitad) }], [{ ...cats[0], nombre: `${cats[0].nombre} (sigue)`, items: it.slice(mitad) }]];
-  }
-  const peso = c => c.items.length + 1.6;
-  const total = cats.reduce((s, c) => s + peso(c), 0);
-  let mejor = 1, mejorDif = Infinity, acum = 0;
-  for (let k = 1; k < cats.length; k++) {
-    acum += peso(cats[k - 1]);
-    const dif = Math.abs(total - 2 * acum);
-    if (dif < mejorDif) { mejorDif = dif; mejor = k; }
-  }
-  return [cats.slice(0, mejor), cats.slice(mejor)];
+// Papeles: alto y ancho en mm (el oficio chileno mide 216 x 330). Los margenes de la hoja son de 6 mm.
+const PAPELES_PRECIOS = { a4: { nombre: 'A4', ancho: 210, alto: 297 }, oficio: { nombre: 'Oficio', ancho: 216, alto: 330 } };
+const ALTO_BANDA_MM = 8.5;       // franja de categoria con su espacio
+const FILA_COMODA_MM = 4.6;      // por debajo de esto (letra ~9 pt) es preferible usar una hoja mas
+
+function papelPreciosElegido() {
+  let k = 'a4';
+  try { k = localStorage.getItem('papelPrecios') || 'a4'; } catch (e) { /* sin almacenamiento: A4 */ }
+  return PAPELES_PRECIOS[k] ? k : 'a4';
 }
 
-// Altura de fila y tamano de letra: los mayores con los que la hoja mas llena cabe completa en el alto del A4.
-function dimensionesHojaPrecios(hojas) {
-  const ALTO_UTIL_MM = 285 - 13;      // A4 menos margenes, titulo y un poco de holgura
-  const ALTO_BANDA_MM = 8.5;          // franja de categoria con su espacio
+function cambiarPapelPrecios(k) {
+  try { localStorage.setItem('papelPrecios', k); } catch (e) { /* no pasa nada */ }
+}
+
+// Alto disponible para filas y franjas: hoja menos margenes (12), titulo y un poco de holgura.
+function altoUtilHojaPrecios(papel) { return papel.alto - 12 - 13; }
+
+// Reparte los productos (en el orden de la lista) en n hojas de alturas parecidas.
+// Prefiere cortar entre categorias; si no hay mas remedio parte una y la sigue en la hoja siguiente como «(sigue)».
+function repartirCategoriasEnHojas(cats, n) {
+  const lineas = [];   // un producto por linea, con el indice de su categoria
+  cats.forEach((c, ci) => c.items.forEach(it => lineas.push({ ci, it })));
+  const L = lineas.length;
+  if (L === 0) return [];
+  n = Math.max(1, Math.min(n, L));
+  const BANDA = ALTO_BANDA_MM / FILA_COMODA_MM;   // la franja pesa como ~1,85 filas
+  const CORTE_EN_CATEGORIA = 5;                    // penaliza partir una categoria
+  // peso de las lineas [i, j): sus filas mas una franja por cada categoria que toque
+  const peso = (i, j) => (j - i) + BANDA * (lineas[j - 1].ci - lineas[i].ci + 1);
+  const INF = 1e9;
+  const dp = Array.from({ length: n + 1 }, () => new Array(L + 1).fill(INF));
+  const corte = Array.from({ length: n + 1 }, () => new Array(L + 1).fill(0));
+  dp[0][0] = 0;
+  for (let k = 1; k <= n; k++) {
+    for (let j = k; j <= L; j++) {
+      for (let i = k - 1; i < j; i++) {
+        if (dp[k - 1][i] >= INF) continue;
+        const parteCategoria = i > 0 && i < L && lineas[i].ci === lineas[i - 1].ci;
+        const c = Math.max(dp[k - 1][i], peso(i, j)) + (parteCategoria ? CORTE_EN_CATEGORIA : 0);
+        if (c < dp[k][j]) { dp[k][j] = c; corte[k][j] = i; }
+      }
+    }
+  }
+  const limites = [L];
+  for (let k = n, j = L; k > 0; k--) { j = corte[k][j]; limites.unshift(j); }
+  const hojas = [];
+  for (let k = 0; k < n; k++) {
+    const desde = limites[k], hasta = limites[k + 1];
+    const hoja = [];
+    for (let p = desde; p < hasta; p++) {
+      const ci = lineas[p].ci;
+      let g = hoja[hoja.length - 1];
+      if (!g || g.ci !== ci) {
+        const sigue = p === desde && p > 0 && lineas[p - 1].ci === ci;
+        g = { ci, nombre: sigue ? `${cats[ci].nombre} (sigue)` : cats[ci].nombre, color: cats[ci].color, items: [] };
+        hoja.push(g);
+      }
+      g.items.push(lineas[p].it);
+    }
+    hojas.push(hoja);
+  }
+  return hojas;
+}
+
+// Altura de fila y tamano de letra: los mayores con los que la hoja mas llena cabe completa en el alto del papel.
+function dimensionesHojaPrecios(hojas, papel) {
+  const alto = altoUtilHojaPrecios(papel);
   let fila = 6.2;
   hojas.forEach(h => {
     const filas = h.reduce((s, c) => s + c.items.length, 0);
-    fila = Math.min(fila, (ALTO_UTIL_MM - h.length * ALTO_BANDA_MM) / filas);
+    fila = Math.min(fila, (alto - h.length * ALTO_BANDA_MM) / filas);
   });
   fila = Math.max(3.6, fila);
   return { fila, pt: Math.min(12, fila * 2.0), ptPrecio: Math.min(14.5, fila * 2.45) };
 }
 
+// Usa las hojas justas: 2 si la letra queda comoda; si no, una mas, hasta 6.
+function armarHojasPrecios(cats, papel) {
+  let hojas = [], d = null;
+  for (let n = 2; n <= 6; n++) {
+    hojas = repartirCategoriasEnHojas(cats, n);
+    d = dimensionesHojaPrecios(hojas, papel);
+    if (d.fila >= FILA_COMODA_MM || hojas.length < n) break;
+  }
+  return { hojas, d };
+}
+
 function imprimirListaPrecios() {
   const cats = categoriasConPrecios();
   if (cats.length === 0) { alert('No hay productos para imprimir.'); return; }
-  const hojas = repartirCategoriasEnHojas(cats);
-  const d = dimensionesHojaPrecios(hojas);
+  const papel = PAPELES_PRECIOS[papelPreciosElegido()];
+  const { hojas, d } = armarHojasPrecios(cats, papel);
   const fecha = new Date().toLocaleDateString('es-CL');
+  // El tamano de pagina se fija aqui segun el papel elegido (la regla @page precios del CSS solo es el valor por defecto).
+  let estiloPagina = document.getElementById('estilo-pagina-precios');
+  if (!estiloPagina) { estiloPagina = document.createElement('style'); estiloPagina.id = 'estilo-pagina-precios'; document.head.appendChild(estiloPagina); }
+  estiloPagina.textContent = `@page precios { size: ${papel.ancho}mm ${papel.alto}mm; margin: 6mm; }`;
   const area = document.getElementById('hoja-precios-impresion');
+  area.style.setProperty('--hp-alto', `${papel.alto - 12}mm`);
   area.style.setProperty('--hp-fila', `${d.fila.toFixed(2)}mm`);
   area.style.setProperty('--hp-pt', `${d.pt.toFixed(1)}pt`);
   area.style.setProperty('--hp-pt-precio', `${d.ptPrecio.toFixed(1)}pt`);

@@ -1894,6 +1894,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 .precios-barra { display: flex; gap: 8px; align-items: center; }
 .precios-barra .campo-busqueda { margin: 10px 0; flex: 1; min-width: 0; }
 .precios-barra .btn { white-space: nowrap; width: auto; margin: 0; }
+.select-papel-precios { padding: 9px 6px; border: 1px solid #ccc; border-radius: 6px; font-size: .9rem; background: #fff; }
 .precios-chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; -webkit-overflow-scrolling: touch; }
 .chip-precio { flex: 0 0 auto; border: 2px solid var(--color-chip, #555); background: #fff; color: var(--color-chip, #333); border-radius: 999px; padding: 6px 12px; font-size: .88rem; font-weight: 600; cursor: pointer; }
 .chip-precio small { opacity: .75; font-weight: 400; }
@@ -1909,7 +1910,7 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
 
 /* ---------- Lista de precios (hojas A4 al imprimir) ---------- */
 #hoja-precios-impresion { display: none; page: precios; font-family: "Arial Narrow", "Liberation Sans Narrow", Arial, Helvetica, sans-serif; color: #1a1a1a; }
-.hp-hoja { width: 86mm; height: 285mm; overflow: hidden; break-after: page; page-break-after: always; }
+.hp-hoja { width: 86mm; height: var(--hp-alto, 285mm); overflow: hidden; break-after: page; page-break-after: always; }
 .hp-hoja:last-child { break-after: auto; page-break-after: auto; }
 .hp-hoja h1 { margin: 0 0 2mm; font-size: 15pt; line-height: 1; text-transform: uppercase; letter-spacing: .04em; display: flex; justify-content: space-between; align-items: baseline; }
 .hp-hoja h1 small { font-size: 7.5pt; font-weight: 400; letter-spacing: 0; text-transform: none; color: #555; }

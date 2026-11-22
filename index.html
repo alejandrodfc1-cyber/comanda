@@ -681,12 +681,16 @@
 
     <div id="seccion-admin-precios" class="oculto">
       <div class="precios-barra">
-        <input type="search" id="buscar-precio" class="campo-busqueda" placeholder="🔍 Buscar producto…" autocomplete="off" oninput="renderListaPrecios()">
-        <button type="button" class="btn btn-turquesa" onclick="imprimirListaPrecios()">🖨️ Imprimir</button>
+        <input type="search" id="buscar-precio" class="campo-busqueda" placeholder="🔍 Buscar…" autocomplete="off" oninput="renderListaPrecios()">
+        <select id="papel-precios" class="select-papel-precios" onchange="cambiarPapelPrecios(this.value)" aria-label="Tamaño de papel">
+      <option value="a4">A4</option>
+      <option value="oficio">Oficio</option>
+    </select>
+    <button type="button" class="btn btn-turquesa" onclick="imprimirListaPrecios()">🖨️ Imprimir</button>
       </div>
       <div class="precios-chips" id="chips-precios"></div>
       <div id="lista-precios"></div>
-      <p class="texto-ayuda">Se arma sola con los precios de Productos, así que siempre están al día. El orden es el de «Orden Menú». «Imprimir» saca 2 hojas A4, una tira angosta en cada una, para pegar en caja.</p>
+      <p class="texto-ayuda">Se arma sola con los precios de Productos, así que siempre están al día. El orden es el de «Orden Menú». «Imprimir» saca hojas con una tira angosta en cada una (2 normalmente; una más si la lista crece mucho), en A4 u Oficio según elijas.</p>
     </div>
 
     <div id="seccion-admin-reporte-caja" class="oculto">
