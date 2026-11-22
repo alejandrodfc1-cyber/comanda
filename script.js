@@ -8,6 +8,7 @@ function confirmarApp(mensaje, opciones = {}) {
     const btnCancelar = document.getElementById('btn-confirmar-cancelar');
     btnAceptar.textContent = opciones.textoAceptar || 'Confirmar';
     btnAceptar.className = opciones.peligro ? 'btn btn-peligro' : 'btn';
+    btnCancelar.textContent = opciones.textoCancelar || 'Cancelar';
     const cerrar = (resultado) => {
       modal.classList.add('oculto');
       btnAceptar.onclick = null;
@@ -1657,7 +1658,6 @@ async function cerrarMesa(metodoPago) {
 
     reproducirSonidoCobro(metodoPago);
 
-    mesa.pedido.forEach(item => sb.rpc('incrementar_conteo', { p_id: item.id, cant: item.cantidad }));
     sb.rpc('descontar_inventario_venta', { p_items: mesa.pedido }).then(({ error }) => {
       if (error) console.error('No se pudo descontar el inventario:', error);
     });
@@ -5256,6 +5256,49 @@ async function moverTop20(id, direccion) {
   await sb.from('productos').update({ orden_top20: ordenA }).eq('id', b.id);
   await cargarTop20Admin();
   cargarCategoriasYProductos();
+}
+
+// Ordena el Top20 por unidades vendidas (ultimos 30 dias, calculado en la base desde las ventas).
+// Antes de cambiar nada, la base guarda el orden actual para poder volver atras.
+async function ordenarTop20PorVentas() {
+  const { data: ranking, error } = await sb.rpc('ranking_top20_por_ventas', { p_dias: 30 });
+  if (error) { alert('No se pudo calcular el ranking (problema de conexión). No se cambió nada.'); return; }
+  if (!ranking || ranking.length === 0) { alert('Todavía no hay ventas de los últimos 30 días para armar el ranking.'); return; }
+  const enLista = top20AdminCache.filter(p => p.top20).length;
+  if (!(await confirmarApp(`Se ordenarán los ${enLista} productos de tu Top20 por unidades vendidas en los últimos 30 días (el más vendido primero).\n\nTu orden actual queda guardado: podrás volver a él con «Volver a un orden anterior».`, { textoAceptar: 'Ordenar' }))) return;
+  const faltan = ranking.filter(r => r.posicion <= 20 && !r.en_top20);
+  let agregar = false;
+  if (faltan.length > 0) {
+    agregar = await confirmarApp(`Estos productos están entre los 20 más vendidos y no están en tu Top20:\n\n${faltan.map(r => `• ${r.nombre} (${r.vendidos})`).join('\n')}\n\n¿Los agrego también?`, { textoAceptar: 'Sí, agregarlos', textoCancelar: 'No, solo ordenar' });
+  }
+  const { error: errOrden } = await sb.rpc('ordenar_top20_por_ventas', { p_dias: 30, p_agregar: agregar });
+  if (errOrden) { alert('No se pudo ordenar el Top20 (problema de conexión). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
+  await cargarTop20Admin();
+  cargarCategoriasYProductos();
+  document.getElementById('lista-respaldos-top20').classList.add('oculto');
+}
+
+async function mostrarRespaldosTop20() {
+  const cont = document.getElementById('lista-respaldos-top20');
+  if (!cont.classList.contains('oculto')) { cont.classList.add('oculto'); return; }
+  const { data, error } = await sb.from('respaldos_top20').select('id, creado_en, motivo, fijo, orden').order('creado_en', { ascending: false });
+  if (error) { alert('No se pudieron leer los órdenes guardados (problema de conexión).'); return; }
+  cont.innerHTML = (data && data.length)
+    ? data.map(r => {
+        const fecha = new Date(r.creado_en).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        return `<div class="fila-respaldo-top20"><div><strong>${escaparHtml(fecha)}</strong>${r.fijo ? ' 📌' : ''}<span>${escaparHtml(r.motivo)} · ${r.orden.length} productos</span></div><button type="button" class="btn btn-secundario" onclick="restaurarTop20(${r.id})">Volver a este</button></div>`;
+      }).join('')
+    : '<p style="color:#666">Todavía no hay órdenes guardados.</p>';
+  cont.classList.remove('oculto');
+}
+
+async function restaurarTop20(id) {
+  if (!(await confirmarApp('El Top20 volverá a quedar exactamente como estaba en ese momento (productos y posiciones). El orden de ahora también se guarda, así que puedes deshacerlo.', { textoAceptar: 'Volver a este' }))) return;
+  const { error } = await sb.rpc('restaurar_top20', { p_respaldo_id: id });
+  if (error) { alert('No se pudo restaurar el orden (problema de conexión). Revisa la lista antes de volver a intentar.'); await cargarTop20Admin(); return; }
+  await cargarTop20Admin();
+  cargarCategoriasYProductos();
+  document.getElementById('lista-respaldos-top20').classList.add('oculto');
 }
 
 let ordenAdminCache = [];

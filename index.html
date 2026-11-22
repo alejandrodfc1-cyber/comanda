@@ -527,6 +527,14 @@
     </div>
 
     <div id="seccion-admin-top20" class="oculto">
+      <div class="top20-ranking">
+        <div class="top20-ranking-botones">
+          <button type="button" class="btn btn-turquesa" onclick="ordenarTop20PorVentas()">📊 Ordenar por ventas (30 días)</button>
+          <button type="button" class="btn btn-secundario" onclick="mostrarRespaldosTop20()">↩️ Volver a un orden anterior</button>
+        </div>
+        <div id="lista-respaldos-top20" class="oculto"></div>
+        <p class="texto-ayuda">El ranking se calcula con las ventas reales de los últimos 30 días. Antes de cambiar algo, tu orden actual queda guardado.</p>
+      </div>
       <h3 class="titulo-form">En el Top20 (arriba = primero)</h3>
       <div id="lista-top20-actual"></div>
       <div class="buscador-fijo-top20" id="buscador-fijo-top20">

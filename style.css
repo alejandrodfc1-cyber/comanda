@@ -1930,3 +1930,13 @@ main { padding: 20px; padding-bottom: max(88px, calc(20px + env(safe-area-inset-
   body.imprimiendo-precios #hoja-precios-impresion, body.imprimiendo-precios #hoja-precios-impresion * { visibility: visible; }
   body.imprimiendo-precios, body.imprimiendo-precios * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- Top 20: ordenar por ventas y volver a un orden anterior ---------- */
+.top20-ranking { margin-bottom: 14px; }
+.top20-ranking-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.top20-ranking-botones .btn { flex: 1 1 200px; }
+#lista-respaldos-top20 { margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+.fila-respaldo-top20 { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-bottom: 1px solid #eee; }
+.fila-respaldo-top20:last-child { border-bottom: none; }
+.fila-respaldo-top20 span { display: block; font-size: .8rem; color: #666; }
+.fila-respaldo-top20 .btn { white-space: nowrap; padding: 7px 10px; font-size: .82rem; }
