@@ -442,7 +442,8 @@ let ultimaCargaMesasAplicada = 0;
 
 async function cargarMesas() {
   const llamada = ++secuenciaCargaMesas;
-  const mesaAntes = mesaActivaId ? mesaActiva() : null;
+  const idAntes = mesaActivaId;
+  const mesaAntes = idAntes ? mesaActiva() : null;
   const teniaPedidoAntes = !!mesaAntes && mesaAntes.pedido.length > 0;
   // Se ordena tambien por id: si dos mesas tuvieran el mismo orden, sin esto la base las entrega en un orden
   // que cambia cada vez que se actualiza una, y las mesas se intercambiaban de lugar en la grilla.
@@ -455,10 +456,12 @@ async function cargarMesas() {
     cerrarModalMenu();
   } else if (mesaActivaId) {
     const mesaAhora = mesaActiva();
-    if (teniaPedidoAntes && mesaAhora.pedido.length === 0) {
+    if (teniaPedidoAntes && idAntes === mesaActivaId && mesaAhora.pedido.length === 0) {
       // La mesa que tenia abierta se cobro/vacio desde otro dispositivo mientras
       // la miraba -- la vuelve a la grilla en vez de dejarla atascada con un
-      // pedido vacio que ya no existe.
+      // pedido vacio que ya no existe. Solo vale si sigue siendo la MISMA mesa que al
+      // empezar esta carga: si entretanto se abrio otra (ej. una sub-mesa recien creada,
+      // que parte vacia), no hay que cerrarla ni borrarla.
       cerrarModalMenu();
     } else {
       renderPedido();
